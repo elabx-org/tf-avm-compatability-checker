@@ -1,169 +1,63 @@
-name: Check Terraform azurerm Version for Multiple Repos
+name: Check Terraform Azure Provider Version Compatibility
 
 on:
   workflow_dispatch:
-    inputs:
-      repos:
-        description: 'List of GitHub repositories to check (one per line)'
-        required: true
-        default: |
-          Azure/terraform-azurerm-avm-res-storage-storageaccount
-          Azure/terraform-azurerm-avm-res-network-virtualnetwork
-  schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  check-terraform-version:
+  check-provider-versions:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        terraform_version: ['1.0.0']
+        azurerm_version: ['4.0.0', '4.3.3']
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ matrix.terraform_version }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install semver
-
-      - name: Check azurerm version for multiple repos
-        run: |
-          #!/bin/bash
-          set -e  # Exit immediately if a command exits with a non-zero status
-          set -x  # Print commands and their arguments as they are executed
-
-          # Function to extract version constraints
-          extract_version() {
-            if [ ! -f "$1" ]; then
-              echo "File $1 not found"
-              return 1
-            fi
-            echo "Contents of $1:"
-            cat "$1"
-            echo "Searching for azurerm version in $1"
-            azurerm_block=$(grep -ozP 'azurerm\s*=\s*\{[^}]*\}' "$1") || echo "No azurerm block found"
-            echo "Azurerm block:"
-            echo "$azurerm_block"
-            version=$(echo "$azurerm_block" | grep -oP 'version\s*=\s*"\K[^"]+') || true
-            if [ -z "$version" ]; then
-              echo "No version found in azurerm block"
-              return 1
-            fi
-            echo "$version"
+    - name: Create Terraform configuration
+      run: |
+        cat << EOF > main.tf
+        terraform {
+          required_providers {
+            azurerm = {
+              source  = "hashicorp/azurerm"
+              version = "${{ matrix.azurerm_version }}"
+            }
           }
-          
-          # Function to check if version meets constraints
-          check_version() {
-            python - <<EOF
-          import semver
-          import sys
-          
-          version_constraint = "$1"
-          target_version = "$2"
-          
-          print(f"Checking version constraint: {version_constraint} against target version: {target_version}")
-          
-          if ">=" in version_constraint and "<" in version_constraint:
-              min_version, max_version = version_constraint.split(',')
-              min_version = min_version.replace('>=', '').strip()
-              max_version = max_version.replace('<', '').strip()
-              
-              print(f"Min version: {min_version}, Max version: {max_version}")
-              
-              if semver.compare(target_version, min_version) >= 0 and semver.compare(target_version, max_version) < 0:
-                  print("Compatible")
-              else:
-                  print("Incompatible")
-          elif ">=" in version_constraint:
-              min_version = version_constraint.replace('>=', '').strip()
-              print(f"Min version: {min_version}")
-              if semver.compare(target_version, min_version) >= 0:
-                  print("Compatible")
-              else:
-                  print("Incompatible")
-          else:
-              print("Unsupported version constraint format")
-          EOF
-          }
-          
-          # Initialize repos array
-          declare -a repos
+        }
 
-          # Get list of repositories
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "Workflow triggered manually. Reading input repositories."
-            IFS=$'\n' read -r -a repos <<< "${{ github.event.inputs.repos }}"
-          else
-            echo "Workflow triggered by schedule. Using default repositories."
-            repos=(
-              "Azure/terraform-azurerm-avm-res-storage-storageaccount"
-              "Azure/terraform-azurerm-avm-res-network-virtualnetwork"
-            )
-          fi
+        module "storage_account" {
+          source  = "Azure/terraform-azurerm-avm-res-storage-storageaccount"
+          version = "latest"  # You might want to specify a version
           
-          # Check if repos array is empty
-          if [ ${#repos[@]} -eq 0 ]; then
-            echo "Error: No repositories specified."
-            exit 1
-          fi
-          
-          # Print the list of repositories
-          echo "Repositories to check:"
-          printf '%s\n' "${repos[@]}"
-          
-          # Initialize results file
-          echo "Terraform azurerm Version Compatibility Results" > version-check-results.txt
-          echo "=========================================" >> version-check-results.txt
-          
-          for repo in "${repos[@]}"; do
-            echo "Checking repository: $repo"
-            echo "Repository: $repo" >> version-check-results.txt
-            
-            # Clone the repository
-            git clone "https://github.com/$repo.git" temp_repo || { echo "Failed to clone $repo"; continue; }
-            cd temp_repo || { echo "Failed to change directory to temp_repo"; continue; }
-            
-            # Check for terraform.tf file
-            if [ -f "terraform.tf" ]; then
-              echo "Found terraform.tf file"
-              version_constraints=$(extract_version "terraform.tf")
-              
-              if [ -n "$version_constraints" ]; then
-                echo "Version constraints found: $version_constraints"
-                echo "Version constraints: $version_constraints" >> ../version-check-results.txt
-                
-                # Check compatibility with azurerm 4.0.0
-                compatibility_4_0_0=$(check_version "$version_constraints" "4.0.0")
-                echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0"
-                echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0" >> ../version-check-results.txt
-                
-                # Check compatibility with azurerm 4.3.3
-                compatibility_4_3_3=$(check_version "$version_constraints" "4.3.3")
-                echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3"
-                echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3" >> ../version-check-results.txt
-              else
-                echo "No version constraints found in terraform.tf"
-                echo "No version constraints found" >> ../version-check-results.txt
-              fi
-            else
-              echo "terraform.tf not found in the repository"
-              echo "terraform.tf not found" >> ../version-check-results.txt
-            fi
-            
-            # Clean up
-            cd ..
-            rm -rf temp_repo
-            echo "----------------------------------------" >> version-check-results.txt
-          done
+          # Add any required variables here
+          # For example:
+          # resource_group_name = "example-rg"
+          # location            = "eastus"
+          # name                = "examplestorage"
+        }
+        EOF
 
-          # Print the contents of the results file
-          cat version-check-results.txt
+    - name: Terraform Init
+      run: terraform init
+      continue-on-error: true
+      id: tf_init
 
-      - name: Upload results
-        uses: actions/upload-artifact@v3
-        with:
-          name: version-check-results
-          path: version-check-results.txt
+    - name: Check Terraform Init Result
+      run: |
+        if [ "${{ steps.tf_init.outcome }}" == "success" ]; then
+          echo "Terraform init succeeded with azurerm provider version ${{ matrix.azurerm_version }}"
+        else
+          echo "Terraform init failed with azurerm provider version ${{ matrix.azurerm_version }}"
+          exit 1
+        fi
