@@ -11,9 +11,10 @@ on:
         description: 'Comma-separated list of azurerm versions to check'
         required: true
         default: '4.0.0,4.3.0'
-
-env:
-  TF_VERSION: '1.9.7'
+      tf_versions:
+        description: 'Comma-separated list of Terraform versions to check'
+        required: true
+        default: '1.5.0,1.9.7'
 
 jobs:
   prepare-matrix:
@@ -21,11 +22,13 @@ jobs:
     outputs:
       avm_matrix: ${{ steps.set-matrix.outputs.avm_matrix }}
       azurerm_matrix: ${{ steps.set-matrix.outputs.azurerm_matrix }}
+      tf_matrix: ${{ steps.set-matrix.outputs.tf_matrix }}
     steps:
       - id: set-matrix
         run: |
           echo "avm_matrix=$(echo ${{ github.event.inputs.avm_sources }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
           echo "azurerm_matrix=$(echo ${{ github.event.inputs.azurerm_versions }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          echo "tf_matrix=$(echo ${{ github.event.inputs.tf_versions }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
 
   check-compatibility:
     needs: prepare-matrix
@@ -34,6 +37,7 @@ jobs:
       matrix:
         avm_source: ${{ fromJson(needs.prepare-matrix.outputs.avm_matrix) }}
         azurerm_version: ${{ fromJson(needs.prepare-matrix.outputs.azurerm_matrix) }}
+        tf_version: ${{ fromJson(needs.prepare-matrix.outputs.tf_matrix) }}
       fail-fast: false
 
     steps:
@@ -43,35 +47,24 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: ${{ env.TF_VERSION }}
+        terraform_version: ${{ matrix.tf_version }}
 
-    - name: Create Terraform configuration
+    - name: Prepare Terraform configuration
       run: |
-        cat << EOF > main.tf
-        terraform {
-          required_providers {
-            azurerm = {
-              source  = "hashicorp/azurerm"
-              version = "${{ matrix.azurerm_version }}"
-            }
-          }
-        }
-
-        module "test_module" {
-          source  = "${{ matrix.avm_source }}"
-        }
-        EOF
+        sed -i 's|AZURERM_VERSION|${{ matrix.azurerm_version }}|g' terraform/main.tf
+        sed -i 's|AVM_SOURCE|${{ matrix.avm_source }}|g' terraform/main.tf
 
     - name: Terraform Init
       id: tf_init
       run: |
+        cd terraform
         terraform init 2>&1 | tee init_output.txt
         echo "init_exit_code=$?" >> $GITHUB_OUTPUT
 
     - name: Extract module version
       id: module_version
       run: |
-        VERSION=$(grep -oP 'Installed ${{ matrix.avm_source }} v\K[^ ]+' init_output.txt || echo "Version not found")
+        VERSION=$(grep -oP 'Installed ${{ matrix.avm_source }} v\K[^ ]+' terraform/init_output.txt || echo "Version not found")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Check Terraform Init Result
@@ -79,21 +72,21 @@ jobs:
       run: |
         if [ "${{ steps.tf_init.outputs.init_exit_code }}" == "0" ]; then
           echo "result=compatible" >> $GITHUB_OUTPUT
-          echo "✅ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is compatible with azurerm ${{ matrix.azurerm_version }}"
+          echo "✅ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         else
           echo "result=incompatible" >> $GITHUB_OUTPUT
-          echo "❌ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is not compatible with azurerm ${{ matrix.azurerm_version }}"
+          echo "❌ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is not compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         fi
 
     - name: Upload Terraform init output
       uses: actions/upload-artifact@v4
       with:
         name: init-output-${{ github.run_id }}-${{ strategy.job-index }}
-        path: init_output.txt
+        path: terraform/init_output.txt
 
     - name: Save result
       run: |
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ steps.check_result.outputs.result }},${{ steps.module_version.outputs.version }}" >> results.csv
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.module_version.outputs.version }}" >> results.csv
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -115,11 +108,11 @@ jobs:
       run: |
         echo "# Compatibility Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| AVM Source | azurerm Version | Compatibility | Module Version |" >> $GITHUB_STEP_SUMMARY
-        echo "|------------|-----------------|---------------|----------------|" >> $GITHUB_STEP_SUMMARY
+        echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Module Version |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|-----------------|-------------------|---------------|----------------|" >> $GITHUB_STEP_SUMMARY
         
-        cat results.csv | while IFS=',' read -r avm_source azurerm_version result module_version; do
-          echo "| $avm_source | $azurerm_version | $result | $module_version |" >> $GITHUB_STEP_SUMMARY
+        cat results.csv | while IFS=',' read -r avm_source azurerm_version tf_version result module_version; do
+          echo "| $avm_source | $azurerm_version | $tf_version | $result | $module_version |" >> $GITHUB_STEP_SUMMARY
         done
 
     - name: Upload Summary as Artifact
