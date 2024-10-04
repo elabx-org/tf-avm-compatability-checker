@@ -96,14 +96,21 @@ jobs:
 
     - name: Save result
       run: |
-        echo '{
-          "avm_source": "${{ matrix.avm_source }}",
-          "azurerm_version": "${{ matrix.azurerm_version }}",
-          "tf_version": "${{ matrix.tf_version }}",
-          "result": "${{ steps.check_result.outputs.result }}",
-          "reason": "${{ steps.check_result.outputs.reason }}",
-          "module_version": "${{ steps.module_version.outputs.version }}"
-        }' >> results.json
+        jq -n \
+          --arg avm "${{ matrix.avm_source }}" \
+          --arg azurerm "${{ matrix.azurerm_version }}" \
+          --arg tf "${{ matrix.tf_version }}" \
+          --arg result "${{ steps.check_result.outputs.result }}" \
+          --arg reason "${{ steps.check_result.outputs.reason }}" \
+          --arg module_version "${{ steps.module_version.outputs.version }}" \
+          '{
+            "avm_source": $avm,
+            "azurerm_version": $azurerm,
+            "tf_version": $tf,
+            "result": $result,
+            "reason": $reason,
+            "module_version": $module_version
+          }' >> results.json
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -128,7 +135,7 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
         
-        jq -r '.[] | "| \(.avm_source) | \(.azurerm_version) | \(.tf_version) | \(.result) | \(.reason) | \(.module_version) |"' results.json >> $GITHUB_STEP_SUMMARY
+        jq -r '. | "| \(.avm_source) | \(.azurerm_version) | \(.tf_version) | \(.result) | \(.reason) | \(.module_version) |"' results.json >> $GITHUB_STEP_SUMMARY
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
