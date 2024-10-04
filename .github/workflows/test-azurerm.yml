@@ -91,12 +91,16 @@ jobs:
     - name: Save result
       run: |
         mkdir -p ./results
-        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" > "./results/${{ matrix.avm_source }}_${{ matrix.azurerm_version }}_${{ matrix.tf_version }}.txt"
+        safe_avm_source=$(echo "${{ matrix.avm_source }}" | sed 's/[^a-zA-Z0-9]/_/g')
+        safe_azurerm_version=$(echo "${{ matrix.azurerm_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
+        safe_tf_version=$(echo "${{ matrix.tf_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
+        result_file="./results/${safe_avm_source}_${safe_azurerm_version}_${safe_tf_version}.txt"
+        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" > "$result_file"
 
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
-        name: results-${{ matrix.avm_source }}-${{ matrix.azurerm_version }}-${{ matrix.tf_version }}
+        name: results-${{ github.run_id }}-${{ strategy.job-index }}
         path: ./results
 
   summarize-results:
