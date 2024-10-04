@@ -56,24 +56,19 @@ jobs:
         sed -i "s|AZURERM_VERSION|${escaped_azurerm_version}|g" terraform/main.tf
         sed -i "s|AVM_SOURCE|${escaped_avm_source}|g" terraform/main.tf
 
-    - name: Terraform Init
-      id: tf_init
+    - name: Terraform Init and Check Compatibility
+      id: tf_init_and_check
       run: |
         cd terraform
-        terraform init -no-color 2>&1 | tee init_output.txt
-        echo "init_exit_code=$?" >> $GITHUB_OUTPUT
-
-    - name: Check Compatibility
-      id: check_result
-      run: |
-        init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
+        terraform init -no-color > init_output.txt 2>&1
+        init_exit_code=$?
         
-        if [ "$init_exit_code" == "0" ]; then
+        if [ $init_exit_code -eq 0 ]; then
           echo "result=compatible" >> $GITHUB_OUTPUT
           echo "reason=Init successful" >> $GITHUB_OUTPUT
         else
           echo "result=incompatible" >> $GITHUB_OUTPUT
-          if grep -q "no available releases match the given constraints" terraform/init_output.txt; then
+          if grep -q "no available releases match the given constraints" init_output.txt; then
             echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
           else
             echo "reason=Init failed" >> $GITHUB_OUTPUT
@@ -81,24 +76,23 @@ jobs:
         fi
         
         # Extract azurerm version constraints from init output
-        azurerm_constraints=$(grep -oP 'versions matching "[^"]*"' terraform/init_output.txt | grep azurerm | cut -d'"' -f2)
+        azurerm_constraints=$(grep -oP 'versions matching "[^"]*"' init_output.txt | grep azurerm | cut -d'"' -f2)
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
         
-        echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
-        echo "Result: ${{ steps.check_result.outputs.result }}"
-        echo "Reason: ${{ steps.check_result.outputs.reason }}"
-        echo "azurerm constraints: $azurerm_constraints"
-        echo "Init exit code: $init_exit_code"
-
-    - name: Extract module version
-      id: module_version
-      run: |
+        # Extract module version
         AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/\//\\\//g')
-        VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" terraform/init_output.txt)
-        if [ -z "$VERSION" ]; then
-          VERSION="Version not found"
+        MODULE_VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" init_output.txt)
+        if [ -z "$MODULE_VERSION" ]; then
+          MODULE_VERSION="Version not found"
         fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "module_version=$MODULE_VERSION" >> $GITHUB_OUTPUT
+        
+        echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
+        echo "Result: ${{ steps.tf_init_and_check.outputs.result }}"
+        echo "Reason: ${{ steps.tf_init_and_check.outputs.reason }}"
+        echo "azurerm constraints: $azurerm_constraints"
+        echo "Module version: $MODULE_VERSION"
+        echo "Init exit code: $init_exit_code"
 
     - name: Save result
       run: |
@@ -107,7 +101,8 @@ jobs:
         safe_azurerm_version=$(echo "${{ matrix.azurerm_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
         safe_tf_version=$(echo "${{ matrix.tf_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
         result_file="./results/${safe_avm_source}_${safe_azurerm_version}_${safe_tf_version}.txt"
-        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}|${{ steps.check_result.outputs.azurerm_constraints }}" | tr -d '\n' > "$result_file"
+        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.tf_init_and_check.outputs.result }}|${{ steps.tf_init_and_check.outputs.reason }}|${{ steps.tf_init_and_check.outputs.module_version }}|${{ steps.tf_init_and_check.outputs.azurerm_constraints }}" | tr -d '\n' > "$result_file"
+
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
