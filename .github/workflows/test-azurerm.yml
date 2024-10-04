@@ -44,8 +44,10 @@ jobs:
             echo "Contents of $1:"
             cat "$1"
             echo "Searching for azurerm version in $1"
-            grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" || echo "No azurerm block found"
-            version=$(grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" | grep -oP 'version\s*=\s*"\K[^"]+') || true
+            azurerm_block=$(grep -ozP 'azurerm\s*=\s*\{[^}]*\}' "$1") || echo "No azurerm block found"
+            echo "Azurerm block:"
+            echo "$azurerm_block"
+            version=$(echo "$azurerm_block" | grep -oP 'version\s*=\s*"\K[^"]+') || true
             if [ -z "$version" ]; then
               echo "No version found in azurerm block"
               return 1
@@ -124,18 +126,10 @@ jobs:
             git clone "https://github.com/$repo.git" temp_repo || { echo "Failed to clone $repo"; continue; }
             cd temp_repo || { echo "Failed to change directory to temp_repo"; continue; }
             
-            # List files in the repository
-            echo "Files in the repository:"
-            ls -R
-            
-            # Try to find terraform file
-            terraform_file=$(find . -name "*.tf" -print -quit)
-            if [ -z "$terraform_file" ]; then
-              echo "No .tf files found in the repository"
-              echo "No .tf files found" >> ../version-check-results.txt
-            else
-              echo "Found Terraform file: $terraform_file"
-              version_constraints=$(extract_version "$terraform_file")
+            # Check for terraform.tf file
+            if [ -f "terraform.tf" ]; then
+              echo "Found terraform.tf file"
+              version_constraints=$(extract_version "terraform.tf")
               
               if [ -n "$version_constraints" ]; then
                 echo "Version constraints found: $version_constraints"
@@ -151,9 +145,12 @@ jobs:
                 echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3"
                 echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3" >> ../version-check-results.txt
               else
-                echo "No version constraints found in $terraform_file"
+                echo "No version constraints found in terraform.tf"
                 echo "No version constraints found" >> ../version-check-results.txt
               fi
+            else
+              echo "terraform.tf not found in the repository"
+              echo "terraform.tf not found" >> ../version-check-results.txt
             fi
             
             # Clean up
