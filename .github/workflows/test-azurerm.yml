@@ -10,7 +10,7 @@ on:
       azurerm_versions:
         description: 'Comma-separated list of azurerm versions to check'
         required: true
-        default: '4.0.0,4.3.0'
+        default: '4.0.0,4.3.3'
       tf_versions:
         description: 'Comma-separated list of Terraform versions to check'
         required: true
@@ -26,9 +26,9 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          echo "avm_matrix=$(echo ${{ github.event.inputs.avm_sources }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
-          echo "azurerm_matrix=$(echo ${{ github.event.inputs.azurerm_versions }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
-          echo "tf_matrix=$(echo ${{ github.event.inputs.tf_versions }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          echo "avm_matrix=$(echo '${{ github.event.inputs.avm_sources }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          echo "azurerm_matrix=$(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          echo "tf_matrix=$(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
 
   check-compatibility:
     needs: prepare-matrix
@@ -51,8 +51,10 @@ jobs:
 
     - name: Prepare Terraform configuration
       run: |
-        sed -i 's|AZURERM_VERSION|${{ matrix.azurerm_version }}|g' terraform/main.tf
-        sed -i 's|AVM_SOURCE|${{ matrix.avm_source }}|g' terraform/main.tf
+        escaped_azurerm_version=$(printf '%s\n' "${{ matrix.azurerm_version }}" | sed -e 's/[\/&]/\\&/g')
+        escaped_avm_source=$(printf '%s\n' "${{ matrix.avm_source }}" | sed -e 's/[\/&]/\\&/g')
+        sed -i "s|AZURERM_VERSION|${escaped_azurerm_version}|g" terraform/main.tf
+        sed -i "s|AVM_SOURCE|${escaped_avm_source}|g" terraform/main.tf
 
     - name: Terraform Init
       id: tf_init
