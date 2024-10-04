@@ -1,19 +1,27 @@
-name: Check Terraform Azure Provider Version Compatibility
+name: Check AVM Compatibility with Azure Provider Versions
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    inputs:
+      avm_sources:
+        description: 'Comma-separated list of AVM source URLs'
+        required: true
+        default: 'Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm'
+      azurerm_versions:
+        description: 'Comma-separated list of azurerm versions to check'
+        required: true
+        default: '4.0.0,4.3.3,4.50.0'
+
+env:
+  TF_VERSION: '1.5.0'
 
 jobs:
-  check-provider-versions:
+  check-compatibility:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        terraform_version: ['1.0.0']
-        azurerm_version: ['4.0.0', '4.3.3']
+        avm_source: ${{ fromJson(format('[{0}]', join(',', split(github.event.inputs.avm_sources, ',')))) }}
+        azurerm_version: ${{ fromJson(format('[{0}]', join(',', split(github.event.inputs.azurerm_versions, ',')))) }}
 
     steps:
     - name: Checkout code
@@ -22,7 +30,7 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
       with:
-        terraform_version: ${{ matrix.terraform_version }}
+        terraform_version: ${{ env.TF_VERSION }}
 
     - name: Create Terraform configuration
       run: |
@@ -36,28 +44,61 @@ jobs:
           }
         }
 
-        module "storage_account" {
-          source  = "Azure/avm-res-keyvault-vault/azurerm"
-          version = "0.9.1"  # You might want to specify a version
-          
-          # Add any required variables here
-          # For example:
-          # resource_group_name = "example-rg"
-          # location            = "eastus"
-          # name                = "examplestorage"
+        module "test_module" {
+          source  = "${{ matrix.avm_source }}"
         }
         EOF
 
     - name: Terraform Init
-      run: terraform init
-      continue-on-error: true
       id: tf_init
+      run: |
+        terraform init 2>&1 | tee init_output.txt
+        echo "init_exit_code=$?" >> $GITHUB_OUTPUT
+
+    - name: Extract module version
+      id: module_version
+      run: |
+        VERSION=$(grep -oP 'Installed ${{ matrix.avm_source }} v\K[^ ]+' init_output.txt || echo "Version not found")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Check Terraform Init Result
       run: |
-        if [ "${{ steps.tf_init.outcome }}" == "success" ]; then
-          echo "Terraform init succeeded with azurerm provider version ${{ matrix.azurerm_version }}"
+        if [ "${{ steps.tf_init.outputs.init_exit_code }}" == "0" ]; then
+          echo "✅ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is compatible with azurerm ${{ matrix.azurerm_version }}"
+          echo "avm_${{ matrix.avm_source }}_azurerm_${{ matrix.azurerm_version }}=compatible" >> $GITHUB_OUTPUT
         else
-          echo "Terraform init failed with azurerm provider version ${{ matrix.azurerm_version }}"
-          exit 1
+          echo "❌ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is not compatible with azurerm ${{ matrix.azurerm_version }}"
+          echo "avm_${{ matrix.avm_source }}_azurerm_${{ matrix.azurerm_version }}=incompatible" >> $GITHUB_OUTPUT
         fi
+
+    - name: Upload Terraform init output
+      uses: actions/upload-artifact@v2
+      with:
+        name: terraform-init-output-${{ matrix.avm_source }}-azurerm-${{ matrix.azurerm_version }}
+        path: init_output.txt
+
+  summarize-results:
+    needs: check-compatibility
+    runs-on: ubuntu-latest
+    steps:
+    - name: Summarize Compatibility Results
+      run: |
+        echo "# Compatibility Summary" > summary.md
+        echo "" >> summary.md
+        echo "| AVM Source | azurerm Version | Compatibility | Module Version |" >> summary.md
+        echo "|------------|-----------------|---------------|----------------|" >> summary.md
+        
+        for output in ${{ needs.check-compatibility.outputs.* }}; do
+          IFS='=' read -r key value <<< "$output"
+          IFS='_' read -r _ avm_source _ azurerm_version <<< "$key"
+          module_version=$(grep "version=" terraform-init-output-${avm_source}-azurerm-${azurerm_version}/init_output.txt | cut -d'=' -f2)
+          echo "| $avm_source | $azurerm_version | $value | $module_version |" >> summary.md
+        done
+        
+        cat summary.md
+
+    - name: Upload Summary
+      uses: actions/upload-artifact@v2
+      with:
+        name: compatibility-summary
+        path: summary.md
