@@ -95,7 +95,7 @@ jobs:
         safe_azurerm_version=$(echo "${{ matrix.azurerm_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
         safe_tf_version=$(echo "${{ matrix.tf_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
         result_file="./results/${safe_avm_source}_${safe_azurerm_version}_${safe_tf_version}.txt"
-        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" > "$result_file"
+        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" | tr -d '\n' > "$result_file"
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -129,7 +129,7 @@ jobs:
         
         find ./all-results -type f -name "*.txt" | sort | while read file; do
           if [ -s "$file" ]; then
-            content=$(cat "$file")
+            content=$(tr '\n' ' ' < "$file" | sed 's/|/|/g' | sed 's/^ *//;s/ *$//')
             IFS='|' read -r avm_source azurerm_version tf_version result reason module_version <<< "$content"
             echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
           else
