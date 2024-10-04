@@ -10,11 +10,14 @@ on:
       azurerm_versions:
         description: 'Comma-separated list of azurerm versions to check'
         required: true
-        default: '4.0.0,4.3.3'
+        default: '4.0.0,4.3.0'
       tf_versions:
         description: 'Comma-separated list of Terraform versions to check'
         required: true
         default: '1.5.0,1.9.7'
+
+env:
+  ARM_SKIP_PROVIDER_REGISTRATION: true
 
 jobs:
   prepare-matrix:
@@ -69,26 +72,51 @@ jobs:
         VERSION=$(grep -oP 'Installed ${{ matrix.avm_source }} v\K[^ ]+' terraform/init_output.txt || echo "Version not found")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Check Terraform Init Result
+    - name: Terraform Plan
+      id: tf_plan
+      if: steps.tf_init.outputs.init_exit_code == '0'
+      run: |
+        cd terraform
+        terraform plan -input=false -no-color -detailed-exitcode 2>&1 | tee plan_output.txt
+        echo "plan_exit_code=$?" >> $GITHUB_OUTPUT
+
+    - name: Check Compatibility
       id: check_result
       run: |
-        if [ "${{ steps.tf_init.outputs.init_exit_code }}" == "0" ]; then
+        init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
+        plan_exit_code="${{ steps.tf_plan.outputs.plan_exit_code }}"
+        
+        if [ "$init_exit_code" != "0" ]; then
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          echo "reason=Init failed" >> $GITHUB_OUTPUT
+        elif [ "$plan_exit_code" == "1" ]; then
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          echo "reason=Plan error" >> $GITHUB_OUTPUT
+        elif grep -q "Error: " terraform/plan_output.txt; then
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          echo "reason=Plan contains errors" >> $GITHUB_OUTPUT
+        else
           echo "result=compatible" >> $GITHUB_OUTPUT
+          echo "reason=Init and plan successful" >> $GITHUB_OUTPUT
+        fi
+        
+        if [ "$(cat $GITHUB_OUTPUT | grep result | cut -d'=' -f2)" == "compatible" ]; then
           echo "✅ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         else
-          echo "result=incompatible" >> $GITHUB_OUTPUT
           echo "❌ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is not compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         fi
 
-    - name: Upload Terraform init output
+    - name: Upload Terraform outputs
       uses: actions/upload-artifact@v4
       with:
-        name: init-output-${{ github.run_id }}-${{ strategy.job-index }}
-        path: terraform/init_output.txt
+        name: terraform-outputs-${{ github.run_id }}-${{ strategy.job-index }}
+        path: |
+          terraform/init_output.txt
+          terraform/plan_output.txt
 
     - name: Save result
       run: |
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.module_version.outputs.version }}" >> results.csv
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }}" >> results.csv
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -110,11 +138,11 @@ jobs:
       run: |
         echo "# Compatibility Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Module Version |" >> $GITHUB_STEP_SUMMARY
-        echo "|------------|-----------------|-------------------|---------------|----------------|" >> $GITHUB_STEP_SUMMARY
+        echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|-----------------|-------------------|---------------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
         
-        cat results.csv | while IFS=',' read -r avm_source azurerm_version tf_version result module_version; do
-          echo "| $avm_source | $azurerm_version | $tf_version | $result | $module_version |" >> $GITHUB_STEP_SUMMARY
+        cat results.csv | while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version; do
+          echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
         done
 
     - name: Upload Summary as Artifact
