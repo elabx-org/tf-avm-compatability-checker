@@ -112,6 +112,14 @@ jobs:
       with:
         path: ./all-results
 
+    - name: List Results
+      run: |
+        echo "Contents of ./all-results:"
+        find ./all-results -type f
+        echo "Contents of result files:"
+        find ./all-results -type f -name "*.txt" -exec cat {} \; -exec echo \;
+        
+
     - name: Summarize Compatibility Results
       run: |
         echo "# Compatibility Summary" >> $GITHUB_STEP_SUMMARY
@@ -120,8 +128,13 @@ jobs:
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
         
         find ./all-results -type f -name "*.txt" | sort | while read file; do
-          IFS='|' read -r avm_source azurerm_version tf_version result reason module_version < "$file"
-          echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
+          if [ -s "$file" ]; then
+            content=$(cat "$file")
+            IFS='|' read -r avm_source azurerm_version tf_version result reason module_version <<< "$content"
+            echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Warning: Empty file found: $file" >&2
+          fi
         done
 
     - name: Upload Summary as Artifact
