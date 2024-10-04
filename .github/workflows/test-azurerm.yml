@@ -6,13 +6,11 @@ on:
       avm_sources:
         description: 'Comma-separated list of AVM source URLs'
         required: true
-        # default: 'Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm'
-        # default: 'Azure/avm-res-keyvault-vault/azurerm'
-        default: 'Azure/avm-res-storage-storageaccount/azurerm'
+        default: 'Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm'
       azurerm_versions:
         description: 'Comma-separated list of azurerm versions to check'
         required: true
-        default: '4.0.0,4.3.0'
+        default: '4.0.0,4.3.3'
 
 env:
   TF_VERSION: '1.9.7'
@@ -49,18 +47,20 @@ jobs:
 
     - name: Create Terraform configuration
       run: |
-        echo 'terraform {' > main.tf
-        echo '  required_providers {' >> main.tf
-        echo '    azurerm = {' >> main.tf
-        echo '      source  = "hashicorp/azurerm"' >> main.tf
-        echo '      version = "${{ matrix.azurerm_version }}"' >> main.tf
-        echo '    }' >> main.tf
-        echo '  }' >> main.tf
-        echo '}' >> main.tf
-        echo '' >> main.tf
-        echo 'module "test_module" {' >> main.tf
-        echo '  source  = "${{ matrix.avm_source }}"' >> main.tf
-        echo '}' >> main.tf
+        cat << EOF > main.tf
+        terraform {
+          required_providers {
+            azurerm = {
+              source  = "hashicorp/azurerm"
+              version = "${{ matrix.azurerm_version }}"
+            }
+          }
+        }
+
+        module "test_module" {
+          source  = "${{ matrix.avm_source }}"
+        }
+        EOF
 
     - name: Terraform Init
       id: tf_init
