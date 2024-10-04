@@ -32,7 +32,9 @@ jobs:
       - name: Check azurerm version for multiple repos
         run: |
           #!/bin/bash
-          
+          set -e  # Exit immediately if a command exits with a non-zero status
+          set -x  # Print commands and their arguments as they are executed
+
           # Function to extract version constraints
           extract_version() {
             grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" | grep -oP 'version\s*=\s*"\K[^"]+'
@@ -47,10 +49,14 @@ jobs:
           version_constraint = "$1"
           target_version = "$2"
           
+          print(f"Checking version constraint: {version_constraint} against target version: {target_version}")
+          
           if ">=" in version_constraint and "<" in version_constraint:
               min_version, max_version = version_constraint.split(',')
               min_version = min_version.replace('>=', '').strip()
               max_version = max_version.replace('<', '').strip()
+              
+              print(f"Min version: {min_version}, Max version: {max_version}")
               
               if semver.compare(target_version, min_version) >= 0 and semver.compare(target_version, max_version) < 0:
                   print("Compatible")
@@ -58,6 +64,7 @@ jobs:
                   print("Incompatible")
           elif ">=" in version_constraint:
               min_version = version_constraint.replace('>=', '').strip()
+              print(f"Min version: {min_version}")
               if semver.compare(target_version, min_version) >= 0:
                   print("Compatible")
               else:
@@ -78,6 +85,10 @@ jobs:
             )
           fi
           
+          # Print the list of repositories
+          echo "Repositories to check:"
+          printf '%s\n' "${repos[@]}"
+          
           # Initialize results file
           echo "Terraform azurerm Version Compatibility Results" > version-check-results.txt
           echo "=========================================" >> version-check-results.txt
@@ -87,8 +98,8 @@ jobs:
             echo "Repository: $repo" >> version-check-results.txt
             
             # Clone the repository
-            git clone "https://github.com/$repo.git" temp_repo
-            cd temp_repo
+            git clone "https://github.com/$repo.git" temp_repo || { echo "Failed to clone $repo"; continue; }
+            cd temp_repo || { echo "Failed to change directory to temp_repo"; continue; }
             
             # Extract version constraints from terraform.tf
             if [ -f "terraform.tf" ]; then
@@ -116,6 +127,9 @@ jobs:
             rm -rf temp_repo
             echo "----------------------------------------" >> version-check-results.txt
           done
+
+          # Print the contents of the results file
+          cat version-check-results.txt
 
       - name: Upload results
         uses: actions/upload-artifact@v3
