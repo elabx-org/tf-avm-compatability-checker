@@ -74,15 +74,25 @@ jobs:
           EOF
           }
           
+          # Initialize repos array
+          declare -a repos
+
           # Get list of repositories
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            IFS=$'\n' read -d '' -r -a repos <<< "${{ github.event.inputs.repos }}"
+            echo "Workflow triggered manually. Reading input repositories."
+            IFS=$'\n' read -r -a repos <<< "${{ github.event.inputs.repos }}"
           else
-            # Default list for scheduled runs
+            echo "Workflow triggered by schedule. Using default repositories."
             repos=(
               "Azure/terraform-azurerm-avm-res-storage-storageaccount"
               "Azure/terraform-azurerm-avm-res-network-virtualnetwork"
             )
+          fi
+          
+          # Check if repos array is empty
+          if [ ${#repos[@]} -eq 0 ]; then
+            echo "Error: No repositories specified."
+            exit 1
           fi
           
           # Print the list of repositories
