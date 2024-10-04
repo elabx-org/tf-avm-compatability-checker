@@ -37,7 +37,20 @@ jobs:
 
           # Function to extract version constraints
           extract_version() {
-            grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" | grep -oP 'version\s*=\s*"\K[^"]+'
+            if [ ! -f "$1" ]; then
+              echo "File $1 not found"
+              return 1
+            fi
+            echo "Contents of $1:"
+            cat "$1"
+            echo "Searching for azurerm version in $1"
+            grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" || echo "No azurerm block found"
+            version=$(grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" | grep -oP 'version\s*=\s*"\K[^"]+') || true
+            if [ -z "$version" ]; then
+              echo "No version found in azurerm block"
+              return 1
+            fi
+            echo "$version"
           }
           
           # Function to check if version meets constraints
@@ -111,25 +124,36 @@ jobs:
             git clone "https://github.com/$repo.git" temp_repo || { echo "Failed to clone $repo"; continue; }
             cd temp_repo || { echo "Failed to change directory to temp_repo"; continue; }
             
-            # Extract version constraints from terraform.tf
-            if [ -f "terraform.tf" ]; then
-              version_constraints=$(extract_version "terraform.tf")
-              
-              echo "Version constraints found: $version_constraints"
-              echo "Version constraints: $version_constraints" >> ../version-check-results.txt
-              
-              # Check compatibility with azurerm 4.0.0
-              compatibility_4_0_0=$(check_version "$version_constraints" "4.0.0")
-              echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0"
-              echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0" >> ../version-check-results.txt
-              
-              # Check compatibility with azurerm 4.3.3
-              compatibility_4_3_3=$(check_version "$version_constraints" "4.3.3")
-              echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3"
-              echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3" >> ../version-check-results.txt
+            # List files in the repository
+            echo "Files in the repository:"
+            ls -R
+            
+            # Try to find terraform file
+            terraform_file=$(find . -name "*.tf" -print -quit)
+            if [ -z "$terraform_file" ]; then
+              echo "No .tf files found in the repository"
+              echo "No .tf files found" >> ../version-check-results.txt
             else
-              echo "terraform.tf not found in the repository"
-              echo "terraform.tf not found" >> ../version-check-results.txt
+              echo "Found Terraform file: $terraform_file"
+              version_constraints=$(extract_version "$terraform_file")
+              
+              if [ -n "$version_constraints" ]; then
+                echo "Version constraints found: $version_constraints"
+                echo "Version constraints: $version_constraints" >> ../version-check-results.txt
+                
+                # Check compatibility with azurerm 4.0.0
+                compatibility_4_0_0=$(check_version "$version_constraints" "4.0.0")
+                echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0"
+                echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0" >> ../version-check-results.txt
+                
+                # Check compatibility with azurerm 4.3.3
+                compatibility_4_3_3=$(check_version "$version_constraints" "4.3.3")
+                echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3"
+                echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3" >> ../version-check-results.txt
+              else
+                echo "No version constraints found in $terraform_file"
+                echo "No version constraints found" >> ../version-check-results.txt
+              fi
             fi
             
             # Clean up
