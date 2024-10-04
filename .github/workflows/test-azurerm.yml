@@ -66,7 +66,11 @@ jobs:
     - name: Extract module version
       id: module_version
       run: |
-        VERSION=$(grep -oP 'Installed ${{ matrix.avm_source }} v\K[^ ]+' terraform/init_output.txt || echo "Version not found")
+        AVM_SOURCE="${{ matrix.avm_source }}"
+        VERSION=$(sed -n "s/.*Installed $AVM_SOURCE v\([^ ]*\).*/\1/p" terraform/init_output.txt | head -n 1)
+        if [ -z "$VERSION" ]; then
+          VERSION="Version not found"
+        fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Check Compatibility
