@@ -1,0 +1,124 @@
+name: Check Terraform azurerm Version for Multiple Repos
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: 'List of GitHub repositories to check (one per line)'
+        required: true
+        default: |
+          Azure/terraform-azurerm-avm-res-storage-storageaccount
+          Azure/terraform-azurerm-avm-res-network-virtualnetwork
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+
+jobs:
+  check-terraform-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install semver
+
+      - name: Check azurerm version for multiple repos
+        run: |
+          #!/bin/bash
+          
+          # Function to extract version constraints
+          extract_version() {
+            grep -oP 'azurerm\s*=\s*\{.*?\}' "$1" | grep -oP 'version\s*=\s*"\K[^"]+'
+          }
+          
+          # Function to check if version meets constraints
+          check_version() {
+            python - <<EOF
+import semver
+import sys
+
+version_constraint = "$1"
+target_version = "$2"
+
+if ">=" in version_constraint and "<" in version_constraint:
+    min_version, max_version = version_constraint.split(',')
+    min_version = min_version.replace('>=', '').strip()
+    max_version = max_version.replace('<', '').strip()
+    
+    if semver.compare(target_version, min_version) >= 0 and semver.compare(target_version, max_version) < 0:
+        print("Compatible")
+    else:
+        print("Incompatible")
+elif ">=" in version_constraint:
+    min_version = version_constraint.replace('>=', '').strip()
+    if semver.compare(target_version, min_version) >= 0:
+        print("Compatible")
+    else:
+        print("Incompatible")
+else:
+    print("Unsupported version constraint format")
+EOF
+          }
+          
+          # Get list of repositories
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            IFS=$'\n' read -d '' -r -a repos <<< "${{ github.event.inputs.repos }}"
+          else
+            # Default list for scheduled runs
+            repos=(
+              "Azure/terraform-azurerm-avm-res-storage-storageaccount"
+              "Azure/terraform-azurerm-avm-res-network-virtualnetwork"
+            )
+          fi
+          
+          # Initialize results file
+          echo "Terraform azurerm Version Compatibility Results" > version-check-results.txt
+          echo "=========================================" >> version-check-results.txt
+          
+          for repo in "${repos[@]}"; do
+            echo "Checking repository: $repo"
+            echo "Repository: $repo" >> version-check-results.txt
+            
+            # Clone the repository
+            git clone "https://github.com/$repo.git" temp_repo
+            cd temp_repo
+            
+            # Extract version constraints from terraform.tf
+            if [ -f "terraform.tf" ]; then
+              version_constraints=$(extract_version "terraform.tf")
+              
+              echo "Version constraints found: $version_constraints"
+              echo "Version constraints: $version_constraints" >> ../version-check-results.txt
+              
+              # Check compatibility with azurerm 4.0.0
+              compatibility_4_0_0=$(check_version "$version_constraints" "4.0.0")
+              echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0"
+              echo "Compatibility with azurerm 4.0.0: $compatibility_4_0_0" >> ../version-check-results.txt
+              
+              # Check compatibility with azurerm 4.3.3
+              compatibility_4_3_3=$(check_version "$version_constraints" "4.3.3")
+              echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3"
+              echo "Compatibility with azurerm 4.3.3: $compatibility_4_3_3" >> ../version-check-results.txt
+            else
+              echo "terraform.tf not found in the repository"
+              echo "terraform.tf not found" >> ../version-check-results.txt
+            fi
+            
+            # Clean up
+            cd ..
+            rm -rf temp_repo
+            echo "----------------------------------------" >> version-check-results.txt
+          done
+
+      - name: Upload results
+        uses: actions/upload-artifact@v2
+        with:
+          name: version-check-results
+          path: version-check-results.txt
