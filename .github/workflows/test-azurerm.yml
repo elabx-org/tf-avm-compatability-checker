@@ -88,35 +88,15 @@ jobs:
           echo "❌ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is not compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         fi
 
-    - name: Upload Terraform init output
-      uses: actions/upload-artifact@v4
-      with:
-        name: init-output-${{ github.run_id }}-${{ strategy.job-index }}
-        path: terraform/init_output.txt
-
     - name: Save result
       run: |
-        jq -n \
-          --arg avm "${{ matrix.avm_source }}" \
-          --arg azurerm "${{ matrix.azurerm_version }}" \
-          --arg tf "${{ matrix.tf_version }}" \
-          --arg result "${{ steps.check_result.outputs.result }}" \
-          --arg reason "${{ steps.check_result.outputs.reason }}" \
-          --arg module_version "${{ steps.module_version.outputs.version }}" \
-          '{
-            "avm_source": $avm,
-            "azurerm_version": $azurerm,
-            "tf_version": $tf,
-            "result": $result,
-            "reason": $reason,
-            "module_version": $module_version
-          }' >> results.json
+        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" >> results.txt
 
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
-        name: results-${{ github.run_id }}-${{ strategy.job-index }}
-        path: results.json
+        name: results
+        path: results.txt
 
   summarize-results:
     needs: check-compatibility
@@ -125,8 +105,7 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: results-*
-        merge-multiple: true
+        name: results
 
     - name: Summarize Compatibility Results
       run: |
@@ -135,7 +114,9 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
         
-        jq -r '. | "| \(.avm_source) | \(.azurerm_version) | \(.tf_version) | \(.result) | \(.reason) | \(.module_version) |"' results.json >> $GITHUB_STEP_SUMMARY
+        sort results.txt | uniq | while IFS='|' read -r avm_source azurerm_version tf_version result reason module_version; do
+          echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
+        done
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
