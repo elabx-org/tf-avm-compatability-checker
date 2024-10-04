@@ -121,9 +121,9 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
         
-        cat results.csv | while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version; do
+        while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version; do
           echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
-        done
+        done < results.csv
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
