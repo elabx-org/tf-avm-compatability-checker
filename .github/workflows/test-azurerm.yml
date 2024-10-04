@@ -90,13 +90,14 @@ jobs:
 
     - name: Save result
       run: |
-        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" >> results.txt
+        mkdir -p ./results
+        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}" > "./results/${{ matrix.avm_source }}_${{ matrix.azurerm_version }}_${{ matrix.tf_version }}.txt"
 
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
-        name: results
-        path: results.txt
+        name: results-${{ matrix.avm_source }}-${{ matrix.azurerm_version }}-${{ matrix.tf_version }}
+        path: ./results
 
   summarize-results:
     needs: check-compatibility
@@ -105,7 +106,7 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        name: results
+        path: ./all-results
 
     - name: Summarize Compatibility Results
       run: |
@@ -114,7 +115,8 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
         
-        sort results.txt | uniq | while IFS='|' read -r avm_source azurerm_version tf_version result reason module_version; do
+        find ./all-results -type f -name "*.txt" | sort | while read file; do
+          IFS='|' read -r avm_source azurerm_version tf_version result reason module_version < "$file"
           echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version |" >> $GITHUB_STEP_SUMMARY
         done
 
