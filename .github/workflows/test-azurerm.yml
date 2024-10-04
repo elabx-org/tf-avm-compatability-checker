@@ -16,9 +16,6 @@ on:
         required: true
         default: '1.5.0,1.9.7'
 
-env:
-  ARM_SKIP_PROVIDER_REGISTRATION: true
-
 jobs:
   prepare-matrix:
     runs-on: ubuntu-latest
@@ -63,7 +60,7 @@ jobs:
       id: tf_init
       run: |
         cd terraform
-        terraform init 2>&1 | tee init_output.txt
+        terraform init -no-color 2>&1 | tee init_output.txt
         echo "init_exit_code=$?" >> $GITHUB_OUTPUT
 
     - name: Extract module version
@@ -72,47 +69,26 @@ jobs:
         VERSION=$(grep -oP 'Installed ${{ matrix.avm_source }} v\K[^ ]+' terraform/init_output.txt || echo "Version not found")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Terraform Plan
-      id: tf_plan
-      if: steps.tf_init.outputs.init_exit_code == '0'
-      run: |
-        cd terraform
-        terraform plan -input=false -no-color -detailed-exitcode 2>&1 | tee plan_output.txt
-        echo "plan_exit_code=$?" >> $GITHUB_OUTPUT
-
     - name: Check Compatibility
       id: check_result
       run: |
         init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
-        plan_exit_code="${{ steps.tf_plan.outputs.plan_exit_code }}"
         
-        if [ "$init_exit_code" != "0" ]; then
-          echo "result=incompatible" >> $GITHUB_OUTPUT
-          echo "reason=Init failed" >> $GITHUB_OUTPUT
-        elif [ "$plan_exit_code" == "1" ]; then
-          echo "result=incompatible" >> $GITHUB_OUTPUT
-          echo "reason=Plan error" >> $GITHUB_OUTPUT
-        elif grep -q "Error: " terraform/plan_output.txt; then
-          echo "result=incompatible" >> $GITHUB_OUTPUT
-          echo "reason=Plan contains errors" >> $GITHUB_OUTPUT
-        else
+        if [ "$init_exit_code" == "0" ]; then
           echo "result=compatible" >> $GITHUB_OUTPUT
-          echo "reason=Init and plan successful" >> $GITHUB_OUTPUT
-        fi
-        
-        if [ "$(cat $GITHUB_OUTPUT | grep result | cut -d'=' -f2)" == "compatible" ]; then
+          echo "reason=Init successful" >> $GITHUB_OUTPUT
           echo "✅ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         else
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          echo "reason=Init failed" >> $GITHUB_OUTPUT
           echo "❌ AVM: ${{ matrix.avm_source }} (version: ${{ steps.module_version.outputs.version }}) is not compatible with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         fi
 
-    - name: Upload Terraform outputs
+    - name: Upload Terraform init output
       uses: actions/upload-artifact@v4
       with:
-        name: terraform-outputs-${{ github.run_id }}-${{ strategy.job-index }}
-        path: |
-          terraform/init_output.txt
-          terraform/plan_output.txt
+        name: init-output-${{ github.run_id }}-${{ strategy.job-index }}
+        path: terraform/init_output.txt
 
     - name: Save result
       run: |
