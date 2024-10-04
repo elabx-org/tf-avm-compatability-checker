@@ -16,12 +16,24 @@ env:
   TF_VERSION: '1.5.0'
 
 jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      avm_matrix: ${{ steps.set-matrix.outputs.avm_matrix }}
+      azurerm_matrix: ${{ steps.set-matrix.outputs.azurerm_matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          echo "avm_matrix=$(echo ${{ github.event.inputs.avm_sources }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          echo "azurerm_matrix=$(echo ${{ github.event.inputs.azurerm_versions }} | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+
   check-compatibility:
+    needs: prepare-matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        avm_source: ${{ fromJson(format('[{0}]', join(',', split(github.event.inputs.avm_sources, ',')))) }}
-        azurerm_version: ${{ fromJson(format('[{0}]', join(',', split(github.event.inputs.azurerm_versions, ',')))) }}
+        avm_source: ${{ fromJson(needs.prepare-matrix.outputs.avm_matrix) }}
+        azurerm_version: ${{ fromJson(needs.prepare-matrix.outputs.azurerm_matrix) }}
 
     steps:
     - name: Checkout code
