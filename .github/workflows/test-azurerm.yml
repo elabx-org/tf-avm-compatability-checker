@@ -47,20 +47,18 @@ jobs:
 
     - name: Create Terraform configuration
       run: |
-        cat << EOF > main.tf
-        terraform {
-          required_providers {
-            azurerm = {
-              source  = "hashicorp/azurerm"
-              version = "${{ matrix.azurerm_version }}"
-            }
-          }
-        }
-
-        module "test_module" {
-          source  = "${{ matrix.avm_source }}"
-        }
-        EOF
+        echo 'terraform {' > main.tf
+        echo '  required_providers {' >> main.tf
+        echo '    azurerm = {' >> main.tf
+        echo '      source  = "hashicorp/azurerm"' >> main.tf
+        echo '      version = "${{ matrix.azurerm_version }}"' >> main.tf
+        echo '    }' >> main.tf
+        echo '  }' >> main.tf
+        echo '}' >> main.tf
+        echo '' >> main.tf
+        echo 'module "test_module" {' >> main.tf
+        echo '  source  = "${{ matrix.avm_source }}"' >> main.tf
+        echo '}' >> main.tf
 
     - name: Terraform Init
       id: tf_init
