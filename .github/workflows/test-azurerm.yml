@@ -66,8 +66,8 @@ jobs:
     - name: Extract module version
       id: module_version
       run: |
-        AVM_SOURCE="${{ matrix.avm_source }}"
-        VERSION=$(sed -n "s/Downloading registry.terraform.io\/$AVM_SOURCE \(.*\) for test_module.../\1/p" terraform/init_output.txt)
+        AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/\//\\\//g')
+        VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" terraform/init_output.txt)
         if [ -z "$VERSION" ]; then
           VERSION="Version not found"
         fi
