@@ -72,11 +72,10 @@ jobs:
           echo "result=compatible" >> $GITHUB_OUTPUT
           echo "reason=Init successful" >> $GITHUB_OUTPUT
         else
+          echo "result=incompatible" >> $GITHUB_OUTPUT
           if grep -q "no available releases match the given constraints" terraform/init_output.txt; then
-            echo "result=incompatible" >> $GITHUB_OUTPUT
             echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
           else
-            echo "result=incompatible" >> $GITHUB_OUTPUT
             echo "reason=Init failed" >> $GITHUB_OUTPUT
           fi
         fi
@@ -89,6 +88,7 @@ jobs:
         echo "Result: ${{ steps.check_result.outputs.result }}"
         echo "Reason: ${{ steps.check_result.outputs.reason }}"
         echo "azurerm constraints: $azurerm_constraints"
+        echo "Init exit code: $init_exit_code"
 
     - name: Extract module version
       id: module_version
@@ -108,7 +108,6 @@ jobs:
         safe_tf_version=$(echo "${{ matrix.tf_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
         result_file="./results/${safe_avm_source}_${safe_azurerm_version}_${safe_tf_version}.txt"
         echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.check_result.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}|${{ steps.check_result.outputs.azurerm_constraints }}" | tr -d '\n' > "$result_file"
-
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
