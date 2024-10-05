@@ -87,7 +87,10 @@ jobs:
         fi
         
         # Extract azurerm version constraints from init output
-        azurerm_constraints=$(grep -oP 'versions matching "[^"]*"' terraform/init_output.txt | grep azurerm | cut -d'"' -f2)
+        azurerm_constraints=$(grep -oP 'versions matching "\K[^"]*' terraform/init_output.txt | grep -v "^$" | paste -sd "," -)
+        if [ -z "$azurerm_constraints" ]; then
+          azurerm_constraints="No constraints found"
+        fi
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
         
         echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
