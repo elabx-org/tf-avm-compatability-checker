@@ -92,7 +92,7 @@ jobs:
           echo "reason=Init successful" >> $GITHUB_OUTPUT
         fi
         echo "init_exit_code=$exit_code" >> $GITHUB_OUTPUT
-        echo "working_dir=$WORKING_DIR" >> $GITHUB_OUTPU
+        echo "working_dir=$WORKING_DIR" >> $GITHUB_OUTPUT
 
     - name: Check Compatibility
       id: check_result
