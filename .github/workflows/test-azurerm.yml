@@ -76,7 +76,50 @@ jobs:
       run: |
         cd ${{ steps.config_type.outputs.working_dir }}
         terraform init -no-color 2>&1 | tee init_output.txt
-        echo "init_exit_code=$?" >> $GITHUB_OUTPUT
+        exit_code=${PIPESTATUS[0]}
+        if [ $exit_code -eq 1 ]; then
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          if grep -q "Missing required provider configuration" init_output.txt; then
+            missing_providers=$(grep -oP 'with the local name "\K[^"]*' init_output.txt | sort -u | paste -sd "," -)
+            echo "reason=Missing providers: $missing_providers" >> $GITHUB_OUTPUT
+          else
+            echo "reason=Init failed" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "result=compatible" >> $GITHUB_OUTPUT
+          echo "reason=Init successful" >> $GITHUB_OUTPUT
+        fi
+        echo "init_exit_code=$exit_code" >> $GITHUB_OUTPUT
+
+    - name: Check Compatibility
+      id: check_result
+      run: |
+        cd ${{ steps.config_type.outputs.working_dir }}
+        init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
+        result="${{ steps.tf_init.outputs.result }}"
+        reason="${{ steps.tf_init.outputs.reason }}"
+        
+        # Extract azurerm version constraints
+        if [ "$result" = "incompatible" ]; then
+          azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//')
+          if [ -n "$azurerm_constraints" ]; then
+            reason="Version constraint mismatch"
+            echo "reason=$reason" >> $GITHUB_OUTPUT
+          fi
+        else
+          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
+        fi
+        
+        if [ -z "$azurerm_constraints" ]; then
+          azurerm_constraints="No constraints found"
+        fi
+        echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
+        
+        echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
+        echo "Result: $result"
+        echo "Reason: $reason"
+        echo "azurerm constraints: $azurerm_constraints"
+        echo "Init exit code: $init_exit_code"
 
     - name: Extract module version
       id: module_version
@@ -89,31 +132,8 @@ jobs:
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Check Compatibility
-      id: check_result
-      run: |
-        cd ${{ steps.config_type.outputs.working_dir }}
-        init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
-        
-        if [ "$init_exit_code" == "0" ]; then
-          echo "result=compatible" >> $GITHUB_OUTPUT
-          echo "reason=Init successful" >> $GITHUB_OUTPUT
-        else
-          echo "result=incompatible" >> $GITHUB_OUTPUT
-          if grep -q "no available releases match the given constraints" init_output.txt; then
-            echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
-          else
-            echo "reason=Init failed" >> $GITHUB_OUTPUT
-          fi
-        fi
-        
-        # Extract azurerm version constraints from init output
-        azurerm_constraints=$(grep -oP 'versions matching "\K[^"]*' init_output.txt | grep azurerm | paste -sd "," -)
-        echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
-
     - name: Save result
       run: |
-        RESULTS_DIR="."
         AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
         echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
