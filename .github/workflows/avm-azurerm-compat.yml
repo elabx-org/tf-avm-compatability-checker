@@ -112,25 +112,24 @@ jobs:
             if grep -q "no available releases match the given constraints" init_output.txt; then
                 echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
                 # Extract azurerm version constraints for failed init due to version mismatch
-                azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' init_output.txt | tr '\n' ' ')
+                azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
             else
                 echo "reason=Init failed" >> $GITHUB_OUTPUT
                 azurerm_constraints="No constraints found"
             fi
         fi
-
+    
         if [ -z "$azurerm_constraints" ]; then
             azurerm_constraints="No constraints found"
         fi
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
-
-        
+    
         echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         echo "Result: $(cat $GITHUB_OUTPUT | grep result | cut -d'=' -f2)"
         echo "Reason: $(cat $GITHUB_OUTPUT | grep reason | cut -d'=' -f2)"
         echo "azurerm constraints: $azurerm_constraints"
         echo "Init exit code: $init_exit_code"
-
+        
     - name: Extract module version
       id: module_version
       run: |
