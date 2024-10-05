@@ -57,6 +57,30 @@ jobs:
         sed -i "s|AZURERM_VERSION|${escaped_azurerm_version}|g" terraform/main.tf
         sed -i "s|AVM_SOURCE|${escaped_avm_source}|g" terraform/main.tf
 
+        # Add additional provider blocks for specific modules
+        if [[ "${{ matrix.avm_source }}" == *"caf-enterprise-scale"* ]]; then
+          cat << EOF >> terraform/main.tf
+
+        provider "azurerm" {
+          features {}
+          alias = "connectivity"
+        }
+
+        provider "azurerm" {
+          features {}
+          alias = "management"
+        }
+
+        module "test_module" {
+          source = "${{ matrix.avm_source }}"
+          providers = {
+            azurerm.connectivity = azurerm.connectivity
+            azurerm.management   = azurerm.management
+          }
+        }
+        EOF
+        fi
+
     - name: Terraform Init
       id: tf_init
       run: |
@@ -65,13 +89,17 @@ jobs:
         exit_code=${PIPESTATUS[0]}
         if [ $exit_code -eq 1 ]; then
           echo "result=incompatible" >> $GITHUB_OUTPUT
-          echo "reason=Init failed" >> $GITHUB_OUTPUT
+          if grep -q "Missing required provider configuration" init_output.txt; then
+            missing_providers=$(grep -oP 'with the local name "\K[^"]*' init_output.txt | sort -u | paste -sd "," -)
+            echo "reason=Missing providers: $missing_providers" >> $GITHUB_OUTPUT
+          else
+            echo "reason=Init failed" >> $GITHUB_OUTPUT
+          fi
         else
           echo "result=compatible" >> $GITHUB_OUTPUT
           echo "reason=Init successful" >> $GITHUB_OUTPUT
         fi
         echo "init_exit_code=$exit_code" >> $GITHUB_OUTPUT
-
     - name: Check Compatibility
       id: check_result
       run: |
