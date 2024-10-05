@@ -64,8 +64,11 @@ jobs:
     - name: Prepare Terraform configuration
       run: |
         WORKING_DIR="${{ steps.config_type.outputs.working_dir }}"
-        sed -i 's|AZURERM_VERSION|${{ matrix.azurerm_version }}|g' $WORKING_DIR/main.tf
-        sed -i 's|AVM_SOURCE|${{ matrix.avm_source }}|g' $WORKING_DIR/main.tf
+        AZURERM_VERSION=$(echo "${{ matrix.azurerm_version }}" | sed 's/[\/&]/\\&/g')
+        AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/[\/&]/\\&/g')
+        sed -i "s|AZURERM_VERSION|${AZURERM_VERSION}|g" $WORKING_DIR/main.tf
+        sed -i "s|AVM_SOURCE|${AVM_SOURCE}|g" $WORKING_DIR/main.tf
+        echo "Contents of $WORKING_DIR/main.tf:"
         cat $WORKING_DIR/main.tf
 
     - name: Terraform Init
