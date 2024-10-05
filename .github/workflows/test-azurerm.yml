@@ -114,7 +114,9 @@ jobs:
     - name: Save result
       run: |
         mkdir -p ./results
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},${{ steps.check_result.outputs.azurerm_constraints }}" | tr -d '\n' >> results.csv
+        AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> results.csv
+        echo "" >> results.csv  # Add a newline for readability
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -139,8 +141,11 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> $GITHUB_STEP_SUMMARY
         
+        # Combine all result files
+        cat results-* > all_results.csv
+        
         # Sort the results file to ensure consistent ordering
-        sort results.csv > sorted_results.csv
+        sort all_results.csv > sorted_results.csv
         
         while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
           # Remove any newline characters and trim whitespace
@@ -154,6 +159,10 @@ jobs:
           
           echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
         done < sorted_results.csv
+
+        # Display the contents of the results file for debugging
+        echo "Contents of sorted_results.csv:"
+        cat sorted_results.csv
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
