@@ -105,7 +105,7 @@ jobs:
         if [ "$init_exit_code" == "0" ]; then
             echo "result=compatible" >> $GITHUB_OUTPUT
             echo "reason=Init successful" >> $GITHUB_OUTPUT
-            # Extract azurerm version constraints for successful init, preserving commas and spaces
+            # Extract azurerm version constraints for successful init, preserving commas and spaces exactly as found
             azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
         else
             echo "result=incompatible" >> $GITHUB_OUTPUT
@@ -122,7 +122,10 @@ jobs:
         if [ -z "$azurerm_constraints" ]; then
             azurerm_constraints="No constraints found"
         fi
-        echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
+
+        # Use double quotes to ensure commas and spaces are retained properly when outputting to GitHub Actions
+        echo "azurerm_constraints=\"$azurerm_constraints\"" >> $GITHUB_OUTPUT
+
 
         
         echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
