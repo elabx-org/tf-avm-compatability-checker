@@ -116,8 +116,8 @@ jobs:
         RESULTS_DIR="./results"
         mkdir -p "$RESULTS_DIR"
         AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "$RESULTS_DIR/results.csv"
-        echo "" >> "$RESULTS_DIR/results.csv"  # Add a newline for readability
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "$RESULTS_DIR/results-${{ strategy.job-index }}.csv"
+        echo "" >> "$RESULTS_DIR/results-${{ strategy.job-index }}.csv"  # Add a newline for readability
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -142,14 +142,17 @@ jobs:
 
     - name: Summarise Compatibility Results
       run: |
-        echo "# Compatibility Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> $GITHUB_STEP_SUMMARY
-        echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> $GITHUB_STEP_SUMMARY
+        echo "# Compatibility Summary" > summary.md
+        echo "" >> summary.md
+        echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
+        echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
         
-        if [ -f results.csv ]; then
-          # Sort the results file to ensure consistent ordering
-          sort results.csv > sorted_results.csv
+        # Combine all result files
+        cat results-*.csv > all_results.csv
+        
+        if [ -s all_results.csv ]; then
+          # Sort the combined results file
+          sort all_results.csv > sorted_results.csv
           
           while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
             # Remove any newline characters and trim whitespace
@@ -161,18 +164,21 @@ jobs:
             module_version=$(echo "$module_version" | tr -d '\n' | xargs)
             azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
             
-            echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
+            echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
 
           # Display the contents of the results file for debugging
           echo "Contents of sorted_results.csv:"
           cat sorted_results.csv
         else
-          echo "No results found. Check if results.csv file was created and uploaded correctly." >> $GITHUB_STEP_SUMMARY
+          echo "No results found. Check if result files were created and uploaded correctly." >> summary.md
         fi
+
+        # Output the summary to the workflow
+        cat summary.md >> $GITHUB_STEP_SUMMARY
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
       with:
         name: compatibility-summary
-        path: $GITHUB_STEP_SUMMARY
+        path: summary.md
