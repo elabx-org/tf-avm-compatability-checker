@@ -50,130 +50,74 @@ jobs:
         terraform_version: ${{ matrix.tf_version }}
         terraform_wrapper: false
 
+    - name: Determine configuration type and working directory
+      id: config_type
+      run: |
+        if [[ "${{ matrix.avm_source }}" == *"caf-enterprise-scale"* ]]; then
+          echo "config_type=caf" >> $GITHUB_OUTPUT
+          echo "working_dir=terraform/caf_config" >> $GITHUB_OUTPUT
+        else
+          echo "config_type=normal" >> $GITHUB_OUTPUT
+          echo "working_dir=terraform/normal_config" >> $GITHUB_OUTPUT
+        fi
+
     - name: Prepare Terraform configuration
       run: |
-        # Prepare the module source and azurerm version strings
-        MODULE_SOURCE=$(echo "${{ matrix.avm_source }}" | tr -d '\n')
-        AZURERM_VERSION=$(echo "${{ matrix.azurerm_version }}" | tr -d '\n')
-        
-        # Create a new main.tf file with the correct structure
-        cat << EOF > terraform/main.tf
-        terraform {
-          required_providers {
-            azurerm = {
-              source  = "hashicorp/azurerm"
-              version = "${AZURERM_VERSION}"
-            }
-          }
-        }
-
-        provider "azurerm" {
-          features {}
-        }
-
-        provider "azurerm" {
-          features {}
-          alias = "connectivity"
-        }
-
-        provider "azurerm" {
-          features {}
-          alias = "management"
-        }
-
-        module "test_module" {
-          source  = "${MODULE_SOURCE}"
-
-          providers = {
-            azurerm              = azurerm
-            azurerm.connectivity = azurerm.connectivity
-            azurerm.management   = azurerm.management
-          }
-
-          # Add any required variables here
-          # For example:
-          # default_location = "eastus"
-          # root_parent_id   = data.azurerm_client_config.core.tenant_id
-          # root_id          = "es"
-          # root_name        = "Enterprise-Scale"
-        }
-        EOF
-
-        # Display the contents of main.tf for debugging
-        cat terraform/main.tf
+        WORKING_DIR="${{ steps.config_type.outputs.working_dir }}"
+        sed -i 's|AZURERM_VERSION|${{ matrix.azurerm_version }}|g' $WORKING_DIR/main.tf
+        sed -i 's|AVM_SOURCE|${{ matrix.avm_source }}|g' $WORKING_DIR/main.tf
+        cat $WORKING_DIR/main.tf
 
     - name: Terraform Init
       id: tf_init
       run: |
-        cd terraform
+        cd ${{ steps.config_type.outputs.working_dir }}
         terraform init -no-color 2>&1 | tee init_output.txt
-        exit_code=${PIPESTATUS[0]}
-        if [ $exit_code -eq 1 ]; then
-          echo "result=incompatible" >> $GITHUB_OUTPUT
-          if grep -q "Missing required provider configuration" init_output.txt; then
-            missing_providers=$(grep -oP 'with the local name "\K[^"]*' init_output.txt | sort -u | paste -sd "," -)
-            echo "reason=Missing providers: $missing_providers" >> $GITHUB_OUTPUT
-          else
-            echo "reason=Init failed" >> $GITHUB_OUTPUT
-          fi
-        else
-          echo "result=compatible" >> $GITHUB_OUTPUT
-          echo "reason=Init successful" >> $GITHUB_OUTPUT
-        fi
-        echo "init_exit_code=$exit_code" >> $GITHUB_OUTPUT
-    - name: Check Compatibility
-      id: check_result
-      run: |
-        init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
-        result="${{ steps.tf_init.outputs.result }}"
-        reason="${{ steps.tf_init.outputs.reason }}"
-        
-        # Extract azurerm version constraints
-        if [ "$result" = "incompatible" ]; then
-          azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' terraform/init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//')
-          if [ -n "$azurerm_constraints" ]; then
-            reason="Version constraint mismatch"
-            echo "reason=$reason" >> $GITHUB_OUTPUT
-          fi
-        else
-          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' terraform/init_output.txt)
-        fi
-        
-        if [ -z "$azurerm_constraints" ]; then
-          azurerm_constraints="No constraints found"
-        fi
-        echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
-        
-        echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
-        echo "Result: $result"
-        echo "Reason: $reason"
-        echo "azurerm constraints: $azurerm_constraints"
-        echo "Init exit code: $init_exit_code"
+        echo "init_exit_code=$?" >> $GITHUB_OUTPUT
 
     - name: Extract module version
       id: module_version
       run: |
+        cd ${{ steps.config_type.outputs.working_dir }}
         AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/\//\\\//g')
-        VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" terraform/init_output.txt)
+        VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" init_output.txt)
         if [ -z "$VERSION" ]; then
           VERSION="Version not found"
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+    - name: Check Compatibility
+      id: check_result
+      run: |
+        cd ${{ steps.config_type.outputs.working_dir }}
+        init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
+        
+        if [ "$init_exit_code" == "0" ]; then
+          echo "result=compatible" >> $GITHUB_OUTPUT
+          echo "reason=Init successful" >> $GITHUB_OUTPUT
+        else
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          if grep -q "no available releases match the given constraints" init_output.txt; then
+            echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
+          else
+            echo "reason=Init failed" >> $GITHUB_OUTPUT
+          fi
+        fi
+        
+        # Extract azurerm version constraints from init output
+        azurerm_constraints=$(grep -oP 'versions matching "\K[^"]*' init_output.txt | grep azurerm | paste -sd "," -)
+        echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
+
     - name: Save result
       run: |
         mkdir -p ./results
-        safe_avm_source=$(echo "${{ matrix.avm_source }}" | sed 's/[^a-zA-Z0-9]/_/g')
-        safe_azurerm_version=$(echo "${{ matrix.azurerm_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
-        safe_tf_version=$(echo "${{ matrix.tf_version }}" | sed 's/[^a-zA-Z0-9]/_/g')
-        result_file="./results/${safe_avm_source}_${safe_azurerm_version}_${safe_tf_version}.txt"
-        echo "${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|${{ steps.tf_init.outputs.result }}|${{ steps.check_result.outputs.reason }}|${{ steps.module_version.outputs.version }}|${{ steps.check_result.outputs.azurerm_constraints }}" | tr -d '\n' > "$result_file"
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},${{ steps.check_result.outputs.azurerm_constraints }}" >> results.csv
 
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
         name: results-${{ github.run_id }}-${{ strategy.job-index }}
-        path: ./results
+        path: results.csv
 
   summarize-results:
     needs: check-compatibility
@@ -182,14 +126,8 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: ./all-results
-
-    - name: List Results
-      run: |
-        echo "Contents of ./all-results:"
-        find ./all-results -type f
-        echo "Contents of result files:"
-        find ./all-results -type f -name "*.txt" -exec cat {} \; -exec echo \;
+        pattern: results-*
+        merge-multiple: true
 
     - name: Summarize Compatibility Results
       run: |
@@ -198,15 +136,9 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> $GITHUB_STEP_SUMMARY
         
-        find ./all-results -type f -name "*.txt" | sort | while read file; do
-          if [ -s "$file" ]; then
-            content=$(tr '\n' ' ' < "$file" | sed 's/|/|/g' | sed 's/^ *//;s/ *$//')
-            IFS='|' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints <<< "$content"
-            echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Warning: Empty file found: $file" >&2
-          fi
-        done
+        while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
+          echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
+        done < results.csv
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
