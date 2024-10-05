@@ -135,7 +135,8 @@ jobs:
     - name: Save result
       run: |
         AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
+        COMPATIBILITY="${{ steps.check_result.outputs.result }}"
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},$COMPATIBILITY,${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
 
     - name: Upload results
@@ -173,17 +174,17 @@ jobs:
           # Sort the combined results file
           sort all_results.csv > sorted_results.csv
           
-          while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
+          while IFS=',' read -r avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
             # Remove any newline characters and trim whitespace
             avm_source=$(echo "$avm_source" | tr -d '\n' | xargs)
             azurerm_version=$(echo "$azurerm_version" | tr -d '\n' | xargs)
             tf_version=$(echo "$tf_version" | tr -d '\n' | xargs)
-            result=$(echo "$result" | tr -d '\n' | xargs)
+            compatibility=$(echo "$compatibility" | tr -d '\n' | xargs)
             reason=$(echo "$reason" | tr -d '\n' | xargs)
             module_version=$(echo "$module_version" | tr -d '\n' | xargs)
             azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
             
-            echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> summary.md
+            echo "| $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
 
           # Display the contents of the results file for debugging
