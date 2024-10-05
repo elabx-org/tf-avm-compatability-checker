@@ -112,7 +112,7 @@ jobs:
           if grep -q "no available releases match the given constraints" init_output.txt; then
             echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
             # Extract azurerm version constraints for failed init due to version mismatch, preserving commas
-            azurerm_constraints=$(awk '/no available releases match the given constraints/{getline; print}' init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//' | sed 's/ /,/g')
+            azurerm_constraints=$(grep -oP 'versions matching "\K[^"]*' init_output.txt | tr '\n' ',' | sed 's/,$//')
           else
             echo "reason=Init failed" >> $GITHUB_OUTPUT
             azurerm_constraints="No constraints found"
