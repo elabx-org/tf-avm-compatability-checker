@@ -113,18 +113,19 @@ jobs:
 
     - name: Save result
       run: |
-        mkdir -p ./results
+        RESULTS_DIR="./results"
+        mkdir -p "$RESULTS_DIR"
         AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> results.csv
-        echo "" >> results.csv  # Add a newline for readability
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "$RESULTS_DIR/results.csv"
+        echo "" >> "$RESULTS_DIR/results.csv"  # Add a newline for readability
 
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
         name: results-${{ github.run_id }}-${{ strategy.job-index }}
-        path: results.csv
+        path: ./results/results.csv
 
-  summarize-results:
+  summarise-results:
     needs: check-compatibility
     runs-on: ubuntu-latest
     steps:
@@ -134,35 +135,44 @@ jobs:
         pattern: results-*
         merge-multiple: true
 
-    - name: Summarize Compatibility Results
+    - name: Debug file structure
+      run: |
+        echo "Current directory structure:"
+        ls -R
+
+    - name: Summarise Compatibility Results
       run: |
         echo "# Compatibility Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> $GITHUB_STEP_SUMMARY
         
-        # Combine all result files
-        cat results-* > all_results.csv
+        # Find and combine all result files
+        find . -name "results-*.csv" -exec cat {} + > all_results.csv
         
-        # Sort the results file to ensure consistent ordering
-        sort all_results.csv > sorted_results.csv
-        
-        while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
-          # Remove any newline characters and trim whitespace
-          avm_source=$(echo "$avm_source" | tr -d '\n' | xargs)
-          azurerm_version=$(echo "$azurerm_version" | tr -d '\n' | xargs)
-          tf_version=$(echo "$tf_version" | tr -d '\n' | xargs)
-          result=$(echo "$result" | tr -d '\n' | xargs)
-          reason=$(echo "$reason" | tr -d '\n' | xargs)
-          module_version=$(echo "$module_version" | tr -d '\n' | xargs)
-          azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
+        if [ ! -s all_results.csv ]; then
+          echo "No results found. Check if results files were created and uploaded correctly." >> $GITHUB_STEP_SUMMARY
+        else
+          # Sort the results file to ensure consistent ordering
+          sort all_results.csv > sorted_results.csv
           
-          echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
-        done < sorted_results.csv
+          while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
+            # Remove any newline characters and trim whitespace
+            avm_source=$(echo "$avm_source" | tr -d '\n' | xargs)
+            azurerm_version=$(echo "$azurerm_version" | tr -d '\n' | xargs)
+            tf_version=$(echo "$tf_version" | tr -d '\n' | xargs)
+            result=$(echo "$result" | tr -d '\n' | xargs)
+            reason=$(echo "$reason" | tr -d '\n' | xargs)
+            module_version=$(echo "$module_version" | tr -d '\n' | xargs)
+            azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
+            
+            echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
+          done < sorted_results.csv
 
-        # Display the contents of the results file for debugging
-        echo "Contents of sorted_results.csv:"
-        cat sorted_results.csv
+          # Display the contents of the results file for debugging
+          echo "Contents of sorted_results.csv:"
+          cat sorted_results.csv
+        fi
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
