@@ -203,9 +203,7 @@ jobs:
             echo "Debug: Processing line: $avm_source,$azurerm_version,$tf_version,$compatibility,$reason,$module_version,$azurerm_constraints"
 
             # Remove newlines and trim extra spaces for azurerm_constraints
-            azurerm_constraints=$(echo "$azurerm_constraints" | tr -s '[:space:]' | sed -E 's/([0-9\.]+) ([<>]=?|~>) /\1, \2 /g' | sed -E 's/ ([0-9\.]+),/\1,/g')
-
-
+            azurerm_constraints=$(echo "$azurerm_constraints" | tr -s '[:space:]' | sed -E 's/([0-9\.]+) ([<>]=?|~>) /\1, \2 /g' | sed -E 's/ ([0-9\.]+),/\1,/g' | sed -E 's/([<>]=?|~>) ([0-9\.]+) ([0-9\.]+)/\1 \2, \3/g')
 
             echo "Debug: After processing: $avm_source,$azurerm_version,$tf_version,$compatibility,$reason,$module_version,$azurerm_constraints"
 
