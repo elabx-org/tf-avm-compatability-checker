@@ -136,8 +136,13 @@ jobs:
       run: |
         AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
         COMPATIBILITY="${{ steps.check_result.outputs.result }}"
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},$COMPATIBILITY,${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
+        echo "Debug: Compatibility result is $COMPATIBILITY"
+        RESULT_LINE="${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},$COMPATIBILITY,${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS"
+        echo "Debug: Full result line is: $RESULT_LINE"
+        echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
+        echo "Debug: Contents of results-${{ strategy.job-index }}.csv:"
+        cat "results-${{ strategy.job-index }}.csv"
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -159,6 +164,8 @@ jobs:
       run: |
         echo "Current directory structure:"
         ls -R
+        echo "Contents of all result files:"
+        cat results-*
 
     - name: Summarise Compatibility Results
       run: |
@@ -170,11 +177,18 @@ jobs:
         # Combine all result files
         cat results-* > all_results.csv
         
+        echo "Debug: Contents of all_results.csv:"
+        cat all_results.csv
+        
         if [ -s all_results.csv ]; then
           # Sort the combined results file
           sort all_results.csv > sorted_results.csv
           
+          echo "Debug: Contents of sorted_results.csv:"
+          cat sorted_results.csv
+          
           while IFS=',' read -r avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
+            echo "Debug: Processing line: $avm_source,$azurerm_version,$tf_version,$compatibility,$reason,$module_version,$azurerm_constraints"
             # Remove any newline characters and trim whitespace
             avm_source=$(echo "$avm_source" | tr -d '\n' | xargs)
             azurerm_version=$(echo "$azurerm_version" | tr -d '\n' | xargs)
@@ -184,12 +198,12 @@ jobs:
             module_version=$(echo "$module_version" | tr -d '\n' | xargs)
             azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
             
+            echo "Debug: After processing: $avm_source,$azurerm_version,$tf_version,$compatibility,$reason,$module_version,$azurerm_constraints"
             echo "| $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
 
-          # Display the contents of the results file for debugging
-          echo "Contents of sorted_results.csv:"
-          cat sorted_results.csv
+          echo "Debug: Final contents of summary.md:"
+          cat summary.md
         else
           echo "No results found. Check if result files were created and uploaded correctly." >> summary.md
         fi
