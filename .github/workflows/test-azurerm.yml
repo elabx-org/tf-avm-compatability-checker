@@ -96,28 +96,32 @@ jobs:
       run: |
         cd ${{ steps.config_type.outputs.working_dir }}
         init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
-        result="${{ steps.tf_init.outputs.result }}"
-        reason="${{ steps.tf_init.outputs.reason }}"
         
-        # Extract azurerm version constraints
-        if [ "$result" = "incompatible" ]; then
-          azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//')
-          if [ -n "$azurerm_constraints" ]; then
-            reason="Version constraint mismatch"
-            echo "reason=$reason" >> $GITHUB_OUTPUT
-          fi
+        if [ "$init_exit_code" == "0" ]; then
+          echo "result=compatible" >> $GITHUB_OUTPUT
+          echo "reason=Init successful" >> $GITHUB_OUTPUT
         else
-          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
+          echo "result=incompatible" >> $GITHUB_OUTPUT
+          if grep -q "no available releases match the given constraints" init_output.txt; then
+            echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
+          else
+            echo "reason=Init failed" >> $GITHUB_OUTPUT
+          fi
         fi
         
+        # Extract azurerm version constraints
+        azurerm_constraints=$(grep -oP 'versions matching "\K[^"]*' init_output.txt | grep azurerm | paste -sd "," -)
+        if [ -z "$azurerm_constraints" ]; then
+          azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//')
+        fi
         if [ -z "$azurerm_constraints" ]; then
           azurerm_constraints="No constraints found"
         fi
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
         
         echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
-        echo "Result: $result"
-        echo "Reason: $reason"
+        echo "Result: $(cat $GITHUB_OUTPUT | grep result | cut -d'=' -f2)"
+        echo "Reason: $(cat $GITHUB_OUTPUT | grep reason | cut -d'=' -f2)"
         echo "azurerm constraints: $azurerm_constraints"
         echo "Init exit code: $init_exit_code"
 
@@ -136,8 +140,10 @@ jobs:
       run: |
         AZURERM_CONSTRAINTS=$(echo "${{ steps.check_result.outputs.azurerm_constraints }}" | sed 's/,/ /g')
         COMPATIBILITY="${{ steps.check_result.outputs.result }}"
+        REASON="${{ steps.check_result.outputs.reason }}"
         echo "Debug: Compatibility result is $COMPATIBILITY"
-        RESULT_LINE="${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},$COMPATIBILITY,${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS"
+        echo "Debug: Reason is $REASON"
+        RESULT_LINE="${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},$COMPATIBILITY,$REASON,${{ steps.module_version.outputs.version }},$AZURERM_CONSTRAINTS"
         echo "Debug: Full result line is: $RESULT_LINE"
         echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
