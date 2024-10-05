@@ -74,7 +74,9 @@ jobs:
     - name: Terraform Init
       id: tf_init
       run: |
-        cd ${{ steps.config_type.outputs.working_dir }}
+        WORKING_DIR="${{ steps.config_type.outputs.working_dir }}"
+        cd "$WORKING_DIR"
+        echo "Current working directory: $(pwd)"
         terraform init -no-color 2>&1 | tee init_output.txt
         exit_code=${PIPESTATUS[0]}
         if [ $exit_code -eq 1 ]; then
@@ -90,11 +92,14 @@ jobs:
           echo "reason=Init successful" >> $GITHUB_OUTPUT
         fi
         echo "init_exit_code=$exit_code" >> $GITHUB_OUTPUT
+        echo "working_dir=$WORKING_DIR" >> $GITHUB_OUTPU
 
     - name: Check Compatibility
       id: check_result
       run: |
-        cd ${{ steps.config_type.outputs.working_dir }}
+        WORKING_DIR="${{ steps.tf_init.outputs.working_dir }}"
+        cd "$WORKING_DIR"
+        echo "Current working directory: $(pwd)"
         init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
         
         if [ "$init_exit_code" == "0" ]; then
