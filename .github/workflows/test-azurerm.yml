@@ -57,29 +57,32 @@ jobs:
         sed -i "s|AZURERM_VERSION|${escaped_azurerm_version}|g" terraform/main.tf
         sed -i "s|AVM_SOURCE|${escaped_avm_source}|g" terraform/main.tf
 
-        # Add additional provider blocks for specific modules
+        # Add additional provider blocks and update module for specific modules
         if [[ "${{ matrix.avm_source }}" == *"caf-enterprise-scale"* ]]; then
-          cat << EOF >> terraform/main.tf
+          # Add provider blocks
+          sed -i '/^terraform {/a \
+          provider "azurerm" {\
+            features {}\
+            alias = "connectivity"\
+          }\
+          \
+          provider "azurerm" {\
+            features {}\
+            alias = "management"\
+          }' terraform/main.tf
 
-        provider "azurerm" {
-          features {}
-          alias = "connectivity"
-        }
-
-        provider "azurerm" {
-          features {}
-          alias = "management"
-        }
-
-        module "test_module" {
-          source = "${{ matrix.avm_source }}"
-          providers = {
-            azurerm.connectivity = azurerm.connectivity
-            azurerm.management   = azurerm.management
-          }
-        }
-        EOF
+          # Update existing module block
+          sed -i '/^module "test_module" {/,/^}/ {
+            /^}/i \
+              providers = {\
+                azurerm.connectivity = azurerm.connectivity\
+                azurerm.management   = azurerm.management\
+              }
+          }' terraform/main.tf
         fi
+
+        # Display the contents of main.tf for debugging
+        cat terraform/main.tf
 
     - name: Terraform Init
       id: tf_init
