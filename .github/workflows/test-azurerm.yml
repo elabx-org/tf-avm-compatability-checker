@@ -81,7 +81,7 @@ jobs:
         
         # Extract azurerm version constraints
         if [ "$result" = "incompatible" ]; then
-          azurerm_constraints=$(awk '/no available releases match the given constraints/{getline; print $0}' terraform/init_output.txt | tr -d '\n')
+          azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' terraform/init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//')
           if [ -n "$azurerm_constraints" ]; then
             reason="Version constraint mismatch"
             echo "reason=$reason" >> $GITHUB_OUTPUT
