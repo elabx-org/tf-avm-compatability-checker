@@ -1,4 +1,4 @@
-name: Check AVM Compatibility with Azure Provider Versions
+name: Check AVM Compatibility with Azurerm
 
 on:
   workflow_dispatch:
