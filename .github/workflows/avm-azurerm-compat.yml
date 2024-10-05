@@ -6,7 +6,7 @@ on:
       avm_sources:
         description: 'Comma-separated list of AVM source URLs'
         required: true
-        default: 'Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm,Azure/caf-enterprise-scale/azurerm'
+        default: 'Azure/avm-res-authorization-roleassignment/azurerm,Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm,Azure/caf-enterprise-scale/azurerm'
       azurerm_versions:
         description: 'Comma-separated list of azurerm versions to check'
         required: true
