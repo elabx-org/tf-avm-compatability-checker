@@ -201,27 +201,23 @@ jobs:
           
           while IFS=',' read -r avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
             echo "Debug: Processing line: $avm_source,$azurerm_version,$tf_version,$compatibility,$reason,$module_version,$azurerm_constraints"
-            # Remove any newline characters and trim whitespace
-            avm_source=$(echo "$avm_source" | tr -d '\n' | xargs)
-            azurerm_version=$(echo "$azurerm_version" | tr -d '\n' | xargs)
-            tf_version=$(echo "$tf_version" | tr -d '\n' | xargs)
-            compatibility=$(echo "$compatibility" | tr -d '\n' | xargs)
-            reason=$(echo "$reason" | tr -d '\n' | xargs)
-            module_version=$(echo "$module_version" | tr -d '\n' | xargs)
-            azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
+            
+            # Preserve commas and replace only multiple spaces with a single space
+            azurerm_constraints=$(echo "$azurerm_constraints" | sed -e 's/  */ /g' | sed 's/, */,/g')
             
             echo "Debug: After processing: $avm_source,$azurerm_version,$tf_version,$compatibility,$reason,$module_version,$azurerm_constraints"
             echo "| $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
-
+    
           echo "Debug: Final contents of summary.md:"
           cat summary.md
         else
           echo "No results found. Check if result files were created and uploaded correctly." >> summary.md
         fi
-
+    
         # Output the summary to the workflow
         cat summary.md >> $GITHUB_STEP_SUMMARY
+      
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
