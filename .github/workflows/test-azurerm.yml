@@ -114,7 +114,7 @@ jobs:
     - name: Save result
       run: |
         mkdir -p ./results
-        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},${{ steps.check_result.outputs.azurerm_constraints }}" >> results.csv
+        echo "${{ matrix.avm_source }},${{ matrix.azurerm_version }},${{ matrix.tf_version }},${{ steps.check_result.outputs.result }},${{ steps.check_result.outputs.reason }},${{ steps.module_version.outputs.version }},${{ steps.check_result.outputs.azurerm_constraints }}" | tr -d '\n' >> results.csv
 
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -139,9 +139,21 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> $GITHUB_STEP_SUMMARY
         
+        # Sort the results file to ensure consistent ordering
+        sort results.csv > sorted_results.csv
+        
         while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
+          # Remove any newline characters and trim whitespace
+          avm_source=$(echo "$avm_source" | tr -d '\n' | xargs)
+          azurerm_version=$(echo "$azurerm_version" | tr -d '\n' | xargs)
+          tf_version=$(echo "$tf_version" | tr -d '\n' | xargs)
+          result=$(echo "$result" | tr -d '\n' | xargs)
+          reason=$(echo "$reason" | tr -d '\n' | xargs)
+          module_version=$(echo "$module_version" | tr -d '\n' | xargs)
+          azurerm_constraints=$(echo "$azurerm_constraints" | tr -d '\n' | xargs)
+          
           echo "| $avm_source | $azurerm_version | $tf_version | $result | $reason | $module_version | $azurerm_constraints |" >> $GITHUB_STEP_SUMMARY
-        done < results.csv
+        done < sorted_results.csv
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
