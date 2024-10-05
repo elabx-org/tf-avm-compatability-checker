@@ -39,6 +39,15 @@ jobs:
         azurerm_version: ${{ fromJson(needs.prepare-matrix.outputs.azurerm_matrix) }}
         tf_version: ${{ fromJson(needs.prepare-matrix.outputs.tf_matrix) }}
       fail-fast: false
+    name: >-
+      ${{ 
+        contains(matrix.avm_source, 'avm-res-') && 
+        contains(matrix.avm_source, '/azurerm') 
+        ? matrix.avm_source.split('avm-res-')[1].split('/azurerm')[0] 
+        : contains(matrix.avm_source, 'caf-enterprise-scale') 
+          ? 'caf-enterprise-scale' 
+          : matrix.avm_source
+      }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
 
     steps:
     - name: Checkout code
