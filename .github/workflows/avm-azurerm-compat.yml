@@ -103,24 +103,24 @@ jobs:
         init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
         
         if [ "$init_exit_code" == "0" ]; then
-          echo "result=compatible" >> $GITHUB_OUTPUT
-          echo "reason=Init successful" >> $GITHUB_OUTPUT
-          # Extract azurerm version constraints for successful init, preserving commas
-          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt | tr -d '\n')
+        echo "result=compatible" >> $GITHUB_OUTPUT
+        echo "reason=Init successful" >> $GITHUB_OUTPUT
+        # Extract azurerm version constraints for successful init, preserving commas
+        azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt | sed 's/ /,/g' | sed 's/,/, /g')
         else
-          echo "result=incompatible" >> $GITHUB_OUTPUT
-          if grep -q "no available releases match the given constraints" init_output.txt; then
-            echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
-            # Extract azurerm version constraints for failed init due to version mismatch, preserving commas
-            azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt | tr -d '\n')
-          else
-            echo "reason=Init failed" >> $GITHUB_OUTPUT
-            azurerm_constraints="No constraints found"
-          fi
+            echo "result=incompatible" >> $GITHUB_OUTPUT
+            if grep -q "no available releases match the given constraints" init_output.txt; then
+                echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
+                # Extract azurerm version constraints for failed init due to version mismatch, preserving commas
+                azurerm_constraints=$(awk '/no available releases match the given constraints/{print $NF; getline; print $0}' init_output.txt | tr '\n' ' ' | sed 's/^[[:space:]]*//' | sed 's/ /,/g')
+            else
+                echo "reason=Init failed" >> $GITHUB_OUTPUT
+                azurerm_constraints="No constraints found"
+            fi
         fi
-        
+
         if [ -z "$azurerm_constraints" ]; then
-          azurerm_constraints="No constraints found"
+            azurerm_constraints="No constraints found"
         fi
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
         
