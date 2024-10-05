@@ -52,6 +52,9 @@ jobs:
 
     - name: Prepare Terraform configuration
       run: |
+        # Prepare the module source string
+        MODULE_SOURCE=$(echo "${{ matrix.avm_source }}" | tr -d '\n')
+        
         # Create a new main.tf file with the correct structure
         cat << EOF > terraform/main.tf
         terraform {
@@ -78,7 +81,7 @@ jobs:
         }
 
         module "test_module" {
-          source  = "${{ matrix.avm_source }}"
+          source  = "${MODULE_SOURCE}"
 
           providers = {
             azurerm              = azurerm
