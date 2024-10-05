@@ -52,8 +52,9 @@ jobs:
 
     - name: Prepare Terraform configuration
       run: |
-        # Prepare the module source string
+        # Prepare the module source and azurerm version strings
         MODULE_SOURCE=$(echo "${{ matrix.avm_source }}" | tr -d '\n')
+        AZURERM_VERSION=$(echo "${{ matrix.azurerm_version }}" | tr -d '\n')
         
         # Create a new main.tf file with the correct structure
         cat << EOF > terraform/main.tf
@@ -61,7 +62,7 @@ jobs:
           required_providers {
             azurerm = {
               source  = "hashicorp/azurerm"
-              version = "${{ matrix.azurerm_version }}"
+              version = "${AZURERM_VERSION}"
             }
           }
         }
