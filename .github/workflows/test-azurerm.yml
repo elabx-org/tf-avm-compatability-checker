@@ -122,7 +122,7 @@ jobs:
     - name: Upload results
       uses: actions/upload-artifact@v4
       with:
-        name: results-${{ matrix.avm_source }}-${{ matrix.azurerm_version }}-${{ matrix.tf_version }}
+        name: results-${{ github.run_id }}-${{ strategy.job-index }}
         path: ./results/results.csv
 
   summarise-results:
@@ -132,12 +132,13 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: ./all-results
+        pattern: results-*
+        merge-multiple: true
 
     - name: Debug file structure
       run: |
         echo "Current directory structure:"
-        ls -R ./all-results
+        ls -R
 
     - name: Summarise Compatibility Results
       run: |
@@ -146,12 +147,9 @@ jobs:
         echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> $GITHUB_STEP_SUMMARY
         echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> $GITHUB_STEP_SUMMARY
         
-        # Combine all result files
-        find ./all-results -name "results.csv" -exec cat {} + > combined_results.csv
-        
-        if [ -s combined_results.csv ]; then
-          # Sort the combined results file
-          sort combined_results.csv > sorted_results.csv
+        if [ -f results.csv ]; then
+          # Sort the results file to ensure consistent ordering
+          sort results.csv > sorted_results.csv
           
           while IFS=',' read -r avm_source azurerm_version tf_version result reason module_version azurerm_constraints; do
             # Remove any newline characters and trim whitespace
@@ -170,7 +168,7 @@ jobs:
           echo "Contents of sorted_results.csv:"
           cat sorted_results.csv
         else
-          echo "No results found. Check if result files were created and uploaded correctly." >> $GITHUB_STEP_SUMMARY
+          echo "No results found. Check if results.csv file was created and uploaded correctly." >> $GITHUB_STEP_SUMMARY
         fi
 
     - name: Upload Summary as Artifact
