@@ -79,15 +79,17 @@ jobs:
         result="${{ steps.tf_init.outputs.result }}"
         reason="${{ steps.tf_init.outputs.reason }}"
         
+        # Extract azurerm version constraints
         if [ "$result" = "incompatible" ]; then
-          if grep -q "no available releases match the given constraints" terraform/init_output.txt; then
+          azurerm_constraints=$(grep -oP 'no available releases match the given constraints \K.*' terraform/init_output.txt | tr -d '\n')
+          if [ -n "$azurerm_constraints" ]; then
             reason="Version constraint mismatch"
             echo "reason=$reason" >> $GITHUB_OUTPUT
           fi
+        else
+          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' terraform/init_output.txt)
         fi
         
-        # Extract azurerm version constraints from init output
-        azurerm_constraints=$(grep -oP 'versions matching "\K[^"]*' terraform/init_output.txt | grep -v "^$" | paste -sd "," -)
         if [ -z "$azurerm_constraints" ]; then
           azurerm_constraints="No constraints found"
         fi
