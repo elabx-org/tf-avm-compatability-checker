@@ -101,11 +101,11 @@ jobs:
         cd "$WORKING_DIR"
         echo "Current working directory: $(pwd)"
         init_exit_code="${{ steps.tf_init.outputs.init_exit_code }}"
-    
+        
         if [ "$init_exit_code" == "0" ]; then
             echo "result=compatible" >> $GITHUB_OUTPUT
             echo "reason=Init successful" >> $GITHUB_OUTPUT
-            # Extract azurerm version constraints for successful init
+            # Extract azurerm version constraints for successful init, preserving commas and spaces
             azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
         else
             echo "result=incompatible" >> $GITHUB_OUTPUT
@@ -118,19 +118,18 @@ jobs:
                 azurerm_constraints="No constraints found"
             fi
         fi
-    
-        # Handle case where azurerm_constraints is empty
+
         if [ -z "$azurerm_constraints" ]; then
             azurerm_constraints="No constraints found"
         fi
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
-    
+
+        
         echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         echo "Result: $(cat $GITHUB_OUTPUT | grep result | cut -d'=' -f2)"
         echo "Reason: $(cat $GITHUB_OUTPUT | grep reason | cut -d'=' -f2)"
         echo "azurerm constraints: $azurerm_constraints"
         echo "Init exit code: $init_exit_code"
-      
 
     - name: Extract module version
       id: module_version
