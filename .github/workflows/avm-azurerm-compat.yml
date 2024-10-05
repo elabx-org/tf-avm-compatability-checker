@@ -106,7 +106,7 @@ jobs:
           echo "result=compatible" >> $GITHUB_OUTPUT
           echo "reason=Init successful" >> $GITHUB_OUTPUT
           # Extract azurerm version constraints for successful init, preserving commas
-          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt | sed 's/ /,/g')
+          azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
         else
           echo "result=incompatible" >> $GITHUB_OUTPUT
           if grep -q "no available releases match the given constraints" init_output.txt; then
