@@ -52,16 +52,13 @@ jobs:
 
     - name: Prepare Terraform configuration
       run: |
-        escaped_azurerm_version=$(printf '%s\n' "${{ matrix.azurerm_version }}" | sed -e 's/[\/&]/\\&/g')
-        escaped_avm_source=$(printf '%s\n' "${{ matrix.avm_source }}" | sed -e 's/[\/&]/\\&/g')
-        
         # Create a new main.tf file with the correct structure
         cat << EOF > terraform/main.tf
         terraform {
           required_providers {
             azurerm = {
               source  = "hashicorp/azurerm"
-              version = "$escaped_azurerm_version"
+              version = "${{ matrix.azurerm_version }}"
             }
           }
         }
@@ -81,13 +78,20 @@ jobs:
         }
 
         module "test_module" {
-          source  = "$escaped_avm_source"
+          source  = "${{ matrix.avm_source }}"
 
           providers = {
             azurerm              = azurerm
             azurerm.connectivity = azurerm.connectivity
             azurerm.management   = azurerm.management
           }
+
+          # Add any required variables here
+          # For example:
+          # default_location = "eastus"
+          # root_parent_id   = data.azurerm_client_config.core.tenant_id
+          # root_id          = "es"
+          # root_name        = "Enterprise-Scale"
         }
         EOF
 
