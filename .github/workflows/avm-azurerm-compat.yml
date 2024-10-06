@@ -504,9 +504,9 @@ jobs:
                   echo "Finalizing dashboard..."
                   cat << EOF >> "$temp_dashboard"
 
-          - Total AVMs checked: $total_avms
-          - Compatible AVMs: $compatible_avms
-          - Incompatible AVMs: $incompatible_avms
+          - 🔢 Total AVMs checked: $total_avms
+          - ✅ Compatible AVMs: $compatible_avms
+          - ❌ Incompatible AVMs: $incompatible_avms
 
           Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
           EOF

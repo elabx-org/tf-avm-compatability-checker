@@ -1,7 +1,7 @@
 # AVM Compatibility Dashboard
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_START -->
-# AVM Compatibility Dashboard
+# AVM Compatibility Dashboard 🚀
 
 ## Summary
 
