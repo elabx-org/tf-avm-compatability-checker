@@ -15,6 +15,11 @@ on:
         description: 'Terraform version to check'
         required: true
         default: '1.9.7'
+      skip_issue_creation:
+        description: 'Skip creating or updating GitHub issues'
+        required: true
+        default: false
+        type: boolean        
 
 jobs:
   prepare-matrix:
@@ -248,6 +253,7 @@ jobs:
 
   create-issues:
     needs: summarise-results
+    if: ${{ !inputs.skip_issue_creation }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
