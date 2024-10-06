@@ -163,7 +163,7 @@ jobs:
         REASON="${{ steps.check_result.outputs.reason }}"
         echo "Debug: Compatibility result is $COMPATIBILITY"
         echo "Debug: Reason is $REASON"
-        RESULT_LINE="${{ matrix.avm_short_name }}|${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
+        RESULT_LINE="${{ matrix.avm_short_name }}|${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS|$GITHUB_JOB"
         echo "Debug: Full result line is: $RESULT_LINE"
         echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
@@ -215,14 +215,14 @@ jobs:
           echo "Debug: Contents of sorted_results.csv:"
           cat sorted_results.csv
           
-          while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints job_id; do
-            echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints|$job_id"
+          while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints job_name; do
+            echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints|$job_name"
 
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
 
             # Generate a link to the specific job run
-            job_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/job/${job_id}"
+            job_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}?check_suite_focus=true#${job_name}"
             job_link="[$avm_short_name]($job_url)"
 
             echo "Debug: After processing: $job_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
