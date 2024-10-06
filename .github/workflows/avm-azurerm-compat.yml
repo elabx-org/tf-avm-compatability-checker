@@ -516,7 +516,7 @@ jobs:
                   if [ $total_avms -eq 0 ]; then
                     echo "Warning: No AVM data was processed. The dashboard may be empty."
                     echo "
-          ## No AVM Data Available
+          ## No AVM Data Available ❗
           No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> "$temp_dashboard"
                   fi
                   
