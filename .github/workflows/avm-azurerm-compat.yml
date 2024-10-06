@@ -8,38 +8,60 @@ on:
         required: true
         default: 'Azure/avm-res-authorization-roleassignment/azurerm,Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm,Azure/caf-enterprise-scale/azurerm'
       azurerm_versions:
-        description: 'Comma-separated list of azurerm versions to check'
+        description: 'AzureRM version to check'
         required: true
-        default: '4.0.0,4.3.0'
+        default: '4.3.0'
       tf_versions:
-        description: 'Comma-separated list of Terraform versions to check'
+        description: 'Terraform version to check'
         required: true
         default: '1.9.7'
+      skip_issue_creation:
+        description: 'Skip creating or updating GitHub issues'
+        required: true
+        default: false
+        type: boolean        
 
 jobs:
   prepare-matrix:
     runs-on: ubuntu-latest
     outputs:
-      avm_matrix: ${{ steps.set-matrix.outputs.avm_matrix }}
-      azurerm_matrix: ${{ steps.set-matrix.outputs.azurerm_matrix }}
-      tf_matrix: ${{ steps.set-matrix.outputs.tf_matrix }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - id: set-matrix
+      - name: Set up matrix
+        id: set-matrix
         run: |
-          echo "avm_matrix=$(echo '${{ github.event.inputs.avm_sources }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
-          echo "azurerm_matrix=$(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
-          echo "tf_matrix=$(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          # Process AVM sources
+          IFS=',' read -ra AVM_SOURCES <<< "${{ github.event.inputs.avm_sources }}"
+          
+          # Initialize an empty array for the matrix
+          MATRIX=()
+          
+          # Loop through each AVM source and create a matrix entry
+          for source in "${AVM_SOURCES[@]}"; do
+            short_name=$(echo "$source" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///')
+            MATRIX+=("{\"avm_source\":\"$source\",\"avm_short_name\":\"$short_name\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
+          done
+          
+          # Join the matrix entries into a JSON array
+          MATRIX_JSON="[$(IFS=,; echo "${MATRIX[*]}")]"
+          
+          # Create the final matrix JSON
+          FINAL_MATRIX="{\"include\":$MATRIX_JSON}"
+          
+          # Set the matrix output
+          echo "matrix=$FINAL_MATRIX" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "Matrix: $FINAL_MATRIX"
 
   check-compatibility:
     needs: prepare-matrix
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        avm_source: ${{ fromJson(needs.prepare-matrix.outputs.avm_matrix) }}
-        azurerm_version: ${{ fromJson(needs.prepare-matrix.outputs.azurerm_matrix) }}
-        tf_version: ${{ fromJson(needs.prepare-matrix.outputs.tf_matrix) }}
+      matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
-
+    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -105,31 +127,29 @@ jobs:
         if [ "$init_exit_code" == "0" ]; then
             echo "result=compatible" >> $GITHUB_OUTPUT
             echo "reason=Init successful" >> $GITHUB_OUTPUT
-            # Extract azurerm version constraints for successful init, preserving commas and spaces
             azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
         else
             echo "result=incompatible" >> $GITHUB_OUTPUT
             if grep -q "no available releases match the given constraints" init_output.txt; then
                 echo "reason=Version constraint mismatch" >> $GITHUB_OUTPUT
-                # Extract azurerm version constraints for failed init due to version mismatch
                 azurerm_constraints=$(grep -oP 'Finding hashicorp/azurerm versions matching "\K[^"]*' init_output.txt)
             else
                 echo "reason=Init failed" >> $GITHUB_OUTPUT
                 azurerm_constraints="No constraints found"
             fi
         fi
-    
+
         if [ -z "$azurerm_constraints" ]; then
             azurerm_constraints="No constraints found"
         fi
         echo "azurerm_constraints=$azurerm_constraints" >> $GITHUB_OUTPUT
-    
+
         echo "AVM: ${{ matrix.avm_source }} with azurerm ${{ matrix.azurerm_version }} and Terraform ${{ matrix.tf_version }}"
         echo "Result: $(cat $GITHUB_OUTPUT | grep result | cut -d'=' -f2)"
         echo "Reason: $(cat $GITHUB_OUTPUT | grep reason | cut -d'=' -f2)"
         echo "azurerm constraints: $azurerm_constraints"
         echo "Init exit code: $init_exit_code"
-        
+
     - name: Extract module version
       id: module_version
       run: |
@@ -148,7 +168,7 @@ jobs:
         REASON="${{ steps.check_result.outputs.reason }}"
         echo "Debug: Compatibility result is $COMPATIBILITY"
         echo "Debug: Reason is $REASON"
-        RESULT_LINE="${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
+        RESULT_LINE="${{ matrix.avm_short_name }}|${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
         echo "Debug: Full result line is: $RESULT_LINE"
         echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
@@ -182,8 +202,8 @@ jobs:
       run: |
         echo "# Compatibility Summary" > summary.md
         echo "" >> summary.md
-        echo "| AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
-        echo "|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
+        echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
+        echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
         
         # Combine all result files
         cat results-* > all_results.csv
@@ -198,18 +218,24 @@ jobs:
           echo "Debug: Contents of sorted_results.csv:"
           cat sorted_results.csv
           
-          while IFS='|' read -r avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
-            echo "Debug: Processing line: $avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-    
+          while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
+            echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
+
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
-    
-            echo "Debug: After processing: $avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-    
+
+            # Create the registry URL
+            registry_url="https://registry.terraform.io/modules/$avm_source"
+
+            # Create a Markdown link for the AVM name
+            avm_name_link="[$avm_short_name]($registry_url)"
+
+            echo "Debug: After processing: $avm_name_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
+
             # Output the processed line into the summary
-            echo "| $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
+            echo "| $avm_name_link | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
-    
+
           echo "Debug: Final contents of summary.md:"
           cat summary.md
         else
@@ -218,10 +244,118 @@ jobs:
     
         # Output the summary to the workflow
         cat summary.md >> $GITHUB_STEP_SUMMARY
-      
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
       with:
         name: compatibility-summary
         path: summary.md
+
+  create-issues:
+    needs: summarise-results
+    if: ${{ !inputs.skip_issue_creation }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Download summary
+        uses: actions/download-artifact@v4
+        with:
+          name: compatibility-summary
+  
+      - name: Manage issues for AVMs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Starting issue management process..."
+          
+          # Check if summary.md exists
+          if [ ! -f summary.md ]; then
+            echo "Error: summary.md file not found!"
+            exit 1
+          fi
+          
+          echo "Contents of summary.md:"
+          cat summary.md
+          
+          # Read the summary file, skipping the header lines
+          tail -n +4 summary.md | while IFS= read -r line; do
+            # Remove leading and trailing | and spaces
+            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+            
+            # Split the line into fields
+            IFS='|' read -ra fields <<< "$line"
+            
+            # Extract AVM name without the link
+            avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
+            avm_source=$(echo "${fields[1]}" | xargs)
+            azurerm_version=$(echo "${fields[2]}" | xargs)
+            tf_version=$(echo "${fields[3]}" | xargs)
+            compatibility=$(echo "${fields[4]}" | xargs)
+            reason=$(echo "${fields[5]}" | xargs)
+            module_version=$(echo "${fields[6]}" | xargs)
+            azurerm_constraints=$(echo "${fields[7]}" | xargs)
+            
+            echo "Processing AVM: $avm_name"
+            echo "Compatibility: $compatibility"
+            
+            # Check for existing issue
+            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
+            echo "Existing issue number: $issue_number"
+            
+            if [ "$compatibility" == "incompatible" ]; then
+              echo "AVM is incompatible. Preparing issue..."
+              
+              # Prepare issue title and body
+              title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
+              body="An incompatibility has been detected for the following AVM:
+  
+          | Field | Value |
+          |-------|-------|
+          | AVM Name | [$avm_name](https://registry.terraform.io/modules/$avm_source) |
+          | AVM Source | $avm_source |
+          | AzureRM Version | $azurerm_version |
+          | Terraform Version | $tf_version |
+          | Compatibility | $compatibility |
+          | Reason | $reason |
+          | Module Version | $module_version |
+          | AzureRM Constraints | $azurerm_constraints |
+  
+          Please investigate and update the module to ensure compatibility with AzureRM version $azurerm_version."
+  
+              if [ -z "$issue_number" ]; then
+                echo "Creating new issue..."
+                gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
+                if [ $? -eq 0 ]; then
+                  echo "Successfully created new issue for incompatible AVM: $avm_name"
+                else
+                  echo "Error: Failed to create issue for AVM: $avm_name"
+                fi
+              else
+                echo "Updating existing issue..."
+                gh issue edit $issue_number --title "$title" --body "$body"
+                gh issue comment $issue_number --body "Updated compatibility check results on $(date)"
+                if [ $? -eq 0 ]; then
+                  echo "Successfully updated existing issue for incompatible AVM: $avm_name"
+                else
+                  echo "Error: Failed to update issue for AVM: $avm_name"
+                fi
+              fi
+            elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
+              echo "AVM is now compatible. Closing existing issue..."
+              gh issue close $issue_number --comment "AVM is now compatible with AzureRM $azurerm_version as of $(date). Closing this issue."
+              if [ $? -eq 0 ]; then
+                echo "Successfully closed issue for now compatible AVM: $avm_name"
+              else
+                echo "Error: Failed to close issue for AVM: $avm_name"
+              fi
+            else
+              echo "No action needed for AVM: $avm_name"
+            fi
+            
+            echo "Finished processing AVM: $avm_name"
+            echo "-----------------------------------"
+          done
+          
+          echo "Issue management process completed."
