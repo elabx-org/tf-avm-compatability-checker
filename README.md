@@ -1,6 +1,4 @@
-# AVM Compatibility Dashboard
-
-test tert
+# AVM Compatibility Dashboard 🚀
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_START -->
 
