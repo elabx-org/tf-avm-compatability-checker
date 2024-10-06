@@ -359,3 +359,77 @@ jobs:
           done
           
           echo "Issue management process completed."
+
+  generate-dashboard:
+    needs: summarise-results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download summary
+        uses: actions/download-artifact@v4
+        with:
+          name: compatibility-summary
+      
+      - name: Generate Markdown Dashboard
+        run: |
+          echo "# AVM Compatibility Dashboard" > dashboard.md
+          echo "" >> dashboard.md
+          echo "## Summary" >> dashboard.md
+          echo "" >> dashboard.md
+          
+          total_avms=0
+          compatible_avms=0
+          incompatible_avms=0
+          
+          echo "| AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |" >> dashboard.md
+          echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> dashboard.md
+          
+          while IFS= read -r line; do
+            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+            IFS='|' read -ra fields <<< "$line"
+            
+            avm_name="${fields[0]}"
+            avm_source="${fields[1]}"
+            azurerm_version="${fields[2]}"
+            tf_version="${fields[3]}"
+            compatibility="${fields[4]}"
+            reason="${fields[5]}"
+            module_version="${fields[6]}"
+            azurerm_constraints="${fields[7]}"
+            
+            if [ "$compatibility" == "compatible" ]; then
+              ((compatible_avms++))
+              compatibility="✅ Compatible"
+            elif [ "$compatibility" == "incompatible" ]; then
+              ((incompatible_avms++))
+              compatibility="❌ Incompatible"
+            fi
+            ((total_avms++))
+            
+            echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
+          done < <(tail -n +4 summary.md)
+          
+          sed -i "3r /dev/stdin" dashboard.md <<EOF
+          
+          - Total AVMs checked: $total_avms
+          - Compatible AVMs: $compatible_avms
+          - Incompatible AVMs: $incompatible_avms
+          
+          Last updated: $(date -u)
+          
+          EOF
+
+      - name: Update README.md
+        run: |
+          cp dashboard.md README.md
+          
+      - name: Commit and push if changed
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add README.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update AVM Compatibility Dashboard" && git push)
+
+
