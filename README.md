@@ -8,6 +8,11 @@
 
 Last updated: Sun Oct  6 20:16:11 UTC 2024
 
+<style>
+  .center {
+    text-align: center;
+  }
+</style>
 
 | AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |
 |----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|
