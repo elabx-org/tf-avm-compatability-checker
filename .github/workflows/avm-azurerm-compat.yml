@@ -215,16 +215,15 @@ jobs:
           echo "Debug: Contents of sorted_results.csv:"
           cat sorted_results.csv
           
-          while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
-            echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
+          while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints job_id; do
+            echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints|$job_id"
 
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
 
             # Generate a link to the specific job run
-            job_name=$(echo "$avm_short_name ($azurerm_version, $tf_version)" | sed 's/ /%20/g')
-            job_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            job_link="[$avm_short_name]($job_url?check_suite_focus=true#summary-${job_name})"
+            job_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/job/${job_id}"
+            job_link="[$avm_short_name]($job_url)"
 
             echo "Debug: After processing: $job_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
 
