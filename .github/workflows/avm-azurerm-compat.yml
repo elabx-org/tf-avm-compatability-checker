@@ -26,31 +26,28 @@ jobs:
         id: set-matrix
         run: |
           # Process AVM sources
-          avm_sources='${{ github.event.inputs.avm_sources }}'
+          IFS=',' read -ra AVM_SOURCES <<< "${{ github.event.inputs.avm_sources }}"
           
-          # Create matrix
-          matrix=$(jq -n \
-            --arg azurerm "${{ github.event.inputs.azurerm_versions }}" \
-            --arg tf "${{ github.event.inputs.tf_versions }}" \
-            --argjson avms "$(echo $avm_sources | jq -R 'split(",")')" \
-            '{
-              "include": ($avms | map({
-                "avm_source": .,
-                "avm_short_name": (. | split("/")[1] | sub("avm-res-"; "")),
-                "azurerm_version": $azurerm,
-                "tf_version": $tf
-              }))
-            }')
+          # Initialize an empty array for the matrix
+          MATRIX=()
           
-          # Escape the JSON for GitHub Actions
-          matrix="${matrix//'%'/'%25'}"
-          matrix="${matrix//$'\n'/'%0A'}"
-          matrix="${matrix//$'\r'/'%0D'}"
+          # Loop through each AVM source and create a matrix entry
+          for source in "${AVM_SOURCES[@]}"; do
+            short_name=$(echo "$source" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///')
+            MATRIX+=("{\"avm_source\":\"$source\",\"avm_short_name\":\"$short_name\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
+          done
           
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          # Join the matrix entries into a JSON array
+          MATRIX_JSON="[$(IFS=,; echo "${MATRIX[*]}")]"
+          
+          # Create the final matrix JSON
+          FINAL_MATRIX="{\"include\":$MATRIX_JSON}"
+          
+          # Set the matrix output
+          echo "matrix=$FINAL_MATRIX" >> $GITHUB_OUTPUT
           
           # Debug output
-          echo "Matrix: $matrix"
+          echo "Matrix: $FINAL_MATRIX"
 
   check-compatibility:
     needs: prepare-matrix
@@ -58,8 +55,7 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
-    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
-    
+    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
