@@ -281,7 +281,8 @@ jobs:
             # Split the line into fields
             IFS='|' read -ra fields <<< "$line"
             
-            avm_name=$(echo "${fields[0]}" | xargs)
+            # Extract AVM name without the link
+            avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
             avm_source=$(echo "${fields[1]}" | xargs)
             azurerm_version=$(echo "${fields[2]}" | xargs)
             tf_version=$(echo "${fields[3]}" | xargs)
@@ -306,7 +307,7 @@ jobs:
   
           | Field | Value |
           |-------|-------|
-          | AVM Name | $avm_name |
+          | AVM Name | [$avm_name](https://registry.terraform.io/modules/$avm_source) |
           | AVM Source | $avm_source |
           | AzureRM Version | $azurerm_version |
           | Terraform Version | $tf_version |
@@ -351,4 +352,4 @@ jobs:
             echo "-----------------------------------"
           done
           
-          echo "Issue management process completed."    
+          echo "Issue management process completed."
