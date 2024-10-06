@@ -397,7 +397,14 @@ jobs:
           echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> dashboard.md
           
           echo "Processing summary.md..."
-          while IFS= read -r line; do
+          # Skip the first 3 lines (title and header)
+          tail -n +4 summary.md | while IFS= read -r line; do
+            # Skip empty lines
+            if [ -z "$line" ]; then
+              echo "Skipping empty line"
+              continue
+            fi
+            
             echo "Processing line: $line"
             line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
             IFS='|' read -ra fields <<< "$line"
@@ -426,11 +433,12 @@ jobs:
               compatibility="❌ Incompatible"
             else
               echo "Warning: Unexpected compatibility value: $compatibility"
+              continue
             fi
             ((total_avms++))
             
             echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
-          done < <(tail -n +4 summary.md)
+          done
           
           echo "Finalizing dashboard..."
           sed -i "3r /dev/stdin" dashboard.md <<EOF
