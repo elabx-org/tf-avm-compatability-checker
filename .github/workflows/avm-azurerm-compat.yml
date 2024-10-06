@@ -371,6 +371,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: compatibility-summary
+
+      # New Step 1: Check File Permissions
+      - name: Check File Permissions
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "File permissions for summary.md:"
+          ls -l summary.md || echo "summary.md not found"
+          echo "File type of summary.md:"
+          file summary.md || echo "summary.md not found"
+        shell: bash
+
+      # New Step 2: Display Summary Content
+      - name: Display Summary Content
+        run: |
+          echo "Contents of summary.md:"
+          cat summary.md 2>&1 || echo "Error reading summary.md"
+          echo "---End of summary.md---"
+          echo "First 10 lines of summary.md:"
+          head -n 10 summary.md 2>&1 || echo "Error reading summary.md"
+        shell: bash    
       
       - name: Debug - List files
         run: |
@@ -383,12 +405,10 @@ jobs:
         run: |
           set -e
           
-          # Function to log errors
           log_error() {
             echo "ERROR: $1" >&2
           }
           
-          # Trap for unexpected errors
           trap 'log_error "Unexpected error occurred on line $LINENO: $BASH_COMMAND"' ERR
           
           echo "Starting dashboard generation..."
@@ -415,10 +435,10 @@ jobs:
           echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> dashboard.md
           
           echo "Processing summary.md..."
-          # Skip the first 3 lines (title and header)
-          tail -n +4 summary.md | while IFS= read -r line; do
-            # Skip empty lines and the table header separator
-            if [ -z "$line" ] || [[ $line == *"----"* ]]; then
+          # Use a while loop to read the file line by line
+          while IFS= read -r line || [ -n "$line" ]; do
+            # Skip empty lines, the table header, and the separator
+            if [ -z "$line" ] || [[ $line == *"AVM Name"* ]] || [[ $line == *"----"* ]]; then
               echo "Skipping line: $line"
               continue
             fi
@@ -457,7 +477,7 @@ jobs:
             ((total_avms++))
             
             echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
-          done
+          done < summary.md
           
           echo "Finalizing dashboard..."
           sed -i "3r /dev/stdin" dashboard.md <<EOF
