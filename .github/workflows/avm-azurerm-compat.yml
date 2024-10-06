@@ -382,10 +382,19 @@ jobs:
       - name: Generate Markdown Dashboard
         run: |
           set -e
+          
+          # Function to log errors
+          log_error() {
+            echo "ERROR: $1" >&2
+          }
+          
+          # Trap for unexpected errors
+          trap 'log_error "Unexpected error occurred on line $LINENO: $BASH_COMMAND"' ERR
+          
           echo "Starting dashboard generation..."
           
           if [ ! -f summary.md ]; then
-            echo "Error: summary.md file not found!"
+            log_error "summary.md file not found!"
             exit 1
           fi
           
@@ -435,19 +444,19 @@ jobs:
             
             echo "Processed fields: $avm_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints"
             
-            if [ "$compatibility" == "compatible" ]; then
+            if [ "$compatibility" = "compatible" ]; then
               ((compatible_avms++))
-              compatibility="✅ Compatible"
-            elif [ "$compatibility" == "incompatible" ]; then
+              compatibility_icon="✅ Compatible"
+            elif [ "$compatibility" = "incompatible" ]; then
               ((incompatible_avms++))
-              compatibility="❌ Incompatible"
+              compatibility_icon="❌ Incompatible"
             else
               echo "Warning: Unexpected compatibility value: $compatibility"
-              continue
+              compatibility_icon="⚠️ Unknown"
             fi
             ((total_avms++))
             
-            echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
+            echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
           done
           
           echo "Finalizing dashboard..."
@@ -469,6 +478,8 @@ jobs:
           
           echo "Dashboard generation complete. Contents of dashboard.md:"
           cat dashboard.md
+
+        shell: bash
 
       - name: Update README.md
         run: |
