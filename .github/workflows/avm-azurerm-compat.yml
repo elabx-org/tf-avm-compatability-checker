@@ -29,13 +29,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install yq
-        run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod a+x /usr/local/bin/yq
-
       - name: Set up matrix
         id: set-matrix
+        shell: bash
         run: |
           set -e
 
@@ -49,11 +45,11 @@ jobs:
             IFS=',' read -ra AVM_SOURCES <<< "${{ github.event.inputs.avm_sources }}"
           else
             echo "Reading AVM sources from config file"
-            if [ ! -f "avm-config.yml" ]; then
-              echo "Error: avm-config.yml not found" >&2
+            if [ ! -f "avm-config.txt" ]; then
+              echo "Error: avm-config.txt not found" >&2
               exit 1
             fi
-            mapfile -t AVM_SOURCES < <(yq e '.avms[]' avm-config.yml)
+            mapfile -t AVM_SOURCES < avm-config.txt
           fi
 
           # Process AVM sources
@@ -74,7 +70,6 @@ jobs:
 
           # Debug output
           echo "Matrix: $FINAL_MATRIX"
-        shell: bash
 
   check-compatibility:
     needs: prepare-matrix
