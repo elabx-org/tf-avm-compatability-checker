@@ -504,7 +504,7 @@ jobs:
           - Compatible AVMs: $compatible_avms
           - Incompatible AVMs: $incompatible_avms
           
-          Last updated: $(date -u)
+          Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
           
           EOF
           
