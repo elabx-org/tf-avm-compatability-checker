@@ -31,9 +31,21 @@ jobs:
           avm_matrix=$(echo "$avm_sources" | jq -R -s -c 'split(",")')
           echo "avm_matrix=$avm_matrix" >> $GITHUB_OUTPUT
           
-          echo "avm_matrix=$(echo '${{ github.event.inputs.avm_sources }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+          # Create shortened names
+          avm_short_names=$(echo "$avm_sources" | tr ',' '\n' | sed 's/^Azure\///;s/\/azurerm$//' | jq -R -s -c 'split("\n")')
+          echo "avm_short_names=$avm_short_names" >> $GITHUB_OUTPUT
+
+          # Process AzureRM versions
           echo "azurerm_matrix=$(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+        
+          # Process Terraform versions
           echo "tf_matrix=$(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+        
+          # Debug output
+          echo "AVM Matrix: $avm_matrix"
+          echo "AVM Short Names: $avm_short_names"
+          echo "AzureRM Matrix: $(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')"
+          echo "Terraform Matrix: $(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')"
   check-compatibility:
     needs: prepare-matrix
     runs-on: ubuntu-latest
