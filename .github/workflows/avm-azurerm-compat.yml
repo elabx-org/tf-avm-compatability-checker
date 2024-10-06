@@ -359,3 +359,182 @@ jobs:
           done
           
           echo "Issue management process completed."
+
+  generate-dashboard:
+    needs: summarise-results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download summary
+        uses: actions/download-artifact@v4
+        with:
+          name: compatibility-summary
+
+      # New Step 1: Check File Permissions
+      - name: Check File Permissions
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "File permissions for summary.md:"
+          ls -l summary.md || echo "summary.md not found"
+          echo "File type of summary.md:"
+          file summary.md || echo "summary.md not found"
+        shell: bash
+
+      # New Step 2: Display Summary Content
+      - name: Display Summary Content
+        run: |
+          echo "Contents of summary.md:"
+          cat summary.md 2>&1 || echo "Error reading summary.md"
+          echo "---End of summary.md---"
+          echo "First 10 lines of summary.md:"
+          head -n 10 summary.md 2>&1 || echo "Error reading summary.md"
+        shell: bash    
+      
+      - name: Debug - List files
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "summary.md contents:"
+          cat summary.md || echo "summary.md not found"
+
+      - name: Generate Markdown Dashboard
+        shell: bash
+        run: |
+          set -e
+          
+          log_error() {
+            echo "ERROR: $1" >&2
+          }
+          
+          trap 'log_error "Unexpected error occurred on line $LINENO: $BASH_COMMAND"' ERR
+          
+          echo "Starting dashboard generation..."
+          
+          if [ ! -f summary.md ]; then
+            log_error "summary.md file not found!"
+            exit 1
+          fi
+          
+          if [ ! -s summary.md ]; then
+            echo "Warning: summary.md is empty. Generating dashboard with no data."
+          fi
+          
+          echo "# AVM Compatibility Dashboard" > dashboard.md
+          echo "" >> dashboard.md
+          echo "## Summary" >> dashboard.md
+          echo "" >> dashboard.md
+          
+          # Initialize counters as integers
+          total_avms=0
+          compatible_avms=0
+          incompatible_avms=0
+          
+          echo "| AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |" >> dashboard.md
+          echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> dashboard.md
+          
+          echo "Processing summary.md..."
+          # Skip header and process only table rows
+          started_table=false
+          while IFS= read -r line || [ -n "$line" ]; do
+            # Check if we've reached the table start
+            if [[ $line == *"|"* ]] && ! $started_table; then
+              started_table=true
+              continue
+            fi
+            
+            # Skip lines until we reach the table
+            if ! $started_table; then
+              echo "Skipping header line: $line"
+              continue
+            fi
+            
+            # Skip the table header separator
+            if [[ $line == *"----"* ]]; then
+              echo "Skipping table separator: $line"
+              continue
+            fi
+            
+            echo "Processing line: $line"
+            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+            IFS='|' read -ra fields <<< "$line"
+            
+            if [ ${#fields[@]} -ne 8 ]; then
+              echo "Warning: Unexpected number of fields (${#fields[@]}) in line: $line"
+              continue
+            fi
+            
+            # Extract AVM name and URL
+            avm_full="${fields[0]}"
+            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+            avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
+            
+            avm_source=$(echo "${fields[1]}" | xargs)
+            azurerm_version=$(echo "${fields[2]}" | xargs)
+            tf_version=$(echo "${fields[3]}" | xargs)
+            compatibility=$(echo "${fields[4]}" | xargs | tr '[:upper:]' '[:lower:]')
+            reason=$(echo "${fields[5]}" | xargs)
+            module_version=$(echo "${fields[6]}" | xargs)
+            azurerm_constraints=$(echo "${fields[7]}" | xargs)
+            
+            echo "Processed fields: $avm_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints"
+            
+            if [ "$compatibility" = "compatible" ]; then
+              compatible_avms=$((compatible_avms + 1))
+              compatibility_icon="✅ Compatible"
+            elif [ "$compatibility" = "incompatible" ]; then
+              incompatible_avms=$((incompatible_avms + 1))
+              compatibility_icon="❌ Incompatible"
+            else
+              echo "Warning: Unexpected compatibility value: $compatibility"
+              compatibility_icon="⚠️ Unknown"
+            fi
+            total_avms=$((total_avms + 1))
+            
+            echo "| [$avm_name]($avm_url) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
+          done < summary.md
+          
+          echo "Finalizing dashboard..."
+          sed -i "3r /dev/stdin" dashboard.md <<EOF
+          
+          - Total AVMs checked: $total_avms
+          - Compatible AVMs: $compatible_avms
+          - Incompatible AVMs: $incompatible_avms
+          
+          Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+          
+          EOF
+          
+          if [ $total_avms -eq 0 ]; then
+            echo "Warning: No AVM data was processed. The dashboard may be empty."
+            echo "## No AVM Data Available" >> dashboard.md
+            echo "No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> dashboard.md
+          fi
+          
+          echo "Dashboard generation complete. Contents of dashboard.md:"
+          cat dashboard.md
+
+      - name: Update README.md
+        run: |
+          echo "Updating README.md..."
+          cp dashboard.md README.md
+          echo "README.md updated. Contents:"
+          cat README.md
+          
+      - name: Commit and push if changed
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add README.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update AVM Compatibility Dashboard" && git push)
+        
+      - name: Debug - Final directory state
+        if: always()
+        run: |
+          echo "Final directory contents:"
+          ls -la
+          echo "Git status:"
+          git status
