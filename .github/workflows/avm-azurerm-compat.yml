@@ -239,3 +239,64 @@ jobs:
       with:
         name: compatibility-summary
         path: summary.md
+
+  create-issues:
+    needs: summarise-results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Download summary
+        uses: actions/download-artifact@v4
+        with:
+          name: compatibility-summary
+  
+      - name: Manage issues for AVMs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Read the summary file, skipping the header lines
+          tail -n +4 summary.md | while IFS='|' read -r avm_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
+            # Remove leading/trailing whitespace
+            compatibility=$(echo $compatibility | xargs)
+            avm_name=$(echo $avm_name | xargs)
+            
+            # Check for existing issue
+            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
+            
+            if [ "$compatibility" == "incompatible" ]; then
+              # Prepare issue title and body
+              title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
+              body="An incompatibility has been detected for the following AVM:
+  
+          | Field | Value |
+          |-------|-------|
+          | AVM Name | $avm_name |
+          | AVM Source | $avm_source |
+          | AzureRM Version | $azurerm_version |
+          | Terraform Version | $tf_version |
+          | Compatibility | $compatibility |
+          | Reason | $reason |
+          | Module Version | $module_version |
+          | AzureRM Constraints | $azurerm_constraints |
+  
+          Please investigate and update the module to ensure compatibility with AzureRM version $azurerm_version."
+  
+              if [ -z "$issue_number" ]; then
+                # Create new issue if it doesn't exist
+                gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
+                echo "Created new issue for incompatible AVM: $avm_name"
+              else
+                # Update existing issue
+                gh issue edit $issue_number --title "$title" --body "$body"
+                gh issue comment $issue_number --body "Updated compatibility check results on $(date)"
+                echo "Updated existing issue for incompatible AVM: $avm_name"
+              fi
+            elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
+              # Close issue if AVM is now compatible
+              gh issue close $issue_number --comment "AVM is now compatible with AzureRM $azurerm_version as of $(date). Closing this issue."
+              echo "Closed issue for now compatible AVM: $avm_name"
+            fi
+          done
+  
