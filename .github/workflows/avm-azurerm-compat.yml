@@ -44,10 +44,11 @@ jobs:
     strategy:
       matrix:
         avm_source: ${{ fromJson(needs.prepare-matrix.outputs.avm_matrix) }}
+        avm_short_name: ${{ fromJson(needs.prepare-matrix.outputs.avm_short_names) }}
         azurerm_version: ${{ fromJson(needs.prepare-matrix.outputs.azurerm_matrix) }}
         tf_version: ${{ fromJson(needs.prepare-matrix.outputs.tf_matrix) }}
       fail-fast: false
-    name: ${{ matrix.avm_source }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
+    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
     
     steps:
     - name: Checkout code
