@@ -268,10 +268,21 @@ jobs:
           cat summary.md
           
           # Read the summary file, skipping the header lines
-          tail -n +4 summary.md | while IFS='|' read -r avm_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
-            # Remove leading/trailing whitespace
-            compatibility=$(echo $compatibility | xargs)
-            avm_name=$(echo $avm_name | xargs)
+          tail -n +4 summary.md | while IFS= read -r line; do
+            # Remove leading and trailing | and spaces
+            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+            
+            # Split the line into fields
+            IFS='|' read -ra fields <<< "$line"
+            
+            avm_name=$(echo "${fields[0]}" | xargs)
+            avm_source=$(echo "${fields[1]}" | xargs)
+            azurerm_version=$(echo "${fields[2]}" | xargs)
+            tf_version=$(echo "${fields[3]}" | xargs)
+            compatibility=$(echo "${fields[4]}" | xargs)
+            reason=$(echo "${fields[5]}" | xargs)
+            module_version=$(echo "${fields[6]}" | xargs)
+            azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
             echo "Processing AVM: $avm_name"
             echo "Compatibility: $compatibility"
@@ -334,5 +345,4 @@ jobs:
             echo "-----------------------------------"
           done
           
-          echo "Issue management process completed."
-    
+          echo "Issue management process completed."    
