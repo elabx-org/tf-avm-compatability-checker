@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       avm_matrix: ${{ steps.set-matrix.outputs.avm_matrix }}
+      avm_short_names: ${{ steps.set-matrix.outputs.avm_short_names }}
       azurerm_matrix: ${{ steps.set-matrix.outputs.azurerm_matrix }}
       tf_matrix: ${{ steps.set-matrix.outputs.tf_matrix }}
     steps:
