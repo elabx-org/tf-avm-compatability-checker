@@ -1,9 +1,12 @@
 # AVM Compatibility Dashboard
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_START -->
-# AVM Compatibility Dashboard
 
 ## Summary
+
+- Total AVMs checked: 
+- Compatible AVMs: 
+- Incompatible AVMs:           
 
 | AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |
 |----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|
@@ -12,9 +15,5 @@
 | [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | Azure/avm-res-keyvault-vault/azurerm | 4.3.0 | 1.9.7 | ✅ Compatible | Init successful | 0.9.1 | >= 3.71.0, 4.3.0 |
 | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.7 | >= 3.114.0, < 4.0.0, 4.3.0 |
 
-- Total AVMs checked: 4
-- Compatible AVMs: 1
-- Incompatible AVMs: 3
-
-Last updated: Sun Oct 06 21:52:29 BST 2024
+Last updated: Sun Oct 06 21:58:06 BST 2024
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
