@@ -27,23 +27,25 @@ jobs:
         run: |
           # Process AVM sources
           avm_sources='${{ github.event.inputs.avm_sources }}'
-          avm_short_names=$(echo "$avm_sources" | tr ',' '\n' | sed 's/^Azure\///;s/\/azurerm$//' | jq -R -s -c 'split("\n")')
           
           # Create matrix
           matrix=$(jq -n \
             --arg azurerm "${{ github.event.inputs.azurerm_versions }}" \
             --arg tf "${{ github.event.inputs.tf_versions }}" \
-            --argjson avms "$avm_short_names" \
+            --argjson avms "$(echo $avm_sources | jq -R 'split(",")')" \
             '{
-              "include": [
-                {
-                  "avm_source": $ARGS.positional,
-                  "avm_short_name": $avms,
-                  "azurerm_version": $azurerm,
-                  "tf_version": $tf
-                }
-              ]
-            }' $avm_sources)
+              "include": ($avms | map({
+                "avm_source": .,
+                "avm_short_name": (. | split("/")[1] | sub("avm-res-"; "")),
+                "azurerm_version": $azurerm,
+                "tf_version": $tf
+              }))
+            }')
+          
+          # Escape the JSON for GitHub Actions
+          matrix="${matrix//'%'/'%25'}"
+          matrix="${matrix//$'\n'/'%0A'}"
+          matrix="${matrix//$'\r'/'%0D'}"
           
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           
