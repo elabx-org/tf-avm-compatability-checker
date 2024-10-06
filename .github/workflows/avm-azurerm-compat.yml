@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       avm_sources:
-        description: 'Comma-separated list of AVM source URLs'
-        required: true
-        default: 'Azure/avm-res-authorization-roleassignment/azurerm,Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm,Azure/caf-enterprise-scale/azurerm'
+        description: 'Comma-separated list of AVM source URLs (leave empty to use config file)'
+        required: false
       azurerm_versions:
         description: 'AzureRM version to check'
         required: true
@@ -19,7 +18,7 @@ on:
         description: 'Skip creating or updating GitHub issues'
         required: true
         default: false
-        type: boolean        
+        type: boolean     
 
 jobs:
   prepare-matrix:
@@ -27,32 +26,55 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod a+x /usr/local/bin/yq
+
       - name: Set up matrix
         id: set-matrix
         run: |
+          set -e
+
+          get_short_name() {
+            echo "$1" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///'
+          }
+
+          # Check if AVM sources are provided via workflow dispatch
+          if [ -n "${{ github.event.inputs.avm_sources }}" ]; then
+            echo "Using AVM sources from workflow dispatch"
+            IFS=',' read -ra AVM_SOURCES <<< "${{ github.event.inputs.avm_sources }}"
+          else
+            echo "Reading AVM sources from config file"
+            if [ ! -f "avm-config.yml" ]; then
+              echo "Error: avm-config.yml not found" >&2
+              exit 1
+            fi
+            mapfile -t AVM_SOURCES < <(yq e '.avms[]' avm-config.yml)
+          fi
+
           # Process AVM sources
-          IFS=',' read -ra AVM_SOURCES <<< "${{ github.event.inputs.avm_sources }}"
-          
-          # Initialize an empty array for the matrix
           MATRIX=()
-          
-          # Loop through each AVM source and create a matrix entry
           for source in "${AVM_SOURCES[@]}"; do
-            short_name=$(echo "$source" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///')
+            short_name=$(get_short_name "$source")
             MATRIX+=("{\"avm_source\":\"$source\",\"avm_short_name\":\"$short_name\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
           done
-          
+
           # Join the matrix entries into a JSON array
           MATRIX_JSON="[$(IFS=,; echo "${MATRIX[*]}")]"
-          
+
           # Create the final matrix JSON
           FINAL_MATRIX="{\"include\":$MATRIX_JSON}"
-          
+
           # Set the matrix output
           echo "matrix=$FINAL_MATRIX" >> $GITHUB_OUTPUT
-          
+
           # Debug output
           echo "Matrix: $FINAL_MATRIX"
+        shell: bash
 
   check-compatibility:
     needs: prepare-matrix

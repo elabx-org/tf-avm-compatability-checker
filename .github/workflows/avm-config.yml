@@ -1,0 +1,5 @@
+avms:
+  - Azure/avm-res-authorization-roleassignment/azurerm
+  - Azure/avm-res-storage-storageaccount/azurerm
+  - Azure/avm-res-keyvault-vault/azurerm
+  - Azure/caf-enterprise-scale/azurerm
