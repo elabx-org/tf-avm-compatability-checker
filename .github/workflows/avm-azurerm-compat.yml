@@ -372,8 +372,18 @@ jobs:
         with:
           name: compatibility-summary
       
+      - name: Debug - List files
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "summary.md contents:"
+          cat summary.md || echo "summary.md not found"
+
       - name: Generate Markdown Dashboard
         run: |
+          set -e
+          echo "Starting dashboard generation..."
+          
           echo "# AVM Compatibility Dashboard" > dashboard.md
           echo "" >> dashboard.md
           echo "## Summary" >> dashboard.md
@@ -386,9 +396,16 @@ jobs:
           echo "| AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |" >> dashboard.md
           echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> dashboard.md
           
+          echo "Processing summary.md..."
           while IFS= read -r line; do
+            echo "Processing line: $line"
             line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
             IFS='|' read -ra fields <<< "$line"
+            
+            if [ ${#fields[@]} -ne 8 ]; then
+              echo "Warning: Unexpected number of fields (${#fields[@]}) in line: $line"
+              continue
+            fi
             
             avm_name="${fields[0]}"
             avm_source="${fields[1]}"
@@ -399,18 +416,23 @@ jobs:
             module_version="${fields[6]}"
             azurerm_constraints="${fields[7]}"
             
+            echo "Processed fields: $avm_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints"
+            
             if [ "$compatibility" == "compatible" ]; then
               ((compatible_avms++))
               compatibility="✅ Compatible"
             elif [ "$compatibility" == "incompatible" ]; then
               ((incompatible_avms++))
               compatibility="❌ Incompatible"
+            else
+              echo "Warning: Unexpected compatibility value: $compatibility"
             fi
             ((total_avms++))
             
             echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
           done < <(tail -n +4 summary.md)
           
+          echo "Finalizing dashboard..."
           sed -i "3r /dev/stdin" dashboard.md <<EOF
           
           - Total AVMs checked: $total_avms
@@ -420,10 +442,16 @@ jobs:
           Last updated: $(date -u)
           
           EOF
+          
+          echo "Dashboard generation complete. Contents of dashboard.md:"
+          cat dashboard.md
 
       - name: Update README.md
         run: |
+          echo "Updating README.md..."
           cp dashboard.md README.md
+          echo "README.md updated. Contents:"
+          cat README.md
           
       - name: Commit and push if changed
         run: |
@@ -431,5 +459,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git add README.md
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update AVM Compatibility Dashboard" && git push)
-
-
+        
+      - name: Debug - Final directory state
+        if: always()
+        run: |
+          echo "Final directory contents:"
+          ls -la
+          echo "Git status:"
+          git status
