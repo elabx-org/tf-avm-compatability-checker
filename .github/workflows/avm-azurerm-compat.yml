@@ -239,3 +239,110 @@ jobs:
       with:
         name: compatibility-summary
         path: summary.md
+
+  create-issues:
+    needs: summarise-results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+  
+      - name: Download summary
+        uses: actions/download-artifact@v4
+        with:
+          name: compatibility-summary
+  
+      - name: Manage issues for AVMs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Starting issue management process..."
+          
+          # Check if summary.md exists
+          if [ ! -f summary.md ]; then
+            echo "Error: summary.md file not found!"
+            exit 1
+          fi
+          
+          echo "Contents of summary.md:"
+          cat summary.md
+          
+          # Read the summary file, skipping the header lines
+          tail -n +4 summary.md | while IFS= read -r line; do
+            # Remove leading and trailing | and spaces
+            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+            
+            # Split the line into fields
+            IFS='|' read -ra fields <<< "$line"
+            
+            avm_name=$(echo "${fields[0]}" | xargs)
+            avm_source=$(echo "${fields[1]}" | xargs)
+            azurerm_version=$(echo "${fields[2]}" | xargs)
+            tf_version=$(echo "${fields[3]}" | xargs)
+            compatibility=$(echo "${fields[4]}" | xargs)
+            reason=$(echo "${fields[5]}" | xargs)
+            module_version=$(echo "${fields[6]}" | xargs)
+            azurerm_constraints=$(echo "${fields[7]}" | xargs)
+            
+            echo "Processing AVM: $avm_name"
+            echo "Compatibility: $compatibility"
+            
+            # Check for existing issue
+            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
+            echo "Existing issue number: $issue_number"
+            
+            if [ "$compatibility" == "incompatible" ]; then
+              echo "AVM is incompatible. Preparing issue..."
+              
+              # Prepare issue title and body
+              title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
+              body="An incompatibility has been detected for the following AVM:
+  
+          | Field | Value |
+          |-------|-------|
+          | AVM Name | $avm_name |
+          | AVM Source | $avm_source |
+          | AzureRM Version | $azurerm_version |
+          | Terraform Version | $tf_version |
+          | Compatibility | $compatibility |
+          | Reason | $reason |
+          | Module Version | $module_version |
+          | AzureRM Constraints | $azurerm_constraints |
+  
+          Please investigate and update the module to ensure compatibility with AzureRM version $azurerm_version."
+  
+              if [ -z "$issue_number" ]; then
+                echo "Creating new issue..."
+                gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
+                if [ $? -eq 0 ]; then
+                  echo "Successfully created new issue for incompatible AVM: $avm_name"
+                else
+                  echo "Error: Failed to create issue for AVM: $avm_name"
+                fi
+              else
+                echo "Updating existing issue..."
+                gh issue edit $issue_number --title "$title" --body "$body"
+                gh issue comment $issue_number --body "Updated compatibility check results on $(date)"
+                if [ $? -eq 0 ]; then
+                  echo "Successfully updated existing issue for incompatible AVM: $avm_name"
+                else
+                  echo "Error: Failed to update issue for AVM: $avm_name"
+                fi
+              fi
+            elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
+              echo "AVM is now compatible. Closing existing issue..."
+              gh issue close $issue_number --comment "AVM is now compatible with AzureRM $azurerm_version as of $(date). Closing this issue."
+              if [ $? -eq 0 ]; then
+                echo "Successfully closed issue for now compatible AVM: $avm_name"
+              else
+                echo "Error: Failed to close issue for AVM: $avm_name"
+              fi
+            else
+              echo "No action needed for AVM: $avm_name"
+            fi
+            
+            echo "Finished processing AVM: $avm_name"
+            echo "-----------------------------------"
+          done
+          
+          echo "Issue management process completed."    
