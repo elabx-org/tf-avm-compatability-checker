@@ -428,9 +428,12 @@ jobs:
           
           # Generate dashboard content
           cat << EOF > "$temp_dashboard"
-          # AVM Compatibility Dashboard
 
           ## Summary
+
+          - Total AVMs checked: $total_avms
+          - Compatible AVMs: $compatible_avms
+          - Incompatible AVMs: $incompatible_avms          
 
           | AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |
           |----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|
@@ -504,10 +507,6 @@ jobs:
                   
                   echo "Finalizing dashboard..."
                   cat << EOF >> "$temp_dashboard"
-
-          - Total AVMs checked: $total_avms
-          - Compatible AVMs: $compatible_avms
-          - Incompatible AVMs: $incompatible_avms
 
           Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
           EOF
