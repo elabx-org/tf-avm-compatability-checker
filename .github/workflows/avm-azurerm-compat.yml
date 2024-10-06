@@ -27,6 +27,8 @@ jobs:
     steps:
       - id: set-matrix
         run: |
+          avm_sources='${{ github.event.inputs.avm_sources }}'
+          avm_matrix=$(echo "$avm_sources" | jq -R -s -c 'split(",")')
           echo "avm_matrix=$(echo '${{ github.event.inputs.avm_sources }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
           echo "azurerm_matrix=$(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
           echo "tf_matrix=$(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
