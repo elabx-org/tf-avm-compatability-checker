@@ -402,6 +402,7 @@ jobs:
           cat summary.md || echo "summary.md not found"
 
       - name: Generate Markdown Dashboard
+        shell: bash
         run: |
           set -e
           
@@ -466,8 +467,11 @@ jobs:
               continue
             fi
             
-            # Trim whitespace from all fields
-            avm_name=$(echo "${fields[0]}" | xargs)
+            # Extract AVM name and URL
+            avm_full="${fields[0]}"
+            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+            avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
+            
             avm_source=$(echo "${fields[1]}" | xargs)
             azurerm_version=$(echo "${fields[2]}" | xargs)
             tf_version=$(echo "${fields[3]}" | xargs)
@@ -490,7 +494,7 @@ jobs:
             fi
             total_avms=$((total_avms + 1))
             
-            echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
+            echo "| [$avm_name]($avm_url) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
           done < summary.md
           
           echo "Finalizing dashboard..."
@@ -512,8 +516,6 @@ jobs:
           
           echo "Dashboard generation complete. Contents of dashboard.md:"
           cat dashboard.md
-
-        shell: bash
 
       - name: Update README.md
         run: |
