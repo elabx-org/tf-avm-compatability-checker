@@ -19,16 +19,24 @@ on:
 jobs:
   prepare-matrix:
     runs-on: ubuntu-latest
-    outputs:
-      avm_matrix: ${{ steps.set-matrix.outputs.avm_matrix }}
-      azurerm_matrix: ${{ steps.set-matrix.outputs.azurerm_matrix }}
-      tf_matrix: ${{ steps.set-matrix.outputs.tf_matrix }}
-    steps:
-      - id: set-matrix
-        run: |
-          echo "avm_matrix=$(echo '${{ github.event.inputs.avm_sources }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
-          echo "azurerm_matrix=$(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
-          echo "tf_matrix=$(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+  outputs:
+    avm_matrix: ${{ steps.set-matrix.outputs.avm_matrix }}
+    avm_short_names: ${{ steps.set-matrix.outputs.avm_short_names }}
+    azurerm_matrix: ${{ steps.set-matrix.outputs.azurerm_matrix }}
+    tf_matrix: ${{ steps.set-matrix.outputs.tf_matrix }}
+  steps:
+    - id: set-matrix
+      run: |
+        avm_sources='${{ github.event.inputs.avm_sources }}'
+        avm_matrix=$(echo "$avm_sources" | jq -R -s -c 'split(",")')
+        echo "avm_matrix=$avm_matrix" >> $GITHUB_OUTPUT
+        
+        # Create shortened names
+        avm_short_names=$(echo "$avm_sources" | tr ',' '\n' | sed 's/^Azure\///;s/\/azurerm$//' | jq -R -s -c 'split("\n")')
+        echo "avm_short_names=$avm_short_names" >> $GITHUB_OUTPUT
+        
+        echo "azurerm_matrix=$(echo '${{ github.event.inputs.azurerm_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
+        echo "tf_matrix=$(echo '${{ github.event.inputs.tf_versions }}' | jq -R -s -c 'split(",")')" >> $GITHUB_OUTPUT
 
   check-compatibility:
     needs: prepare-matrix
@@ -147,7 +155,7 @@ jobs:
         REASON="${{ steps.check_result.outputs.reason }}"
         echo "Debug: Compatibility result is $COMPATIBILITY"
         echo "Debug: Reason is $REASON"
-        RESULT_LINE="${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
+        RESULT_LINE="${{ matrix.avm_short_name }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
         echo "Debug: Full result line is: $RESULT_LINE"
         echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
         echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
