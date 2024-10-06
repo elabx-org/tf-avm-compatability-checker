@@ -484,10 +484,10 @@ jobs:
             
             if [ "$compatibility" = "compatible" ]; then
               compatible_avms=$((compatible_avms + 1))
-              compatibility_icon="✅"
+              compatibility_icon="✅ Compatible"
             elif [ "$compatibility" = "incompatible" ]; then
               incompatible_avms=$((incompatible_avms + 1))
-              compatibility_icon="❌"
+              compatibility_icon="❌ Incompatible"
             else
               echo "Warning: Unexpected compatibility value: $compatibility"
               compatibility_icon="⚠️ Unknown"
