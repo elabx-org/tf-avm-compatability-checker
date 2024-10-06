@@ -15,6 +15,11 @@ on:
         description: 'Terraform version to check'
         required: true
         default: '1.9.7'
+      skip_issue_creation:
+        description: 'Skip creating or updating GitHub issues'
+        required: true
+        default: false
+        type: boolean        
 
 jobs:
   prepare-matrix:
@@ -219,10 +224,16 @@ jobs:
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
 
-            echo "Debug: After processing: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
+            # Create the registry URL
+            registry_url="https://registry.terraform.io/modules/$avm_source"
+
+            # Create a Markdown link for the AVM name
+            avm_name_link="[$avm_short_name]($registry_url)"
+
+            echo "Debug: After processing: $avm_name_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
 
             # Output the processed line into the summary
-            echo "| $avm_short_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
+            echo "| $avm_name_link | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
 
           echo "Debug: Final contents of summary.md:"
@@ -242,6 +253,7 @@ jobs:
 
   create-issues:
     needs: summarise-results
+    if: ${{ !inputs.skip_issue_creation }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -275,7 +287,8 @@ jobs:
             # Split the line into fields
             IFS='|' read -ra fields <<< "$line"
             
-            avm_name=$(echo "${fields[0]}" | xargs)
+            # Extract AVM name without the link
+            avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
             avm_source=$(echo "${fields[1]}" | xargs)
             azurerm_version=$(echo "${fields[2]}" | xargs)
             tf_version=$(echo "${fields[3]}" | xargs)
@@ -300,7 +313,7 @@ jobs:
   
           | Field | Value |
           |-------|-------|
-          | AVM Name | $avm_name |
+          | AVM Name | [$avm_name](https://registry.terraform.io/modules/$avm_source) |
           | AVM Source | $avm_source |
           | AzureRM Version | $azurerm_version |
           | Terraform Version | $tf_version |
@@ -345,4 +358,4 @@ jobs:
             echo "-----------------------------------"
           done
           
-          echo "Issue management process completed."    
+          echo "Issue management process completed."
