@@ -542,13 +542,6 @@ jobs:
                   
                   echo "Dashboard update complete. Updated contents of README.md:"
                   cat README.md
-
-      - name: Update README.md
-        run: |
-          echo "Updating README.md..."
-          cp dashboard.md README.md
-          echo "README.md updated. Contents:"
-          cat README.md
           
       - name: Commit and push if changed
         run: |
@@ -556,6 +549,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git add README.md
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update AVM Compatibility Dashboard" && git push)
+        shell: bash
         
       - name: Debug - Final directory state
         if: always()
