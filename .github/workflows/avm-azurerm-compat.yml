@@ -194,6 +194,8 @@ jobs:
         cat results-*
 
     - name: Summarise Compatibility Results
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "# Compatibility Summary" > summary.md
         echo "" >> summary.md
@@ -219,10 +221,15 @@ jobs:
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
 
-            echo "Debug: After processing: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
+            # Generate a link to the specific job run
+            job_name=$(echo "$avm_short_name ($azurerm_version, $tf_version)" | sed 's/ /%20/g')
+            job_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            job_link="[$avm_short_name]($job_url?check_suite_focus=true#summary-${job_name})"
+
+            echo "Debug: After processing: $job_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
 
             # Output the processed line into the summary
-            echo "| $avm_short_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
+            echo "| $job_link | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
 
           echo "Debug: Final contents of summary.md:"
