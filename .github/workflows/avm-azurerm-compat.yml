@@ -8,52 +8,53 @@ on:
         required: true
         default: 'Azure/avm-res-authorization-roleassignment/azurerm,Azure/avm-res-storage-storageaccount/azurerm,Azure/avm-res-keyvault-vault/azurerm,Azure/caf-enterprise-scale/azurerm'
       azurerm_versions:
-        description: 'Comma-separated list of azurerm versions to check'
+        description: 'AzureRM version to check'
         required: true
-        default: '4.0.0,4.3.0'
+        default: '4.3.0'
       tf_versions:
-        description: 'Comma-separated list of Terraform versions to check'
+        description: 'Terraform version to check'
         required: true
         default: '1.9.7'
 
 jobs:
   prepare-matrix:
-  runs-on: ubuntu-latest
-  outputs:
-    matrix: ${{ steps.set-matrix.outputs.matrix }}
-  steps:
-    - name: Set up matrix
-      id: set-matrix
-      run: |
-        # Process AVM sources
-        avm_sources='${{ github.event.inputs.avm_sources }}'
-        avm_short_names=$(echo "$avm_sources" | tr ',' '\n' | sed 's/^Azure\///;s/\/azurerm$//' | jq -R -s -c 'split("\n")')
-        
-        # Create matrix
-        matrix=$(jq -n \
-          --arg azurerm "${{ github.event.inputs.azurerm_versions }}" \
-          --arg tf "${{ github.event.inputs.tf_versions }}" \
-          --argjson avms "$avm_short_names" \
-          '{
-            "avm_source": $ARGS.positional,
-            "avm_short_name": $avms,
-            "azurerm_version": [$azurerm],
-            "tf_version": [$tf]
-          }' $avm_sources)
-        
-        echo "matrix=$matrix" >> $GITHUB_OUTPUT
-        
-        # Debug output
-        echo "Matrix: $matrix"
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set up matrix
+        id: set-matrix
+        run: |
+          # Process AVM sources
+          avm_sources='${{ github.event.inputs.avm_sources }}'
+          avm_short_names=$(echo "$avm_sources" | tr ',' '\n' | sed 's/^Azure\///;s/\/azurerm$//' | jq -R -s -c 'split("\n")')
+          
+          # Create matrix
+          matrix=$(jq -n \
+            --arg azurerm "${{ github.event.inputs.azurerm_versions }}" \
+            --arg tf "${{ github.event.inputs.tf_versions }}" \
+            --argjson avms "$avm_short_names" \
+            '{
+              "include": [
+                {
+                  "avm_source": $ARGS.positional,
+                  "avm_short_name": $avms,
+                  "azurerm_version": $azurerm,
+                  "tf_version": $tf
+                }
+              ]
+            }' $avm_sources)
+          
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "Matrix: $matrix"
+
   check-compatibility:
     needs: prepare-matrix
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        avm_source: ${{ fromJson(needs.prepare-matrix.outputs.avm_matrix) }}
-        avm_short_name: ${{ fromJson(needs.prepare-matrix.outputs.avm_short_names) }}
-        azurerm_version: ${{ fromJson(needs.prepare-matrix.outputs.azurerm_matrix) }}
-        tf_version: ${{ fromJson(needs.prepare-matrix.outputs.tf_matrix) }}
+      matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
     name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
     
@@ -215,16 +216,16 @@ jobs:
           
           while IFS='|' read -r avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
             echo "Debug: Processing line: $avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-    
+
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
-    
+
             echo "Debug: After processing: $avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-    
+
             # Output the processed line into the summary
             echo "| $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
-    
+
           echo "Debug: Final contents of summary.md:"
           cat summary.md
         else
@@ -233,7 +234,6 @@ jobs:
     
         # Output the summary to the workflow
         cat summary.md >> $GITHUB_STEP_SUMMARY
-      
 
     - name: Upload Summary as Artifact
       uses: actions/upload-artifact@v4
