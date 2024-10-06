@@ -384,6 +384,15 @@ jobs:
           set -e
           echo "Starting dashboard generation..."
           
+          if [ ! -f summary.md ]; then
+            echo "Error: summary.md file not found!"
+            exit 1
+          fi
+          
+          if [ ! -s summary.md ]; then
+            echo "Warning: summary.md is empty. Generating dashboard with no data."
+          fi
+          
           echo "# AVM Compatibility Dashboard" > dashboard.md
           echo "" >> dashboard.md
           echo "## Summary" >> dashboard.md
@@ -450,6 +459,12 @@ jobs:
           Last updated: $(date -u)
           
           EOF
+          
+          if [ $total_avms -eq 0 ]; then
+            echo "Warning: No AVM data was processed. The dashboard may be empty."
+            echo "## No AVM Data Available" >> dashboard.md
+            echo "No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> dashboard.md
+          fi
           
           echo "Dashboard generation complete. Contents of dashboard.md:"
           cat dashboard.md
