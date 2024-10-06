@@ -408,9 +408,9 @@ jobs:
           echo "Processing summary.md..."
           # Skip the first 3 lines (title and header)
           tail -n +4 summary.md | while IFS= read -r line; do
-            # Skip empty lines
-            if [ -z "$line" ]; then
-              echo "Skipping empty line"
+            # Skip empty lines and the table header separator
+            if [ -z "$line" ] || [[ $line == *"----"* ]]; then
+              echo "Skipping line: $line"
               continue
             fi
             
@@ -423,14 +423,15 @@ jobs:
               continue
             fi
             
-            avm_name="${fields[0]}"
-            avm_source="${fields[1]}"
-            azurerm_version="${fields[2]}"
-            tf_version="${fields[3]}"
-            compatibility="${fields[4]}"
-            reason="${fields[5]}"
-            module_version="${fields[6]}"
-            azurerm_constraints="${fields[7]}"
+            # Trim whitespace from all fields
+            avm_name=$(echo "${fields[0]}" | xargs)
+            avm_source=$(echo "${fields[1]}" | xargs)
+            azurerm_version=$(echo "${fields[2]}" | xargs)
+            tf_version=$(echo "${fields[3]}" | xargs)
+            compatibility=$(echo "${fields[4]}" | xargs | tr '[:upper:]' '[:lower:]')
+            reason=$(echo "${fields[5]}" | xargs)
+            module_version=$(echo "${fields[6]}" | xargs)
+            azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
             echo "Processed fields: $avm_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints"
             
