@@ -427,6 +427,7 @@ jobs:
           echo "## Summary" >> dashboard.md
           echo "" >> dashboard.md
           
+          # Initialize counters as integers
           total_avms=0
           compatible_avms=0
           incompatible_avms=0
@@ -435,11 +436,24 @@ jobs:
           echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> dashboard.md
           
           echo "Processing summary.md..."
-          # Use a while loop to read the file line by line
+          # Skip header and process only table rows
+          started_table=false
           while IFS= read -r line || [ -n "$line" ]; do
-            # Skip empty lines, the table header, and the separator
-            if [ -z "$line" ] || [[ $line == *"AVM Name"* ]] || [[ $line == *"----"* ]]; then
-              echo "Skipping line: $line"
+            # Check if we've reached the table start
+            if [[ $line == *"|"* ]] && ! $started_table; then
+              started_table=true
+              continue
+            fi
+            
+            # Skip lines until we reach the table
+            if ! $started_table; then
+              echo "Skipping header line: $line"
+              continue
+            fi
+            
+            # Skip the table header separator
+            if [[ $line == *"----"* ]]; then
+              echo "Skipping table separator: $line"
               continue
             fi
             
@@ -465,16 +479,16 @@ jobs:
             echo "Processed fields: $avm_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints"
             
             if [ "$compatibility" = "compatible" ]; then
-              ((compatible_avms++))
+              compatible_avms=$((compatible_avms + 1))
               compatibility_icon="✅ Compatible"
             elif [ "$compatibility" = "incompatible" ]; then
-              ((incompatible_avms++))
+              incompatible_avms=$((incompatible_avms + 1))
               compatibility_icon="❌ Incompatible"
             else
               echo "Warning: Unexpected compatibility value: $compatibility"
               compatibility_icon="⚠️ Unknown"
             fi
-            ((total_avms++))
+            total_avms=$((total_avms + 1))
             
             echo "| [$avm_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> dashboard.md
           done < summary.md
