@@ -171,7 +171,10 @@ jobs:
       id: module_version
       run: |
         cd ${{ steps.config_type.outputs.working_dir }}
-        AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/\//\\\//g')
+        # Extract the base AVM source (remove everything after //modules or //submodules)
+        BASE_AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/\/\/modules.*//;s/\/\/submodules.*//')
+        echo "Base AVM Source: $BASE_AVM_SOURCE"
+        AVM_SOURCE=$(echo "$BASE_AVM_SOURCE" | sed 's/\//\\\//g')
         VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" init_output.txt)
         if [ -z "$VERSION" ]; then
           VERSION="Version not found"
@@ -242,7 +245,13 @@ jobs:
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
 
             # Create the registry URL
-            registry_url="https://registry.terraform.io/modules/$avm_source"
+            if [[ "$avm_source" == *"//modules"* || "$avm_source" == *"//submodules"* ]]; then
+              base_avm_source=$(echo "$avm_source" | sed 's/\/\/modules.*//;s/\/\/submodules.*//')
+              submodule_path=$(echo "$avm_source" | sed 's/.*\/\/\(modules\|submodules\)/\1/')
+              registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
+            else
+              registry_url="https://registry.terraform.io/modules/$avm_source"
+            fi
 
             # Create a Markdown link for the AVM name
             avm_name_link="[$avm_short_name]($registry_url)"
