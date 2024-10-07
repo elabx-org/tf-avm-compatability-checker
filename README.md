@@ -13,7 +13,7 @@
 | [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | Azure/avm-res-network-azurefirewall/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.2 | ~> 3.105, 4.3.0 |
 | [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | Azure/avm-res-network-bastionhost/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.3.0 | ~> 3.105, 4.3.0 |
 | [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) | Azure/avm-res-network-ddosprotectionplan/azurerm | 4.3.0 | 1.9.7 | ✅ Compatible | Init successful | 0.2.0 | >= 3.71.0, 4.3.0 |
-| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | Version not found | ~> 3.71, 4.3.0 |
+| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.2.3/submodules/rule_collection_groups) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.3 | ~> 3.71, 4.3.0 |
 | [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | Azure/avm-res-network-firewallpolicy/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.3 | ~> 3.71, 4.3.0 |
 | [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) | Azure/avm-res-network-networksecuritygroup/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.0 | ~> 3.71, 4.3.0 |
 | [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | Azure/avm-res-network-privatednszone/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.0 | >= 3.6.0, <= 3.114.0, 4.3.0 |
@@ -27,5 +27,5 @@
 - ✅ Compatible AVMs: 4
 - ❌ Incompatible AVMs: 10
 
-🕒 Last updated: Mon Oct 07 11:04:43 BST 2024
+🕒 Last updated: Mon Oct 07 12:41:23 BST 2024
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
