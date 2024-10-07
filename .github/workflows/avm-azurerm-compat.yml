@@ -247,7 +247,7 @@ jobs:
             # Create the registry URL
             if [[ "$avm_source" == *"//"* ]]; then
               base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
-              submodule_path=$(echo "$avm_source" | sed 's/.*\/\///')
+              submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
               registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
             else
               registry_url="https://registry.terraform.io/modules/$avm_source"
