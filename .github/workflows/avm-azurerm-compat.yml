@@ -461,16 +461,16 @@ jobs:
           cat << EOF > "$temp_dashboard"
           ## AVM Compatibility Dashboard
 
-          <table style="font-size: 12px; border-collapse: collapse; width: 100%;">
+          <table style="font-size: 11px; border-collapse: collapse; width: 100%;">
             <tr style="background-color: #0078D4; color: white;">
-              <th style="width: 30%; padding: 8px; text-align: left;">AVM Name</th>
-              <th style="width: 20%; padding: 8px; text-align: left;">AVM Source</th>
-              <th style="width: 8%; padding: 8px; text-align: left;">AzureRM</th>
-              <th style="width: 8%; padding: 8px; text-align: left;">Terraform</th>
-              <th style="width: 8%; padding: 8px; text-align: center;">Support</th>
-              <th style="width: 11%; padding: 8px; text-align: left;">Reason</th>
-              <th style="width: 7%; padding: 8px; text-align: left;">Module Ver</th>
-              <th style="width: 8%; padding: 8px; text-align: left;">AzureRM Constraints</th>
+              <th style="width: 22%; padding: 4px; text-align: left;">AVM Name</th>
+              <th style="width: 22%; padding: 4px; text-align: left;">AVM Source</th>
+              <th style="width: 7%; padding: 4px; text-align: left;">AzureRM</th>
+              <th style="width: 7%; padding: 4px; text-align: left;">Terraform</th>
+              <th style="width: 6%; padding: 4px; text-align: center;">Support</th>
+              <th style="width: 15%; padding: 4px; text-align: left;">Reason</th>
+              <th style="width: 7%; padding: 4px; text-align: left;">Module Ver</th>
+              <th style="width: 14%; padding: 4px; text-align: left;">AzureRM Constraints</th>
             </tr>
           EOF
           
@@ -514,14 +514,14 @@ jobs:
             total_avms=$((total_avms + 1))
             
             echo "  <tr style=\"background-color: $row_color;\">" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\"><a href=\"$avm_url\" style=\"color: #0078D4; text-decoration: none; font-weight: bold;\">$avm_name</a></td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\">$avm_source</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\">$azurerm_version</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\">$tf_version</td>" >> "$temp_dashboard"
-            echo "    <td style=\"text-align: center; padding: 8px;\">$status_emoji</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\">$reason</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\">$module_version</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 8px;\">$azurerm_constraints</td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\"><a href=\"$avm_url\" style=\"color: #0078D4; text-decoration: none; font-weight: bold;\">$avm_name</a></td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\">$avm_source</td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\">$azurerm_version</td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\">$tf_version</td>" >> "$temp_dashboard"
+            echo "    <td style=\"text-align: center; padding: 4px;\">$status_emoji</td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\">$reason</td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\">$module_version</td>" >> "$temp_dashboard"
+            echo "    <td style=\"padding: 4px;\">$azurerm_constraints</td>" >> "$temp_dashboard"
             echo "  </tr>" >> "$temp_dashboard"
           done
           
