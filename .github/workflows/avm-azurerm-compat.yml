@@ -476,20 +476,11 @@ jobs:
               
               # Process summary.md and count AVMs
               echo "Processing summary.md..."
-              total_avms=$(grep -c '|' summary.md)
-              compatible_avms=$(grep -c '| ✅ Compatible' summary.md || echo 0)
-              incompatible_avms=$(grep -c '| ❌ Incompatible' summary.md || echo 0)
+              total_avms=$(wc -l < avm-config.txt)
+              compatible_avms=0
+              incompatible_avms=0
               
-              echo "Debug: Content of summary.md:"
-              cat summary.md
-              
-              echo "Debug: Grep results:"
-              echo "Compatible: $(grep '| ✅ Compatible' summary.md | wc -l)"
-              echo "Incompatible: $(grep '| ❌ Incompatible' summary.md | wc -l)"
-              
-              echo "Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
-              
-              # Add processed lines to the dashboard
+              # Add processed lines to the dashboard and count compatible/incompatible AVMs
               sed '1,3d' summary.md | while IFS= read -r line || [ -n "$line" ]; do
                 # Remove leading and trailing spaces and pipe characters
                 line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
@@ -505,45 +496,78 @@ jobs:
                 fi
                 
                 # Extract required fields
-                echo "| ${fields[0]} | ${fields[1]} | ${fields[2]} | ${fields[3]} | ${fields[4]} | ${fields[5]} |" >> "$temp_dashboard"
+                avm_full="${fields[0]}"
+                avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+                avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
+                
+                azurerm_version=$(echo "${fields[2]}" | xargs)
+                tf_version=$(echo "${fields[3]}" | xargs)
+                compatibility=$(echo "${fields[4]}" | xargs)
+                reason=$(echo "${fields[5]}" | xargs)
+                module_version=$(echo "${fields[6]}" | xargs)
+                
+                # Count compatible and incompatible AVMs
+                if [ "$compatibility" = "compatible" ]; then
+                  compatible_avms=$((compatible_avms + 1))
+                  compatibility="✅ Compatible"
+                elif [ "$compatibility" = "incompatible" ]; then
+                  incompatible_avms=$((incompatible_avms + 1))
+                  compatibility="❌ Incompatible"
+                fi
+                
+                echo "Processed fields: $avm_name | $azurerm_version | $tf_version | $compatibility | $module_version | $reason"
+                
+                echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_dashboard"
               done
               
-              # Add compatibility overview to the dashboard
+              echo "Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
+              
+              # Get the current run URL
+              run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+              echo "Finalizing dashboard..."
               cat << EOF >> "$temp_dashboard"
-
-            ## Compatibility Overview 📊        
-            - 🔢 Total AVMs checked: $total_avms
-            - ✅ Compatible AVMs: $compatible_avms
-            - ❌ Incompatible AVMs: $incompatible_avms
-
-            🕒 Last updated: $(date)
-
-            🔗 [Link to this update run](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11281367468)
-            EOF
-
-            # Update README.md with new dashboard content
-            awk '
-            /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
-              print
-              while (getline line < "'"$temp_dashboard"'") {
-                print line
+          
+          ## Compatibility Overview 📊        
+          - 🔢 Total AVMs checked: $total_avms
+          - ✅ Compatible AVMs: $compatible_avms
+          - ❌ Incompatible AVMs: $incompatible_avms
+          
+          🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+          
+          🔗 [Link to this update run]($run_url)
+          EOF
+              
+              if [ $total_avms -eq 0 ]; then
+                echo "Warning: No AVM data was processed. The dashboard may be empty."
+                echo "
+          ## No AVM Data Available ❗
+          No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> "$temp_dashboard"
+              fi
+              
+              # Update README.md with new dashboard content
+              awk '
+              /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
+                print
+                while (getline line < "'"$temp_dashboard"'") {
+                  print line
+                }
+                f=1
               }
-              f=1
-            }
-            /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
-              if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
-              print
-              f=0
-              next
-            }
-            !f
-            ' README.md > README.md.new && mv README.md.new README.md
-
-            # Clean up temporary file
-            rm "$temp_dashboard"
-
-            echo "Dashboard update complete. Updated contents of README.md:"
-            cat README.md
+              /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
+                if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
+                print
+                f=0
+                next
+              }
+              !f
+              ' README.md > README.md.new && mv README.md.new README.md
+              
+              # Clean up temporary file
+              rm "$temp_dashboard"
+              
+              echo "Dashboard update complete. Updated contents of README.md:"
+              cat README.md
 
       - name: Commit and push if changed
         run: |
