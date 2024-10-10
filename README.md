@@ -27,5 +27,5 @@
 - ✅ Compatible AVMs: 4
 - ❌ Incompatible AVMs: 10
 
-🕒 Last updated: Mon Oct 07 12:41:23 BST 2024
+🕒 Last updated: Thu Oct 10 15:43:16 BST 2024
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
