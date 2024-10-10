@@ -473,7 +473,7 @@ jobs:
           | AVM Name | AzureRM Version | Terraform Version | Compatibility | Module Ver | Reason |
           |----------|-----------------|-------------------|---------------|------------|--------|
           EOF
-          
+                  
           # Initialize counters as integers
           total_avms=0
           compatible_avms=0
@@ -481,12 +481,13 @@ jobs:
           
           echo "Processing summary.md..."
           # Skip header and process only table rows
-          started_table=false
-          while IFS= read -r line || [ -n "$line" ]; do
-            # ... (skip checking and table start logic remains the same)
-            
-            echo "Processing line: $line"
+          sed '1,3d' summary.md | while IFS= read -r line || [ -n "$line" ]; do
+            # Remove leading and trailing spaces and pipe characters
             line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+            
+            # Skip empty lines
+            [ -z "$line" ] && continue
+            
             IFS='|' read -ra fields <<< "$line"
             
             if [ ${#fields[@]} -ne 8 ]; then
@@ -520,54 +521,55 @@ jobs:
             total_avms=$((total_avms + 1))
             
             echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility_icon | $module_version | $reason |" >> "$temp_dashboard"
-          done < summary.md
+          done
           
           # Get the current run URL
           run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      
+
           echo "Finalizing dashboard..."
           cat << EOF >> "$temp_dashboard"
+
           ## Compatibility Overview 📊        
           - 🔢 Total AVMs checked: $total_avms
           - ✅ Compatible AVMs: $compatible_avms
           - ❌ Incompatible AVMs: $incompatible_avms
-      
+
           🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
-      
+
           🔗 [Link to this update run]($run_url)
           EOF
                   
-                  if [ $total_avms -eq 0 ]; then
-                    echo "Warning: No AVM data was processed. The dashboard may be empty."
-                    echo "
-          ## No AVM Data Available ❗
-          No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> "$temp_dashboard"
-                  fi
-                  
-                  # Update README.md with new dashboard content
-                  awk '
-                  /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
-                    print
-                    while (getline line < "'"$temp_dashboard"'") {
-                      print line
-                    }
-                    f=1
-                  }
-                  /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
-                    if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
-                    print
-                    f=0
-                    next
-                  }
-                  !f
-                  ' README.md > README.md.new && mv README.md.new README.md
-                  
-                  # Clean up temporary file
-                  rm "$temp_dashboard"
-                  
-                  echo "Dashboard update complete. Updated contents of README.md:"
-                  cat README.md
+          if [ $total_avms -eq 0 ]; then
+            echo "Warning: No AVM data was processed. The dashboard may be empty."
+            echo "
+              ## No AVM Data Available ❗
+              No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> "$temp_dashboard"
+            fi
           
+          # Update README.md with new dashboard content
+          awk '
+          /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
+            print
+            while (getline line < "'"$temp_dashboard"'") {
+              print line
+            }
+            f=1
+          }
+          /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
+            if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
+            print
+            f=0
+            next
+          }
+          !f
+          ' README.md > README.md.new && mv README.md.new README.md
+          
+          # Clean up temporary file
+          rm "$temp_dashboard"
+          
+          echo "Dashboard update complete. Updated contents of README.md:"
+          cat README.md
+
       - name: Commit and push if changed
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
