@@ -472,8 +472,8 @@ jobs:
           echo "" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->" >> "$temp_dashboard"
           echo "## Summary" >> "$temp_dashboard"
-          echo "| AVM Name | AzureRM Version | Terraform Version | Compatibility | Module Ver | Reason |" >> "$temp_dashboard"
-          echo "|----------|-----------------|-------------------|---------------|------------|--------|" >> "$temp_dashboard"
+          echo "| AVM Name | AzureRM | Terraform | Module | Compatibility |" >> "$temp_dashboard"
+          echo "|----------|---------|-----------|--------|---------------|" >> "$temp_dashboard"
           
           # Process summary.md and add to dashboard
           skip_header=true
@@ -503,7 +503,6 @@ jobs:
             azurerm_version=$(echo "${fields[2]}" | xargs)
             tf_version=$(echo "${fields[3]}" | xargs)
             compatibility=$(echo "${fields[4]}" | xargs)
-            reason=$(echo "${fields[5]}" | xargs)
             module_version=$(echo "${fields[6]}" | xargs)
             
             if [ "$compatibility" = "compatible" ]; then
@@ -514,7 +513,7 @@ jobs:
               compatibility="❌ Incompatible"
             fi
             
-            echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_dashboard"
+            echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $module_version | $compatibility |" >> "$temp_dashboard"
           done < summary.md
           
           # Add compatibility overview
@@ -526,7 +525,7 @@ jobs:
           echo "" >> "$temp_dashboard"
           echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
-          echo "🔗 [Link to this update run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
+          echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
           
           # Update README.md with new dashboard content
