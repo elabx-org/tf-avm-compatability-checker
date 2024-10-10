@@ -4,7 +4,6 @@
 ## Summary
 | AVM Name | AzureRM Version | Terraform Version | Compatibility | Module Ver | Reason |
 |----------|-----------------|-------------------|---------------|------------|--------|
-| [----------](----------) | ----------------- | ------------------- | ⚠️ Unknown | ---------------- | -------- |
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | 4.3.0 | 1.9.7 | ❌ Incompatible | 0.6.0 | Version constraint mismatch |
 | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | ❌ Incompatible | 6.1.0 | Version constraint mismatch |
 | [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | 4.3.0 | 1.9.7 | ❌ Incompatible | 0.16.0 | Version constraint mismatch |
@@ -25,10 +24,10 @@
 - ✅ Compatible AVMs: 0
 - ❌ Incompatible AVMs: 0
 
-🕒 Last updated: Thu Oct 10 18:47:14 BST 2024
+🕒 Last updated: Thu Oct 10 18:54:42 BST 2024
 
-🔗 [Link to this update run](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11279265981)
+🔗 [Link to this update run](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11279368240)
 
-    ## No AVM Data Available ❗
-    No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file.
+## No AVM Data Available ❗
+No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file.
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
