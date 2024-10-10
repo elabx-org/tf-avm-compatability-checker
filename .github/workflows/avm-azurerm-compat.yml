@@ -477,8 +477,12 @@ jobs:
               # Process summary.md and count AVMs
               echo "Processing summary.md..."
               total_avms=$(wc -l < avm-config.txt)
-              compatible_avms=$(sed '1,3d' summary.md | grep -c '| ✅ Compatible' || echo 0)
-              incompatible_avms=$(sed '1,3d' summary.md | grep -c '| ❌ Incompatible' || echo 0)
+              compatible_avms=$(sed '1,3d' summary.md | grep -c '| ✅ Compatible')
+              incompatible_avms=$(sed '1,3d' summary.md | grep -c '| ❌ Incompatible')
+              
+              # Ensure we have integer values, defaulting to 0 if empty
+              compatible_avms=${compatible_avms:-0}
+              incompatible_avms=${incompatible_avms:-0}
               
               echo "Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
               
