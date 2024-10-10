@@ -480,13 +480,16 @@ jobs:
               compatible_avms=0
               incompatible_avms=0
 
-              # Add processed lines to the dashboard and count compatible/incompatible AVMs
-              sed '1,3d' summary.md | while IFS= read -r line || [ -n "$line" ]; do
+              # Create a temporary file to store the processed lines
+              temp_processed=$(mktemp)
+
+              # Add processed lines to the temporary file and count compatible/incompatible AVMs
+              while IFS= read -r line || [ -n "$line" ]; do
                 # Remove leading and trailing spaces and pipe characters
                 line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
                 
-                # Skip empty lines and lines with only dashes (separator lines)
-                [[ -z "$line" || "$line" == *----* ]] && continue
+                # Skip empty lines, header lines, and lines with only dashes (separator lines)
+                [[ -z "$line" || "$line" == "|"*"|" || "$line" == *----* ]] && continue
                 
                 IFS='|' read -ra fields <<< "$line"
                 
@@ -519,26 +522,32 @@ jobs:
                 
                 echo "Processed fields: $avm_name | $azurerm_version | $tf_version | $compatibility | $module_version | $reason"
                 
-                echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_dashboard"
-              done
+                echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_processed"
+              done < summary.md
 
               echo "Final Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
-              
+
+              # Add the processed lines to the dashboard
+              cat "$temp_processed" >> "$temp_dashboard"
+
+              # Clean up the temporary file
+              rm "$temp_processed"
+
               # Get the current run URL
               run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
+
               echo "Finalizing dashboard..."
               cat << EOF >> "$temp_dashboard"
-          
-          ## Compatibility Overview 📊        
-          - 🔢 Total AVMs checked: $total_avms
-          - ✅ Compatible AVMs: $compatible_avms
-          - ❌ Incompatible AVMs: $incompatible_avms
-          
-          🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
-          
-          🔗 [Link to this update run]($run_url)
-          EOF
+
+              ## Compatibility Overview 📊        
+              - 🔢 Total AVMs checked: $total_avms
+              - ✅ Compatible AVMs: $compatible_avms
+              - ❌ Incompatible AVMs: $incompatible_avms
+
+              🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+
+              🔗 [Link to this update run]($run_url)
+              EOF
               
               if [ $total_avms -eq 0 ]; then
                 echo "Warning: No AVM data was processed. The dashboard may be empty."
