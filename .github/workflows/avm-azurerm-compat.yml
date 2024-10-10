@@ -474,15 +474,11 @@ jobs:
           |----------|-----------------|-------------------|---------------|------------|--------|
           EOF
               
-              # Debug: Display contents of summary.md
-              echo "Contents of summary.md:"
-              cat summary.md
-              
               # Process summary.md and count AVMs
               echo "Processing summary.md..."
               total_avms=$(sed '1,3d' summary.md | grep -v '^$' | grep -v '^|[ -]*|$' | wc -l)
-              compatible_avms=$(sed '1,3d' summary.md | grep -c '| ✅ Compatible' || echo 0)
-              incompatible_avms=$(sed '1,3d' summary.md | grep -c '| ❌ Incompatible' || echo 0)
+              compatible_avms=$(sed '1,3d' summary.md | grep -c '| compatible' || echo 0)
+              incompatible_avms=$(sed '1,3d' summary.md | grep -c '| incompatible' || echo 0)
               
               echo "Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
               
@@ -511,6 +507,13 @@ jobs:
                 compatibility=$(echo "${fields[4]}" | xargs)
                 reason=$(echo "${fields[5]}" | xargs)
                 module_version=$(echo "${fields[6]}" | xargs)
+                
+                # Add emoji to compatibility
+                if [ "$compatibility" = "compatible" ]; then
+                  compatibility="✅ Compatible"
+                elif [ "$compatibility" = "incompatible" ]; then
+                  compatibility="❌ Incompatible"
+                fi
                 
                 echo "Processed fields: $avm_name | $azurerm_version | $tf_version | $compatibility | $module_version | $reason"
                 
