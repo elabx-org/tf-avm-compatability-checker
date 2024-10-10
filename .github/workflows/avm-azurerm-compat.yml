@@ -447,11 +447,21 @@ jobs:
         run: |
           set -e
           
+          log_error() {
+            echo "ERROR: $1" >&2
+          }
+          
+          trap 'log_error "Unexpected error occurred on line $LINENO: $BASH_COMMAND"' ERR
+          
           echo "Starting dashboard generation..."
           
           if [ ! -f summary.md ]; then
-            echo "ERROR: summary.md file not found!" >&2
+            log_error "summary.md file not found!"
             exit 1
+          fi
+          
+          if [ ! -s summary.md ]; then
+            echo "Warning: summary.md is empty. Generating dashboard with no data."
           fi
           
           # Create a temporary file for the dashboard content
@@ -459,109 +469,126 @@ jobs:
           
           # Generate dashboard content
           cat << EOF > "$temp_dashboard"
-          ## AVM Compatibility Dashboard
 
-          <table style="font-size: 11px; border-collapse: collapse; width: 100%;">
-            <tr style="background-color: #0078D4; color: white;">
-              <th style="width: 22%; padding: 4px; text-align: left;">AVM Name</th>
-              <th style="width: 22%; padding: 4px; text-align: left;">AVM Source</th>
-              <th style="width: 7%; padding: 4px; text-align: left;">AzureRM</th>
-              <th style="width: 7%; padding: 4px; text-align: left;">Terraform</th>
-              <th style="width: 6%; padding: 4px; text-align: center;">Support</th>
-              <th style="width: 15%; padding: 4px; text-align: left;">Reason</th>
-              <th style="width: 7%; padding: 4px; text-align: left;">Module Ver</th>
-              <th style="width: 14%; padding: 4px; text-align: left;">AzureRM Constraints</th>
-            </tr>
+          ## Summary
+
+          | AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |
+          |----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|
           EOF
-          
-          # Initialize counters
-          total_avms=0
-          compatible_avms=0
-          incompatible_avms=0
-          
-          # Process summary.md
-          tail -n +4 summary.md | while IFS= read -r line; do
-            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
-            IFS='|' read -ra fields <<< "$line"
-            
-            if [ ${#fields[@]} -ne 8 ]; then
-              continue
-            fi
-            
-            avm_full="${fields[0]}"
-            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
-            avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
-            avm_source=$(echo "${fields[1]}" | xargs)
-            azurerm_version=$(echo "${fields[2]}" | xargs)
-            tf_version=$(echo "${fields[3]}" | xargs)
-            compatibility=$(echo "${fields[4]}" | xargs | tr '[:upper:]' '[:lower:]')
-            reason=$(echo "${fields[5]}" | xargs)
-            module_version=$(echo "${fields[6]}" | xargs)
-            azurerm_constraints=$(echo "${fields[7]}" | xargs)
-            
-            if [ "$compatibility" = "compatible" ]; then
-              compatible_avms=$((compatible_avms + 1))
-              status_emoji="✅"
-              row_color="#E6F3FF"
-            elif [ "$compatibility" = "incompatible" ]; then
-              incompatible_avms=$((incompatible_avms + 1))
-              status_emoji="❌"
-              row_color="#FFE6E6"
-            else
-              status_emoji="⚠️"
-              row_color="#FFFDE6"
-            fi
-            total_avms=$((total_avms + 1))
-            
-            echo "  <tr style=\"background-color: $row_color;\">" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\"><a href=\"$avm_url\" style=\"color: #0078D4; text-decoration: none; font-weight: bold;\">$avm_name</a></td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\">$avm_source</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\">$azurerm_version</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\">$tf_version</td>" >> "$temp_dashboard"
-            echo "    <td style=\"text-align: center; padding: 4px;\">$status_emoji</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\">$reason</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\">$module_version</td>" >> "$temp_dashboard"
-            echo "    <td style=\"padding: 4px;\">$azurerm_constraints</td>" >> "$temp_dashboard"
-            echo "  </tr>" >> "$temp_dashboard"
-          done
-          
-          # Close the table
-          echo "</table>" >> "$temp_dashboard"
-          
-          # Add summary
-          cat << EOF >> "$temp_dashboard"
+                  
+                  # Initialize counters as integers
+                  total_avms=0
+                  compatible_avms=0
+                  incompatible_avms=0
+                  
+                  echo "Processing summary.md..."
+                  # Skip header and process only table rows
+                  started_table=false
+                  while IFS= read -r line || [ -n "$line" ]; do
+                    # Check if we've reached the table start
+                    if [[ $line == *"|"* ]] && ! $started_table; then
+                      started_table=true
+                      continue
+                    fi
+                    
+                    # Skip lines until we reach the table
+                    if ! $started_table; then
+                      echo "Skipping header line: $line"
+                      continue
+                    fi
+                    
+                    # Skip the table header separator
+                    if [[ $line == *"----"* ]]; then
+                      echo "Skipping table separator: $line"
+                      continue
+                    fi
+                    
+                    echo "Processing line: $line"
+                    line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+                    IFS='|' read -ra fields <<< "$line"
+                    
+                    if [ ${#fields[@]} -ne 8 ]; then
+                      echo "Warning: Unexpected number of fields (${#fields[@]}) in line: $line"
+                      continue
+                    fi
+                    
+                    # Extract AVM name and URL
+                    avm_full="${fields[0]}"
+                    avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+                    avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
+                    
+                    avm_source=$(echo "${fields[1]}" | xargs)
+                    azurerm_version=$(echo "${fields[2]}" | xargs)
+                    tf_version=$(echo "${fields[3]}" | xargs)
+                    compatibility=$(echo "${fields[4]}" | xargs | tr '[:upper:]' '[:lower:]')
+                    reason=$(echo "${fields[5]}" | xargs)
+                    module_version=$(echo "${fields[6]}" | xargs)
+                    azurerm_constraints=$(echo "${fields[7]}" | xargs)
+                    
+                    echo "Processed fields: $avm_name | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints"
+                    
+                    if [ "$compatibility" = "compatible" ]; then
+                      compatible_avms=$((compatible_avms + 1))
+                      compatibility_icon="✅ Compatible"
+                    elif [ "$compatibility" = "incompatible" ]; then
+                      incompatible_avms=$((incompatible_avms + 1))
+                      compatibility_icon="❌ Incompatible"
+                    else
+                      echo "Warning: Unexpected compatibility value: $compatibility"
+                      compatibility_icon="⚠️ Unknown"
+                    fi
+                    total_avms=$((total_avms + 1))
+                    
+                    echo "| [$avm_name]($avm_url) | $avm_source | $azurerm_version | $tf_version | $compatibility_icon | $reason | $module_version | $azurerm_constraints |" >> "$temp_dashboard"
+                  done < summary.md
+                  
+                  echo "Finalizing dashboard..."
 
-          ### Compatibility Overview
-          - Total AVMs checked: $total_avms
+                  # Get the current run URL
+                  run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  cat << EOF >> "$temp_dashboard"
+
+          ## Compatibility Overview 📊        
+
+          - 🔢 Total AVMs checked: $total_avms
           - ✅ Compatible AVMs: $compatible_avms
           - ❌ Incompatible AVMs: $incompatible_avms
 
           🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+          🔗 [Link to this update run]($run_url)
           EOF
+                  
+                  if [ $total_avms -eq 0 ]; then
+                    echo "Warning: No AVM data was processed. The dashboard may be empty."
+                    echo "
+          ## No AVM Data Available ❗
+          No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file." >> "$temp_dashboard"
+                  fi
+                  
+                  # Update README.md with new dashboard content
+                  awk '
+                  /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
+                    print
+                    while (getline line < "'"$temp_dashboard"'") {
+                      print line
+                    }
+                    f=1
+                  }
+                  /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
+                    if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
+                    print
+                    f=0
+                    next
+                  }
+                  !f
+                  ' README.md > README.md.new && mv README.md.new README.md
+                  
+                  # Clean up temporary file
+                  rm "$temp_dashboard"
+                  
+                  echo "Dashboard update complete. Updated contents of README.md:"
+                  cat README.md
           
-          # Update README.md with new dashboard content
-          awk '
-          /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
-            print
-            while (getline line < "'"$temp_dashboard"'") {
-              print line
-            }
-            f=1
-          }
-          /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
-            if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
-            print
-            f=0
-            next
-          }
-          !f
-          ' README.md > README.md.new && mv README.md.new README.md
-          
-          # Clean up temporary file
-          rm "$temp_dashboard"
-          
-          echo "Dashboard update complete."
-
       - name: Commit and push if changed
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
