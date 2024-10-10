@@ -476,12 +476,19 @@ jobs:
           echo "|----------|-----------------|-------------------|---------------|------------|--------|" >> "$temp_dashboard"
           
           # Process summary.md and add to dashboard
+          skip_header=true
           while IFS= read -r line; do
             # Remove leading and trailing spaces and pipe characters
             line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
             
             # Skip empty lines, header lines, and lines with only dashes
-            [[ -z "$line" || "$line" == "|"*"|" || "$line" == *----* || "$line" == "# Compatibility Summary" ]] && continue
+            [[ -z "$line" || "$line" == *----* || "$line" == "# Compatibility Summary" ]] && continue
+            
+            # Skip the first header row
+            if $skip_header; then
+              skip_header=false
+              continue
+            fi
             
             IFS='|' read -ra fields <<< "$line"
             
@@ -507,6 +514,7 @@ jobs:
               compatibility="❌ Incompatible"
             fi
             
+            echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_dashboard"
           done < summary.md
           
           # Add compatibility overview
