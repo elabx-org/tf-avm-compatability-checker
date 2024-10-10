@@ -4,7 +4,6 @@
 ## Summary
 | AVM Name | AzureRM Version | Terraform Version | Compatibility | Module Ver | Reason |
 |----------|-----------------|-------------------|---------------|------------|--------|
-| [AVM Name ](AVM Name ) | azurerm Version | Terraform Version | ⚠️ Unknown | Module Version | Reason |
 | [----------](----------) | ----------------- | ------------------- | ⚠️ Unknown | ---------------- | -------- |
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | 4.3.0 | 1.9.7 | ❌ Incompatible | 0.6.0 | Version constraint mismatch |
 | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | ❌ Incompatible | 6.1.0 | Version constraint mismatch |
@@ -20,12 +19,16 @@
 | [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | 4.3.0 | 1.9.7 | ✅ Compatible | 0.1.2 | Init successful |
 | [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) | 4.3.0 | 1.9.7 | ✅ Compatible | 0.3.0 | Init successful |
 | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | 4.3.0 | 1.9.7 | ❌ Incompatible | 0.2.7 | Version constraint mismatch |
+
 ## Compatibility Overview 📊        
-- 🔢 Total AVMs checked: 16
-- ✅ Compatible AVMs: 4
-- ❌ Incompatible AVMs: 10
+- 🔢 Total AVMs checked: 0
+- ✅ Compatible AVMs: 0
+- ❌ Incompatible AVMs: 0
 
-🕒 Last updated: Thu Oct 10 18:29:51 BST 2024
+🕒 Last updated: Thu Oct 10 18:47:14 BST 2024
 
-🔗 [Link to this update run](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11279019032)
+🔗 [Link to this update run](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11279265981)
+
+    ## No AVM Data Available ❗
+    No compatibility data was found. This could be due to an error in the compatibility check process or an empty summary file.
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
