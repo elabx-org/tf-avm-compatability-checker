@@ -5,7 +5,7 @@
 
 <table style="font-size: 12px; border-collapse: collapse; width: 100%;">
   <tr style="background-color: #0078D4; color: white;">
-    <th style="width: 20%; padding: 8px; text-align: left;">AVM Name</th>
+    <th style="width: 10%; padding: 4px; text-align: left;">AVM Name</th>
     <th style="width: 20%; padding: 8px; text-align: left;">AVM Source</th>
     <th style="width: 8%; padding: 8px; text-align: left;">AzureRM</th>
     <th style="width: 8%; padding: 8px; text-align: left;">Terraform</th>
