@@ -507,10 +507,10 @@ jobs:
             
             if [ "$compatibility" = "compatible" ]; then
               compatible_avms=$((compatible_avms + 1))
-              compatibility="✅ Compatible"
+              compatibility="   ✅   "
             elif [ "$compatibility" = "incompatible" ]; then
               incompatible_avms=$((incompatible_avms + 1))
-              compatibility="❌ Incompatible"
+              compatibility="   ❌   "
             fi
             
             echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $module_version | $compatibility |" >> "$temp_dashboard"
