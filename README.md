@@ -1,175 +1,32 @@
 # AVM Compatibility Dashboard 🚀
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_START -->
-## AVM Compatibility Dashboard
 
-<table style="font-size: 11px; border-collapse: collapse; width: 100%;">
-  <tr style="background-color: #0078D4; color: white;">
-    <th style="width: 22%; padding: 4px; text-align: left;">AVM Name</th>
-    <th style="width: 22%; padding: 4px; text-align: left;">AVM Source</th>
-    <th style="width: 7%; padding: 4px; text-align: left;">AzureRM</th>
-    <th style="width: 7%; padding: 4px; text-align: left;">Terraform</th>
-    <th style="width: 6%; padding: 4px; text-align: center;">Support</th>
-    <th style="width: 15%; padding: 4px; text-align: left;">Reason</th>
-    <th style="width: 7%; padding: 4px; text-align: left;">Module Ver</th>
-    <th style="width: 14%; padding: 4px; text-align: left;">AzureRM Constraints</th>
-  </tr>
-  <tr style="background-color: #FFFDE6;">
-    <td style="padding: 4px;"><a href="----------" style="color: #0078D4; text-decoration: none; font-weight: bold;">----------</a></td>
-    <td style="padding: 4px;">------------</td>
-    <td style="padding: 4px;">-----------------</td>
-    <td style="padding: 4px;">-------------------</td>
-    <td style="text-align: center; padding: 4px;">⚠️</td>
-    <td style="padding: 4px;">--------</td>
-    <td style="padding: 4px;">----------------</td>
-    <td style="padding: 4px;">---------------------</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">avm-ptn-vnetgateway</a></td>
-    <td style="padding: 4px;">Azure/avm-ptn-vnetgateway/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.6.0</td>
-    <td style="padding: 4px;">~> 4.0.0, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">caf-enterprise-scale</a></td>
-    <td style="padding: 4px;">Azure/caf-enterprise-scale/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">6.1.0</td>
-    <td style="padding: 4px;">~> 3.107, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">compute-virtualmachine</a></td>
-    <td style="padding: 4px;">Azure/avm-res-compute-virtualmachine/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.16.0</td>
-    <td style="padding: 4px;">~> 3.108, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #E6F3FF;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">keyvault-vault</a></td>
-    <td style="padding: 4px;">Azure/avm-res-keyvault-vault/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">✅</td>
-    <td style="padding: 4px;">Init successful</td>
-    <td style="padding: 4px;">0.9.1</td>
-    <td style="padding: 4px;">>= 3.71.0, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-azurefirewall</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-azurefirewall/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.2.2</td>
-    <td style="padding: 4px;">~> 3.105, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-bastionhost</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-bastionhost/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.3.0</td>
-    <td style="padding: 4px;">~> 3.105, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #E6F3FF;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-ddosprotectionplan</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-ddosprotectionplan/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">✅</td>
-    <td style="padding: 4px;">Init successful</td>
-    <td style="padding: 4px;">0.2.0</td>
-    <td style="padding: 4px;">>= 3.71.0, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.2.3/submodules/rule_collection_groups" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-firewallpolicy//modules/rule_collection_groups</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.2.3</td>
-    <td style="padding: 4px;">~> 3.71, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-firewallpolicy</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-firewallpolicy/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.2.3</td>
-    <td style="padding: 4px;">~> 3.71, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-networksecuritygroup</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-networksecuritygroup/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.2.0</td>
-    <td style="padding: 4px;">~> 3.71, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-privatednszone</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-privatednszone/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.2.0</td>
-    <td style="padding: 4px;">>= 3.6.0, <= 3.114.0, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #E6F3FF;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-publicipaddress</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-publicipaddress/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">✅</td>
-    <td style="padding: 4px;">Init successful</td>
-    <td style="padding: 4px;">0.1.2</td>
-    <td style="padding: 4px;">>= 3.71.0, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #E6F3FF;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">network-routetable</a></td>
-    <td style="padding: 4px;">Azure/avm-res-network-routetable/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">✅</td>
-    <td style="padding: 4px;">Init successful</td>
-    <td style="padding: 4px;">0.3.0</td>
-    <td style="padding: 4px;">~> 4.0, 4.3.0</td>
-  </tr>
-  <tr style="background-color: #FFE6E6;">
-    <td style="padding: 4px;"><a href="https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">storage-storageaccount</a></td>
-    <td style="padding: 4px;">Azure/avm-res-storage-storageaccount/azurerm</td>
-    <td style="padding: 4px;">4.3.0</td>
-    <td style="padding: 4px;">1.9.7</td>
-    <td style="text-align: center; padding: 4px;">❌</td>
-    <td style="padding: 4px;">Version constraint mismatch</td>
-    <td style="padding: 4px;">0.2.7</td>
-    <td style="padding: 4px;">>= 3.114.0, < 4.0.0, 4.3.0</td>
-  </tr>
-</table>
+## Summary
 
-### Compatibility Overview
-- Total AVMs checked: 0
-- ✅ Compatible AVMs: 0
-- ❌ Incompatible AVMs: 0
+| AVM Name | AVM Source | AzureRM Version | Terraform Version | Compatibility | Reason | Module Version | AzureRM Constraints |
+|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.6.0 | ~> 4.0.0, 4.3.0 |
+| [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | Azure/caf-enterprise-scale/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 6.1.0 | ~> 3.107, 4.3.0 |
+| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Azure/avm-res-compute-virtualmachine/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.16.0 | ~> 3.108, 4.3.0 |
+| [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | Azure/avm-res-keyvault-vault/azurerm | 4.3.0 | 1.9.7 | ✅ Compatible | Init successful | 0.9.1 | >= 3.71.0, 4.3.0 |
+| [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | Azure/avm-res-network-azurefirewall/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.2 | ~> 3.105, 4.3.0 |
+| [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | Azure/avm-res-network-bastionhost/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.3.0 | ~> 3.105, 4.3.0 |
+| [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) | Azure/avm-res-network-ddosprotectionplan/azurerm | 4.3.0 | 1.9.7 | ✅ Compatible | Init successful | 0.2.0 | >= 3.71.0, 4.3.0 |
+| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.2.3/submodules/rule_collection_groups) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.3 | ~> 3.71, 4.3.0 |
+| [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | Azure/avm-res-network-firewallpolicy/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.3 | ~> 3.71, 4.3.0 |
+| [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) | Azure/avm-res-network-networksecuritygroup/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.0 | ~> 3.71, 4.3.0 |
+| [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | Azure/avm-res-network-privatednszone/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.0 | >= 3.6.0, <= 3.114.0, 4.3.0 |
+| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | Azure/avm-res-network-publicipaddress/azurerm | 4.3.0 | 1.9.7 | ✅ Compatible | Init successful | 0.1.2 | >= 3.71.0, 4.3.0 |
+| [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) | Azure/avm-res-network-routetable/azurerm | 4.3.0 | 1.9.7 | ✅ Compatible | Init successful | 0.3.0 | ~> 4.0, 4.3.0 |
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 4.3.0 | 1.9.7 | ❌ Incompatible | Version constraint mismatch | 0.2.7 | >= 3.114.0, < 4.0.0, 4.3.0 |
 
-🕒 Last updated: Thu Oct 10 18:05:48 BST 2024
+## Compatibility Overview 📊        
+
+- 🔢 Total AVMs checked: 14
+- ✅ Compatible AVMs: 4
+- ❌ Incompatible AVMs: 10
+
+🕒 Last updated: Thu Oct 10 18:13:59 BST 2024
+🔗 [Link to this update run](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11278798303)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
