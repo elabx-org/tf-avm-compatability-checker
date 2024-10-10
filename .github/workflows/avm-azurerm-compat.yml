@@ -290,74 +290,74 @@ jobs:
         with:
           name: compatibility-summary
   
-          - name: Manage issues for AVMs
-          env:
-            GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          run: |
-            echo "Starting issue management process..."
+      - name: Manage issues for AVMs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          echo "Starting issue management process..."
+          
+          # Check if summary.md exists
+          if [ ! -f summary.md ]; then
+            echo "Error: summary.md file not found!"
+            exit 1
+          fi
+          
+          echo "Contents of summary.md:"
+          cat summary.md
+          
+          # Read the summary file, skipping the header lines
+          tail -n +4 summary.md | while IFS= read -r line; do
+            # Remove leading and trailing | and spaces
+            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
             
-            # Check if summary.md exists
-            if [ ! -f summary.md ]; then
-              echo "Error: summary.md file not found!"
-              exit 1
-            fi
+            # Split the line into fields
+            IFS='|' read -ra fields <<< "$line"
             
-            echo "Contents of summary.md:"
-            cat summary.md
+            # Extract AVM name without the link
+            avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
+            avm_source=$(echo "${fields[1]}" | xargs)
+            azurerm_version=$(echo "${fields[2]}" | xargs)
+            tf_version=$(echo "${fields[3]}" | xargs)
+            compatibility=$(echo "${fields[4]}" | xargs)
+            reason=$(echo "${fields[5]}" | xargs)
+            module_version=$(echo "${fields[6]}" | xargs)
+            azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
-            # Read the summary file, skipping the header lines
-            tail -n +4 summary.md | while IFS= read -r line; do
-              # Remove leading and trailing | and spaces
-              line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
-              
-              # Split the line into fields
-              IFS='|' read -ra fields <<< "$line"
-              
-              # Extract AVM name without the link
-              avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
-              avm_source=$(echo "${fields[1]}" | xargs)
-              azurerm_version=$(echo "${fields[2]}" | xargs)
-              tf_version=$(echo "${fields[3]}" | xargs)
-              compatibility=$(echo "${fields[4]}" | xargs)
-              reason=$(echo "${fields[5]}" | xargs)
-              module_version=$(echo "${fields[6]}" | xargs)
-              azurerm_constraints=$(echo "${fields[7]}" | xargs)
-              
-              echo "Processing AVM: $avm_name"
-              echo "Compatibility: $compatibility"
-              
-              # Check for existing issue
-              issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
-              echo "Existing issue number: $issue_number"
-              
-              if [ "$compatibility" == "incompatible" ]; then
-                echo "AVM is incompatible. Preparing issue..."
-                
-                # Generate the correct registry URL
-                if [[ "$avm_source" == *"//"* ]]; then
-                  base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
-                  submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
-                  registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
-                else
-                  registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
-                fi
-                
-                # Prepare issue title and body
-                title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
-                body="An incompatibility has been detected for the following AVM:
-        
-            | Field | Value |
-            |-------|-------|
-            | AVM Name | [$avm_name]($registry_url) |
-            | AVM Source | $avm_source |
-            | AzureRM Version | $azurerm_version |
-            | Terraform Version | $tf_version |
-            | Compatibility | $compatibility |
-            | Reason | $reason |
-            | Module Version | $module_version |
-            | AzureRM Constraints | $azurerm_constraints |
+            echo "Processing AVM: $avm_name"
+            echo "Compatibility: $compatibility"
             
-            Will continue to monitor compatibility with AzureRM version $azurerm_version as per the schedule set."
+            # Check for existing issue
+            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
+            echo "Existing issue number: $issue_number"
+            
+            if [ "$compatibility" == "incompatible" ]; then
+              echo "AVM is incompatible. Preparing issue..."
+              
+              # Generate the correct registry URL
+              if [[ "$avm_source" == *"//"* ]]; then
+                base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
+                submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
+                registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
+              else
+                registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
+              fi
+              
+              # Prepare issue title and body
+              title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
+              body="An incompatibility has been detected for the following AVM:
+      
+          | Field | Value |
+          |-------|-------|
+          | AVM Name | [$avm_name]($registry_url) |
+          | AVM Source | $avm_source |
+          | AzureRM Version | $azurerm_version |
+          | Terraform Version | $tf_version |
+          | Compatibility | $compatibility |
+          | Reason | $reason |
+          | Module Version | $module_version |
+          | AzureRM Constraints | $azurerm_constraints |
+          
+          Will continue to monitor compatibility with AzureRM version $azurerm_version as per the schedule set."
         
                 if [ -z "$issue_number" ]; then
                   echo "Creating new issue..."
