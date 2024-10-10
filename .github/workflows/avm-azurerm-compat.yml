@@ -292,7 +292,7 @@ jobs:
   
       - name: Manage issues for AVMs
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Starting issue management process..."
           
