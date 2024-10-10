@@ -474,13 +474,13 @@ jobs:
           |----------|-----------------|-------------------|---------------|------------|--------|
           EOF
                   
-                  # Initialize counters as integers
-                  total_avms=0
-                  compatible_avms=0
-                  incompatible_avms=0
-                  
+                  # Process summary.md and count AVMs
                   echo "Processing summary.md..."
-                  # Skip header and process only table rows
+                  total_avms=$(sed '1,3d' summary.md | grep -v '^$' | grep -v '^|[ -]*|$' | wc -l)
+                  compatible_avms=$(sed '1,3d' summary.md | grep -c '| ✅ Compatible |')
+                  incompatible_avms=$(sed '1,3d' summary.md | grep -c '| ❌ Incompatible |')
+                  
+                  # Add processed lines to the dashboard
                   sed '1,3d' summary.md | while IFS= read -r line || [ -n "$line" ]; do
                     # Remove leading and trailing spaces and pipe characters
                     line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
@@ -502,25 +502,13 @@ jobs:
                     
                     azurerm_version=$(echo "${fields[2]}" | xargs)
                     tf_version=$(echo "${fields[3]}" | xargs)
-                    compatibility=$(echo "${fields[4]}" | xargs | tr '[:upper:]' '[:lower:]')
+                    compatibility=$(echo "${fields[4]}" | xargs)
                     reason=$(echo "${fields[5]}" | xargs)
                     module_version=$(echo "${fields[6]}" | xargs)
                     
                     echo "Processed fields: $avm_name | $azurerm_version | $tf_version | $compatibility | $module_version | $reason"
                     
-                    if [ "$compatibility" = "compatible" ]; then
-                      compatible_avms=$((compatible_avms + 1))
-                      compatibility_icon="✅ Compatible"
-                    elif [ "$compatibility" = "incompatible" ]; then
-                      incompatible_avms=$((incompatible_avms + 1))
-                      compatibility_icon="❌ Incompatible"
-                    else
-                      echo "Warning: Unexpected compatibility value: $compatibility"
-                      compatibility_icon="⚠️ Unknown"
-                    fi
-                    total_avms=$((total_avms + 1))
-                    
-                    echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility_icon | $module_version | $reason |" >> "$temp_dashboard"
+                    echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_dashboard"
                   done
                   
                   # Get the current run URL
@@ -529,15 +517,15 @@ jobs:
                   echo "Finalizing dashboard..."
                   cat << EOF >> "$temp_dashboard"
 
-              ## Compatibility Overview 📊        
-              - 🔢 Total AVMs checked: $total_avms
-              - ✅ Compatible AVMs: $compatible_avms
-              - ❌ Incompatible AVMs: $incompatible_avms
+          ## Compatibility Overview 📊        
+          - 🔢 Total AVMs checked: $total_avms
+          - ✅ Compatible AVMs: $compatible_avms
+          - ❌ Incompatible AVMs: $incompatible_avms
 
-              🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+          🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
 
-              🔗 [Link to this update run]($run_url)
-              EOF
+          🔗 [Link to this update run]($run_url)
+          EOF
                   
                   if [ $total_avms -eq 0 ]; then
                     echo "Warning: No AVM data was processed. The dashboard may be empty."
