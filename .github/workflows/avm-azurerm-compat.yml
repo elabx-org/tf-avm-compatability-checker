@@ -18,7 +18,13 @@ on:
         description: 'Skip creating or updating GitHub issues'
         required: true
         default: false
-        type: boolean     
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  actions: read
 
 jobs:
   prepare-matrix:
