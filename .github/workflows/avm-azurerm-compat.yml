@@ -479,7 +479,7 @@ jobs:
               total_avms=$(wc -l < avm-config.txt)
               compatible_avms=0
               incompatible_avms=0
-              
+
               # Add processed lines to the dashboard and count compatible/incompatible AVMs
               sed '1,3d' summary.md | while IFS= read -r line || [ -n "$line" ]; do
                 # Remove leading and trailing spaces and pipe characters
@@ -515,12 +515,14 @@ jobs:
                   compatibility="❌ Incompatible"
                 fi
                 
+                echo "Debug: Compatibility = $compatibility, Compatible count = $compatible_avms, Incompatible count = $incompatible_avms"
+                
                 echo "Processed fields: $avm_name | $azurerm_version | $tf_version | $compatibility | $module_version | $reason"
                 
                 echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $compatibility | $module_version | $reason |" >> "$temp_dashboard"
               done
-              
-              echo "Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
+
+              echo "Final Counts: Total=$total_avms, Compatible=$compatible_avms, Incompatible=$incompatible_avms"
               
               # Get the current run URL
               run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
