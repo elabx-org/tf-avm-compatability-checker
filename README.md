@@ -14,16 +14,6 @@
     <th style="width: 7%; padding: 8px; text-align: left;">Module Ver</th>
     <th style="width: 8%; padding: 8px; text-align: left;">AzureRM Constraints</th>
   </tr>
-  <tr style="background-color: #FFFDE6;">
-    <td style="padding: 8px;"><a href="----------" style="color: #0078D4; text-decoration: none; font-weight: bold;">----------</a></td>
-    <td style="padding: 8px;">------------</td>
-    <td style="padding: 8px;">-----------------</td>
-    <td style="padding: 8px;">-------------------</td>
-    <td style="text-align: center; padding: 8px;">⚠️</td>
-    <td style="padding: 8px;">--------</td>
-    <td style="padding: 8px;">----------------</td>
-    <td style="padding: 8px;">---------------------</td>
-  </tr>
   <tr style="background-color: #FFE6E6;">
     <td style="padding: 8px;"><a href="https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm" style="color: #0078D4; text-decoration: none; font-weight: bold;">avm-ptn-vnetgateway</a></td>
     <td style="padding: 8px;">Azure/avm-ptn-vnetgateway/azurerm</td>
