@@ -529,15 +529,15 @@ jobs:
                   echo "Finalizing dashboard..."
                   cat << EOF >> "$temp_dashboard"
 
-          ## Compatibility Overview 📊        
-          - 🔢 Total AVMs checked: $total_avms
-          - ✅ Compatible AVMs: $compatible_avms
-          - ❌ Incompatible AVMs: $incompatible_avms
+              ## Compatibility Overview 📊        
+              - 🔢 Total AVMs checked: $total_avms
+              - ✅ Compatible AVMs: $compatible_avms
+              - ❌ Incompatible AVMs: $incompatible_avms
 
-          🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+              🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
 
-          🔗 [Link to this update run]($run_url)
-          EOF
+              🔗 [Link to this update run]($run_url)
+              EOF
                   
                   if [ $total_avms -eq 0 ]; then
                     echo "Warning: No AVM data was processed. The dashboard may be empty."
