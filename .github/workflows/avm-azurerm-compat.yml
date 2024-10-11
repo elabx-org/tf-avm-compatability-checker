@@ -476,8 +476,8 @@ jobs:
           echo "" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->" >> "$temp_dashboard"
           echo "## Summary" >> "$temp_dashboard"
-          echo "| AVM Name | AzureRM | Terraform | Module | Compatibility |" >> "$temp_dashboard"
-          echo "|----------|---------|-----------|--------|---------------|" >> "$temp_dashboard"
+          echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> "$temp_dashboard"
+          echo "|----------|:-------:|:---------:|:------:|:----------:|" >> "$temp_dashboard"
           
           # Process summary.md and add to dashboard
           skip_header=true
