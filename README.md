@@ -4,7 +4,7 @@
 
 ## Summary
 | AVM Name | AzureRM | Terraform | Module | Compatibility |
-|----------|---------|-----------|--------|---------------|
+|----------|---------|-----------|--------|:-------------:|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | 4.3.0 | 1.9.7 | 0.6.0 |    ❌    |
 | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | 6.1.0 |    ❌    |
 | [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | 4.3.0 | 1.9.7 | 0.16.0 |    ❌    |
@@ -25,7 +25,7 @@
 - ✅ Compatible AVMs: 4
 - ❌ Incompatible AVMs: 10
 
-🕒 Last updated: Fri Oct 11 23:57:20 BST 2024
+🕒 Last updated: Sat Oct 12 00:11:48 BST 2024
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11300339344)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11300466427)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
