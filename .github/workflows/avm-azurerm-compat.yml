@@ -417,7 +417,7 @@ jobs:
         with:
           name: compatibility-summary
 
-      # New Step 1: Check File Permissions
+      # Check File Permissions
       - name: Check File Permissions
         run: |
           echo "Current directory: $(pwd)"
@@ -429,7 +429,7 @@ jobs:
           file summary.md || echo "summary.md not found"
         shell: bash
 
-      # New Step 2: Display Summary Content
+      # Display Summary Content
       - name: Display Summary Content
         run: |
           echo "Contents of summary.md:"
