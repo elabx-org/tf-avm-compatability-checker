@@ -25,6 +25,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
+  issues: write
 
 jobs:
   prepare-matrix:
@@ -287,6 +288,9 @@ jobs:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -413,7 +417,7 @@ jobs:
         with:
           name: compatibility-summary
 
-      # New Step 1: Check File Permissions
+      # Check File Permissions
       - name: Check File Permissions
         run: |
           echo "Current directory: $(pwd)"
@@ -425,7 +429,7 @@ jobs:
           file summary.md || echo "summary.md not found"
         shell: bash
 
-      # New Step 2: Display Summary Content
+      # Display Summary Content
       - name: Display Summary Content
         run: |
           echo "Contents of summary.md:"
