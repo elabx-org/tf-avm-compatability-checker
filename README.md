@@ -21,11 +21,11 @@
 | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | 4.3.0 | 1.9.7 | 0.2.7 |    ❌    |
 
 ## Compatibility Overview 📊
-- 🔢 Total AVMs checked: 13
+- 🔢 Total AVMs checked: 14
 - ✅ Compatible AVMs: 4
 - ❌ Incompatible AVMs: 10
 
-🕒 Last updated: Sat Oct 12 19:48:35 BST 2024
+🕒 Last updated: Sat Oct 12 19:56:30 BST 2024
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11307973124)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11308012071)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
