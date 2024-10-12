@@ -12,5 +12,6 @@ provider "azurerm" {
 }
 
 module "test_module" {
-  source = "AVM_SOURCE"
+  source  = "AVM_SOURCE"
+  version = "AVM_VERSION"
 }
