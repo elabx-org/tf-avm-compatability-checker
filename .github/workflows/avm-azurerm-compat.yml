@@ -62,8 +62,16 @@ jobs:
           # Process AVM sources
           MATRIX=()
           for source in "${AVM_SOURCES[@]}"; do
-            short_name=$(get_short_name "$source")
-            MATRIX+=("{\"avm_source\":\"$source\",\"avm_short_name\":\"$short_name\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
+            # Split the source into AVM source and version (if provided)
+            IFS=' ' read -r avm_source avm_version <<< "$source"
+            short_name=$(get_short_name "$avm_source")
+            
+            # If version is not specified, set it to "latest"
+            if [ -z "$avm_version" ]; then
+              avm_version="latest"
+            fi
+            
+            MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
           done
 
           # Join the matrix entries into a JSON array
@@ -84,7 +92,7 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
-    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
+    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }}, ${{ matrix.avm_version }})
     
     steps:
     - name: Checkout code
@@ -112,8 +120,17 @@ jobs:
         WORKING_DIR="${{ steps.config_type.outputs.working_dir }}"
         AZURERM_VERSION=$(echo "${{ matrix.azurerm_version }}" | sed 's/[\/&]/\\&/g')
         AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/[\/&]/\\&/g')
+        AVM_VERSION="${{ matrix.avm_version }}"
+        
         sed -i "s|AZURERM_VERSION|${AZURERM_VERSION}|g" $WORKING_DIR/main.tf
         sed -i "s|AVM_SOURCE|${AVM_SOURCE}|g" $WORKING_DIR/main.tf
+        
+        if [ "$AVM_VERSION" != "latest" ]; then
+          sed -i "s|AVM_VERSION|${AVM_VERSION}|g" $WORKING_DIR/main.tf
+        else
+          sed -i '/version = "AVM_VERSION"/d' $WORKING_DIR/main.tf
+        fi
+        
         echo "Contents of $WORKING_DIR/main.tf:"
         cat $WORKING_DIR/main.tf
 
@@ -182,7 +199,13 @@ jobs:
         BASE_AVM_SOURCE=$(echo "${{ matrix.avm_source }}" | sed 's/\/\/modules.*//;s/\/\/submodules.*//')
         echo "Base AVM Source: $BASE_AVM_SOURCE"
         AVM_SOURCE=$(echo "$BASE_AVM_SOURCE" | sed 's/\//\\\//g')
-        VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" init_output.txt)
+        
+        if [ "${{ matrix.avm_version }}" != "latest" ]; then
+          VERSION="${{ matrix.avm_version }}"
+        else
+          VERSION=$(sed -n "s|Downloading registry.terraform.io/$AVM_SOURCE \(.*\) for test_module...|\\1|p" init_output.txt)
+        fi
+        
         if [ -z "$VERSION" ]; then
           VERSION="Version not found"
         fi
@@ -464,7 +487,7 @@ jobs:
           
           # Process summary.md and count AVMs
           echo "Processing summary.md..."
-          total_avms=$(wc -l < avm-config.txt)
+          total_avms=0
           compatible_avms=0
           incompatible_avms=0
           
@@ -500,6 +523,8 @@ jobs:
               echo "Warning: Unexpected number of fields (${#fields[@]}) in line: $line"
               continue
             fi
+            
+            total_avms=$((total_avms + 1))
             
             avm_full="${fields[0]}"
             avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
