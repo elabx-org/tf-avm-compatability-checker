@@ -22,7 +22,8 @@ provider "azurerm" {
 }
 
 module "test_module" {
-  source = "AVM_SOURCE"
+  source  = "AVM_SOURCE"
+  version = "AVM_VERSION"
   providers = {
     azurerm              = azurerm
     azurerm.connectivity = azurerm.connectivity
