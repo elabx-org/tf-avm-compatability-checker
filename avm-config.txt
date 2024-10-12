@@ -1,5 +1,5 @@
-Azure/caf-enterprise-scale/azurerm 0.6.1
+Azure/caf-enterprise-scale/azurerm 6.0.0
 Azure/avm-res-network-virtualnetwork
-Azure/avm-res-compute-virtualmachine 0.1.0
+Azure/avm-res-compute-virtualmachine 0.15.1
 Azure/avm-res-storage-storageaccount
-Azure/avm-res-keyvault-vault 0.2.0
+Azure/avm-res-keyvault-vault 0.8.0
