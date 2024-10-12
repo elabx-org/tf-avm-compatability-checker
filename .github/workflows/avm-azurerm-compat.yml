@@ -92,7 +92,7 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
-    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }})
+    name: ${{ matrix.avm_short_name }} (${{ matrix.azurerm_version }}, ${{ matrix.tf_version }}, ${{ matrix.avm_version }})
     
     steps:
     - name: Checkout code
