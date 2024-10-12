@@ -363,32 +363,35 @@ jobs:
             issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
+            # Generate the correct registry URL
+            if [[ "$avm_source" == *"//"* ]]; then
+              base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
+              submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
+              registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
+            else
+              registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
+            fi
+            
+            # Prepare issue body
+            issue_body="| Field | Value |
+            |-------|-------|
+            | AVM Name | [$avm_name]($registry_url) |
+            | AVM Source | $avm_source |
+            | AzureRM Version | $azurerm_version |
+            | Terraform Version | $tf_version |
+            | Compatibility | $compatibility |
+            | Reason | $reason |
+            | Module Version | $module_version |
+            | AzureRM Constraints | $azurerm_constraints |"
+            
             if [ "$compatibility" == "incompatible" ]; then
               echo "AVM is incompatible. Preparing issue..."
-              
-              # Generate the correct registry URL
-              if [[ "$avm_source" == *"//"* ]]; then
-                base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
-                submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
-                registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
-              else
-                registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
-              fi
               
               # Prepare issue title and body
               title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
               body="An incompatibility has been detected for the following AVM:
-      
-          | Field | Value |
-          |-------|-------|
-          | AVM Name | [$avm_name]($registry_url) |
-          | AVM Source | $avm_source |
-          | AzureRM Version | $azurerm_version |
-          | Terraform Version | $tf_version |
-          | Compatibility | $compatibility |
-          | Reason | $reason |
-          | Module Version | $module_version |
-          | AzureRM Constraints | $azurerm_constraints |
+
+          $issue_body
           
           Will continue to monitor compatibility with AzureRM version $azurerm_version as per the schedule set."
         
@@ -412,7 +415,10 @@ jobs:
                 fi
               elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
                 echo "AVM is now compatible. Closing existing issue..."
-                gh issue close $issue_number --comment "AVM is now compatible with AzureRM $azurerm_version as of $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y'). Closing this issue."
+                closing_comment="AVM is now compatible with AzureRM $azurerm_version as of $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y'). Closing this issue.
+
+          $issue_body"
+                gh issue close $issue_number --comment "$closing_comment"
                 if [ $? -eq 0 ]; then
                   echo "Successfully closed issue for now compatible AVM: $avm_name"
                 else
