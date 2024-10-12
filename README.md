@@ -8,7 +8,7 @@
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | 4.3.0 | 1.9.7 | 0.6.0 |    ❌    |
 | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | 6.0.0 |    ❌    |
 | [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | 4.3.0 | 1.9.7 | 0.15.1 |    ❌    |
-| [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | 4.3.0 | 1.9.7 | 0.9.1 |    ✅    |
+| [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | 4.3.0 | 1.9.7 | 0.8.0 |    ❌    |
 | [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | 4.3.0 | 1.9.7 | 0.2.2 |    ❌    |
 | [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 |    ❌    |
 | [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) | 4.3.0 | 1.9.7 | 0.2.0 |    ✅    |
@@ -22,10 +22,10 @@
 
 ## Compatibility Overview 📊
 - 🔢 Total AVMs checked: 14
-- ✅ Compatible AVMs: 4
-- ❌ Incompatible AVMs: 10
+- ✅ Compatible AVMs: 3
+- ❌ Incompatible AVMs: 11
 
-🕒 Last updated: Sat Oct 12 19:56:30 BST 2024
+🕒 Last updated: Sat Oct 12 20:14:38 BST 2024
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11308012071)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11308126567)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
