@@ -19,6 +19,11 @@ on:
         required: true
         default: false
         type: boolean
+  schedule:
+    # Run 4 times a day between 8am and 6am BST
+    # Note: GitHub Actions uses UTC, so adjusted for BST (UTC+1)
+    # 8am, 2pm, 8pm, 2am BST
+    - cron: '0 7,13,19,1 * * *'
 
 permissions:
   id-token: write
