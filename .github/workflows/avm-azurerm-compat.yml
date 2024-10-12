@@ -395,7 +395,7 @@ jobs:
 
           $issue_body
           
-          Will continue to monitor compatibility with AzureRM version $azurerm_version as per the schedule set."
+          Compatibility checks with AzureRM $azurerm_version will proceed according to the established schedule."
         
                 if [ -z "$issue_number" ]; then
                   echo "Creating new issue..."
