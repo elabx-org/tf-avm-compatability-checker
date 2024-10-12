@@ -382,7 +382,9 @@ jobs:
             | Compatibility | $compatibility |
             | Reason | $reason |
             | Module Version | $module_version |
-            | AzureRM Constraints | $azurerm_constraints |"
+            | AzureRM Constraints | $azurerm_constraints |
+
+            🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')"
             
             if [ "$compatibility" == "incompatible" ]; then
               echo "AVM is incompatible. Preparing issue..."
@@ -406,7 +408,6 @@ jobs:
                 else
                   echo "Updating existing issue..."
                   gh issue edit $issue_number --title "$title" --body "$body"
-                  gh issue comment $issue_number --body "Updated compatibility check results on $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')"
                   if [ $? -eq 0 ]; then
                     echo "Successfully updated existing issue for incompatible AVM: $avm_name"
                   else
@@ -415,7 +416,7 @@ jobs:
                 fi
               elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
                 echo "AVM is now compatible. Closing existing issue..."
-                closing_comment="AVM is now compatible with AzureRM $azurerm_version as of $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y'). Closing this issue.
+                closing_comment="AVM is now compatible with AzureRM $azurerm_version. Closing this issue.
 
           $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
