@@ -334,6 +334,57 @@ jobs:
         run: |
           echo "Starting issue management process..."
           
+          # Function to parse cron schedule and calculate next run time
+          calculate_next_run() {
+            local cron_schedule="$1"
+            local current_time=$(TZ='Europe/London' date +%H%M)
+            local current_day=$(TZ='Europe/London' date +%u)  # 1-7, where 1 is Monday
+            local next_run=""
+            
+            # Parse cron schedule
+            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
+            
+            # Convert day of week to 1-7 format if necessary
+            if [[ "$day_of_week" == "0" ]]; then
+              day_of_week="7"
+            fi
+            
+            # Convert comma-separated values to arrays
+            IFS=',' read -ra hours <<< "$hour"
+            IFS=',' read -ra days_of_week <<< "$day_of_week"
+            
+            # Find the next run time
+            for h in "${hours[@]}"; do
+              if (( 10#$h > 10#$current_time / 100 )); then
+                next_run=$(printf "%02d:00" $h)
+                break
+              fi
+            done
+            
+            # If no next run time found today, find the next day
+            if [ -z "$next_run" ]; then
+              for d in "${days_of_week[@]}"; do
+                if (( d > current_day )); then
+                  next_run="${hours[0]}:00 ($(date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
+                  break
+                fi
+              done
+            fi
+            
+            # If still no next run time, it's the first time slot next week
+            if [ -z "$next_run" ]; then
+              next_run="${hours[0]}:00 ($(date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
+            fi
+            
+            echo "$next_run"
+          }
+          
+          # Extract cron schedule from workflow file
+          CRON_SCHEDULE=$(grep -oP '(?<=cron: ).+' $GITHUB_WORKSPACE/.github/workflows/avm-azurerm-compat.yml | tr -d "'")
+          
+          # Calculate next run time
+          NEXT_RUN=$(calculate_next_run "$CRON_SCHEDULE")
+          
           # Check if summary.md exists
           if [ ! -f summary.md ]; then
             echo "Error: summary.md file not found!"
@@ -389,7 +440,8 @@ jobs:
             | Module Version | $module_version |
             | AzureRM Constraints | $azurerm_constraints |
 
-            🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')"
+            🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+            🔄 Next scheduled run: $NEXT_RUN BST"
             
             if [ "$compatibility" == "incompatible" ]; then
               echo "AVM is incompatible. Preparing issue..."
@@ -497,6 +549,57 @@ jobs:
             echo "Warning: summary.md is empty. Generating dashboard with no data."
           fi
           
+          # Function to parse cron schedule and calculate next run time
+          calculate_next_run() {
+            local cron_schedule="$1"
+            local current_time=$(TZ='Europe/London' date +%H%M)
+            local current_day=$(TZ='Europe/London' date +%u)  # 1-7, where 1 is Monday
+            local next_run=""
+            
+            # Parse cron schedule
+            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
+            
+            # Convert day of week to 1-7 format if necessary
+            if [[ "$day_of_week" == "0" ]]; then
+              day_of_week="7"
+            fi
+            
+            # Convert comma-separated values to arrays
+            IFS=',' read -ra hours <<< "$hour"
+            IFS=',' read -ra days_of_week <<< "$day_of_week"
+            
+            # Find the next run time
+            for h in "${hours[@]}"; do
+              if (( 10#$h > 10#$current_time / 100 )); then
+                next_run=$(printf "%02d:00" $h)
+                break
+              fi
+            done
+            
+            # If no next run time found today, find the next day
+            if [ -z "$next_run" ]; then
+              for d in "${days_of_week[@]}"; do
+                if (( d > current_day )); then
+                  next_run="${hours[0]}:00 ($(date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
+                  break
+                fi
+              done
+            fi
+            
+            # If still no next run time, it's the first time slot next week
+            if [ -z "$next_run" ]; then
+              next_run="${hours[0]}:00 ($(date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
+            fi
+            
+            echo "$next_run"
+          }
+          
+          # Extract cron schedule from workflow file
+          CRON_SCHEDULE=$(grep -oP '(?<=cron: ).+' $GITHUB_WORKSPACE/.github/workflows/avm-azurerm-compat.yml | tr -d "'")
+          
+          # Calculate next run time
+          NEXT_RUN=$(calculate_next_run "$CRON_SCHEDULE")
+          
           # Process summary.md and count AVMs
           echo "Processing summary.md..."
           total_avms=0
@@ -565,6 +668,7 @@ jobs:
           echo "- ❌ Incompatible AVMs: $incompatible_avms" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
+          echo "🔄 Next scheduled run: $NEXT_RUN BST" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
