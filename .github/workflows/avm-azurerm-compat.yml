@@ -19,6 +19,11 @@ on:
         required: true
         default: false
         type: boolean
+  schedule:
+    # Run 4 times a day between 8am and 6am BST
+    # Note: GitHub Actions uses UTC, so adjusted for BST (UTC+1)
+    # 8am, 2pm, 8pm, 2am BST
+    - cron: '0 7,13,19,1 * * *'
 
 permissions:
   id-token: write
@@ -71,7 +76,7 @@ jobs:
               avm_version="latest"
             fi
             
-            MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
+            MATRIX+=("{\"avm_source\":\"$source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
           done
 
           # Join the matrix entries into a JSON array
