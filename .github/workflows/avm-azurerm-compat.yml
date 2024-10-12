@@ -651,10 +651,10 @@ jobs:
             
             if [ "$compatibility" = "compatible" ]; then
               compatible_avms=$((compatible_avms + 1))
-              compatibility="   ✅   "
+              compatibility="✅"
             elif [ "$compatibility" = "incompatible" ]; then
               incompatible_avms=$((incompatible_avms + 1))
-              compatibility="   ❌   "
+              compatibility="❌"
             fi
             
             echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $module_version | $compatibility |" >> "$temp_dashboard"
@@ -668,6 +668,7 @@ jobs:
           echo "- ❌ Incompatible AVMs: $incompatible_avms" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
+          echo "" >> "$temp_dashboard"
           echo "🔄 Next scheduled run: $NEXT_RUN BST" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
@@ -687,10 +688,10 @@ jobs:
             f=1
           }
           /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
-            if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
-            print
-            f=0
-            next
+          if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
+          print
+          f=0
+          next
           }
           !f
           ' README.md > README.md.new && mv README.md.new README.md
