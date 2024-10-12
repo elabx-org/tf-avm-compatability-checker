@@ -29,5 +29,4 @@ module "test_module" {
     azurerm.connectivity = azurerm.connectivity
     azurerm.management   = azurerm.management
   }
-  # Add any required variables here
 }
