@@ -14,5 +14,4 @@ provider "azurerm" {
 module "test_module" {
   source  = "AVM_SOURCE"
   version = "AVM_VERSION"
-  # Add any required variables here
 }
