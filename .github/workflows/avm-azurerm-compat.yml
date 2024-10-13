@@ -460,7 +460,11 @@ jobs:
             echo "Module type: $module_type"
             
             # Check for existing issue
-            issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
+            if [[ "$module_type" == "submodule" ]]; then
+              issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
+            else
+              issue_search_query="\"Incompatibility Detected: $avm_name with AzureRM\" in:title"
+            fi
             issue_number=$(gh issue list --search "$issue_search_query" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
