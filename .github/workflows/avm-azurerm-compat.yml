@@ -8,11 +8,11 @@ on:
         required: false
       azurerm_versions:
         description: 'AzureRM version to check'
-        required: true
+        required: false
         default: '4.3.0'
       tf_versions:
         description: 'Terraform version to check'
-        required: true
+        required: false
         default: '1.9.7'
       skip_issue_creation:
         description: 'Skip creating or updating GitHub issues'
@@ -24,6 +24,10 @@ on:
     # Note: GitHub Actions uses UTC, so adjusted for BST (UTC+1)
     # 8am, 2pm, 8pm, 2am BST
     - cron: '0 7,13,19,1 * * *'
+
+env:
+  DEFAULT_AZURERM_VERSION: '4.3.0'
+  DEFAULT_TF_VERSION: '1.9.7'
 
 permissions:
   id-token: write
@@ -64,6 +68,20 @@ jobs:
             mapfile -t AVM_SOURCES < avm-config.txt
           fi
 
+          # Use input values or default values with clear precedence
+          AZURERM_VERSION="${{ github.event.inputs.azurerm_versions }}"
+          if [ -z "$AZURERM_VERSION" ]; then
+            AZURERM_VERSION="${{ github.event.inputs.azurerm_versions != '' && github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
+          fi
+
+          TF_VERSION="${{ github.event.inputs.tf_versions }}"
+          if [ -z "$TF_VERSION" ]; then
+            TF_VERSION="${{ github.event.inputs.tf_versions != '' && github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
+          fi
+
+          echo "Using AzureRM version: $AZURERM_VERSION"
+          echo "Using Terraform version: $TF_VERSION"
+
           # Process AVM sources
           MATRIX=()
           for source in "${AVM_SOURCES[@]}"; do
@@ -76,7 +94,7 @@ jobs:
               avm_version="latest"
             fi
             
-            MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
+            MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"$AZURERM_VERSION\",\"tf_version\":\"$TF_VERSION\"}")
           done
 
           # Join the matrix entries into a JSON array
@@ -334,6 +352,59 @@ jobs:
         run: |
           echo "Starting issue management process..."
           
+          # Function to parse cron schedule and calculate next run time
+          calculate_next_run() {
+            local cron_schedule="$1"
+            local current_time=$(TZ='UTC' date +%H%M)
+            local current_day=$(TZ='UTC' date +%u)  # 1-7, where 1 is Monday
+            local next_run=""
+            
+            # Parse cron schedule
+            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
+            
+            # Convert day of week to 1-7 format if necessary
+            if [[ "$day_of_week" == "0" ]]; then
+              day_of_week="7"
+            fi
+            
+            # Convert comma-separated values to arrays
+            IFS=',' read -ra hours <<< "$hour"
+            IFS=',' read -ra days_of_week <<< "$day_of_week"
+            
+            # Find the next run time
+            for h in "${hours[@]}"; do
+              if (( 10#$h > 10#$current_time / 100 )); then
+                next_run=$(printf "%02d:00" $h)
+                break
+              fi
+            done
+            
+            # If no next run time found today, find the next day
+            if [ -z "$next_run" ]; then
+              for d in "${days_of_week[@]}"; do
+                if (( d > current_day )); then
+                  next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
+                  break
+                fi
+              done
+            fi
+            
+            # If still no next run time, it's the first time slot next week
+            if [ -z "$next_run" ]; then
+              next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
+            fi
+            
+            # Convert UTC time to BST
+            local bst_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+            echo "$bst_time BST"
+          }
+          
+          # Extract cron schedule from workflow file
+          CRON_SCHEDULE=$(grep -oP '(?<=cron: ).+' $GITHUB_WORKSPACE/.github/workflows/avm-azurerm-compat.yml | tr -d "'")
+          
+          # Calculate next run time
+          NEXT_RUN=$(calculate_next_run "$CRON_SCHEDULE")
+          
           # Check if summary.md exists
           if [ ! -f summary.md ]; then
             echo "Error: summary.md file not found!"
@@ -364,14 +435,16 @@ jobs:
             echo "Processing AVM: $avm_name"
             echo "Compatibility: $compatibility"
             
+            # Extract base AVM source and submodule path
+            base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
+            submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
+            
             # Check for existing issue
             issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
             # Generate the correct registry URL
             if [[ "$avm_source" == *"//"* ]]; then
-              base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
-              submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
               registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
             else
               registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
@@ -389,7 +462,8 @@ jobs:
             | Module Version | $module_version |
             | AzureRM Constraints | $azurerm_constraints |
 
-            🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')"
+            🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
+            🔄 Next scheduled run: $NEXT_RUN"
             
             if [ "$compatibility" == "incompatible" ]; then
               echo "AVM is incompatible. Preparing issue..."
@@ -402,26 +476,42 @@ jobs:
           
           Compatibility checks with AzureRM $azurerm_version will proceed according to the established schedule."
         
-                if [ -z "$issue_number" ]; then
-                  echo "Creating new issue..."
-                  gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
-                  if [ $? -eq 0 ]; then
-                    echo "Successfully created new issue for incompatible AVM: $avm_name"
-                  else
-                    echo "Error: Failed to create issue for AVM: $avm_name"
-                  fi
+              if [ -z "$issue_number" ]; then
+                echo "Creating new issue..."
+                gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
+                if [ $? -eq 0 ]; then
+                  echo "Successfully created new issue for incompatible AVM: $avm_name"
                 else
-                  echo "Updating existing issue..."
-                  gh issue edit $issue_number --title "$title" --body "$body"
-                  if [ $? -eq 0 ]; then
-                    echo "Successfully updated existing issue for incompatible AVM: $avm_name"
-                  else
-                    echo "Error: Failed to update issue for AVM: $avm_name"
-                  fi
+                  echo "Error: Failed to create issue for AVM: $avm_name"
                 fi
-              elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
-                echo "AVM is now compatible. Closing existing issue..."
-                closing_comment="AVM is now compatible with AzureRM $azurerm_version. Closing this issue.
+              else
+                echo "Updating existing issue..."
+                gh issue edit $issue_number --title "$title" --body "$body"
+                if [ $? -eq 0 ]; then
+                  echo "Successfully updated existing issue for incompatible AVM: $avm_name"
+                else
+                  echo "Error: Failed to update issue for AVM: $avm_name"
+                fi
+              fi
+            elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
+              echo "AVM is now compatible. Checking if all related modules are compatible..."
+              
+              # Check if all related modules are compatible
+              all_compatible=true
+              while IFS= read -r related_line; do
+                IFS='|' read -ra related_fields <<< "$related_line"
+                related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
+                related_compatibility=$(echo "${related_fields[4]}" | xargs)
+                
+                if [[ "$related_avm_name" == "$avm_name"* ]] && [ "$related_compatibility" == "incompatible" ]; then
+                  all_compatible=false
+                  break
+                fi
+              done < <(tail -n +4 summary.md)
+              
+              if $all_compatible; then
+                echo "All related modules are compatible. Closing existing issue..."
+                closing_comment="All modules related to $avm_name are now compatible with AzureRM $azurerm_version. Closing this issue.
 
           $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
@@ -431,14 +521,17 @@ jobs:
                   echo "Error: Failed to close issue for AVM: $avm_name"
                 fi
               else
-                echo "No action needed for AVM: $avm_name"
+                echo "Some related modules are still incompatible. Keeping the issue open."
               fi
-              
-              echo "Finished processing AVM: $avm_name"
-              echo "-----------------------------------"
-            done
+            else
+              echo "No action needed for AVM: $avm_name"
+            fi
             
-            echo "Issue management process completed."
+            echo "Finished processing AVM: $avm_name"
+            echo "-----------------------------------"
+          done
+          
+          echo "Issue management process completed."
 
   generate-dashboard:
     needs: summarise-results
@@ -452,7 +545,6 @@ jobs:
         with:
           name: compatibility-summary
 
-      # Check File Permissions
       - name: Check File Permissions
         run: |
           echo "Current directory: $(pwd)"
@@ -464,7 +556,6 @@ jobs:
           file summary.md || echo "summary.md not found"
         shell: bash
 
-      # Display Summary Content
       - name: Display Summary Content
         run: |
           echo "Contents of summary.md:"
@@ -496,6 +587,59 @@ jobs:
           if [ ! -s summary.md ]; then
             echo "Warning: summary.md is empty. Generating dashboard with no data."
           fi
+          
+          # Function to parse cron schedule and calculate next run time
+          calculate_next_run() {
+            local cron_schedule="$1"
+            local current_time=$(TZ='UTC' date +%H%M)
+            local current_day=$(TZ='UTC' date +%u)  # 1-7, where 1 is Monday
+            local next_run=""
+            
+            # Parse cron schedule
+            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
+            
+            # Convert day of week to 1-7 format if necessary
+            if [[ "$day_of_week" == "0" ]]; then
+              day_of_week="7"
+            fi
+            
+            # Convert comma-separated values to arrays
+            IFS=',' read -ra hours <<< "$hour"
+            IFS=',' read -ra days_of_week <<< "$day_of_week"
+            
+            # Find the next run time
+            for h in "${hours[@]}"; do
+              if (( 10#$h > 10#$current_time / 100 )); then
+                next_run=$(printf "%02d:00" $h)
+                break
+              fi
+            done
+            
+            # If no next run time found today, find the next day
+            if [ -z "$next_run" ]; then
+              for d in "${days_of_week[@]}"; do
+                if (( d > current_day )); then
+                  next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
+                  break
+                fi
+              done
+            fi
+            
+            # If still no next run time, it's the first time slot next week
+            if [ -z "$next_run" ]; then
+              next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
+            fi
+            
+            # Convert UTC time to BST
+            local bst_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+            echo "$bst_time BST"
+          }
+          
+          # Extract cron schedule from workflow file
+          CRON_SCHEDULE=$(grep -oP '(?<=cron: ).+' $GITHUB_WORKSPACE/.github/workflows/avm-azurerm-compat.yml | tr -d "'")
+          
+          # Calculate next run time
+          NEXT_RUN=$(calculate_next_run "$CRON_SCHEDULE")
           
           # Process summary.md and count AVMs
           echo "Processing summary.md..."
@@ -548,10 +692,10 @@ jobs:
             
             if [ "$compatibility" = "compatible" ]; then
               compatible_avms=$((compatible_avms + 1))
-              compatibility="   ✅   "
+              compatibility="✅"
             elif [ "$compatibility" = "incompatible" ]; then
               incompatible_avms=$((incompatible_avms + 1))
-              compatibility="   ❌   "
+              compatibility="❌"
             fi
             
             echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $module_version | $compatibility |" >> "$temp_dashboard"
@@ -565,6 +709,8 @@ jobs:
           echo "- ❌ Incompatible AVMs: $incompatible_avms" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
+          echo "" >> "$temp_dashboard"
+          echo "🔄 Next scheduled run: $NEXT_RUN" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
@@ -583,10 +729,10 @@ jobs:
             f=1
           }
           /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
-            if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
-            print
-            f=0
-            next
+          if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
+          print
+          f=0
+          next
           }
           !f
           ' README.md > README.md.new && mv README.md.new README.md
