@@ -449,7 +449,7 @@ jobs:
             echo "Module type: $module_type"
             
             # Check for existing issue
-            issue_search_query="$avm_name in:title"
+            issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
             issue_number=$(gh issue list --search "$issue_search_query" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
@@ -457,7 +457,7 @@ jobs:
             if [[ "$avm_source" == *"//"* ]]; then
               registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
             else
-              registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
+              registry_url="https://registry.terraform.io/modules/$avm_source"
             fi
             
             # Prepare issue body
@@ -509,8 +509,8 @@ jobs:
               # Get the title of the existing issue
               issue_title=$(gh issue view $issue_number --json title --jq .title)
               
-              # Check if the issue title matches the current AVM name
-              if [[ "$issue_title" == *"$avm_name"* ]]; then
+              # Check if the issue title exactly matches the expected title for this AVM
+              if [[ "$issue_title" == "Incompatibility Detected: $avm_name with AzureRM"* ]]; then
                 echo "This is the correct issue for $avm_name. Closing the issue..."
                 closing_comment="The module $avm_name is now compatible with AzureRM $azurerm_version. Closing this issue.
 
@@ -682,7 +682,7 @@ jobs:
             fi
             
             total_avms=$((total_avms + 1))
-            
+             
             avm_full="${fields[0]}"
             avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
             avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
