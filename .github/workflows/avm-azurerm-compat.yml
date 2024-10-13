@@ -363,8 +363,12 @@ jobs:
             # Convert comma-separated values to arrays
             IFS=',' read -ra hours <<< "$hour"
             
+            # Sort hours array
+            IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
+            unset IFS
+            
             # Find the next run time
-            for h in "${hours[@]}"; do
+            for h in "${sorted_hours[@]}"; do
               if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
                 next_run=$(printf "%02d:%02d" $h $minute)
                 break
@@ -373,8 +377,7 @@ jobs:
             
             # If no next run time found today, it's the first time slot next day
             if [ -z "$next_run" ]; then
-              next_run=$(printf "%02d:%02d" ${hours[0]} $minute)
-              current_day=$((current_day % 7 + 1))
+              next_run=$(printf "%02d:%02d" ${sorted_hours[0]} $minute)
             fi
 
             # Determine if it's BST or GMT
@@ -606,8 +609,12 @@ jobs:
             # Convert comma-separated values to arrays
             IFS=',' read -ra hours <<< "$hour"
             
+            # Sort hours array
+            IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
+            unset IFS
+            
             # Find the next run time
-            for h in "${hours[@]}"; do
+            for h in "${sorted_hours[@]}"; do
               if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
                 next_run=$(printf "%02d:%02d" $h $minute)
                 break
@@ -616,8 +623,7 @@ jobs:
             
             # If no next run time found today, it's the first time slot next day
             if [ -z "$next_run" ]; then
-              next_run=$(printf "%02d:%02d" ${hours[0]} $minute)
-              current_day=$((current_day % 7 + 1))
+              next_run=$(printf "%02d:%02d" ${sorted_hours[0]} $minute)
             fi
 
             # Determine if it's BST or GMT
