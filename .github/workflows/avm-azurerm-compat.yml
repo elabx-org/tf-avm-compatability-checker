@@ -503,8 +503,9 @@ jobs:
                 related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
                 related_compatibility=$(echo "${related_fields[4]}" | xargs)
                 
-                if [[ "$related_avm_name" == "$avm_name"* ]] && [ "$related_compatibility" == "incompatible" ]; then
+                if [[ "$related_avm_name" == "$base_avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
                   all_compatible=false
+                  echo "Related module $related_avm_name is still incompatible"
                   break
                 fi
               done < <(tail -n +4 summary.md)
