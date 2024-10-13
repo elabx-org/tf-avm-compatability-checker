@@ -12,8 +12,8 @@
 | [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 | ✅ |
 | [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 | ❌ |
 | [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) | 4.3.0 | 1.9.7 | 0.2.0 | ✅ |
-| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.1/submodules/rule_collection_groups) | 4.3.0 | 1.9.7 | 0.3.1 | ✅ |
-| [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | 4.3.0 | 1.9.7 | 0.3.1 | ✅ |
+| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.0/submodules/rule_collection_groups) | 4.3.0 | 1.9.7 | 0.3.0 | ❌ |
+| [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 | ✅ |
 | [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) | 4.3.0 | 1.9.7 | 0.2.0 | ❌ |
 | [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | 4.3.0 | 1.9.7 | 0.2.0 | ❌ |
 | [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | 4.3.0 | 1.9.7 | 0.1.2 | ✅ |
@@ -22,13 +22,12 @@
 
 ## Compatibility Overview 📊
 - 🔢 Total AVMs checked: 14
-- ✅ Compatible AVMs: 7
-- ❌ Incompatible AVMs: 7
+- ✅ Compatible AVMs: 6
+- ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Sun Oct 13 16:39:06 BST 2024
+🕒 Last updated: Sun Oct 13 16:50:46 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11315641976)
-
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11315711407)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
