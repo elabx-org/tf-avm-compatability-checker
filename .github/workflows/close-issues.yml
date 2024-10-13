@@ -1,0 +1,55 @@
+name: Close or Delete Open Issues
+
+on:
+  workflow_dispatch:  # This allows manual triggering only
+
+jobs:
+  cleanup-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Octokit
+        run: npm install @octokit/rest
+
+      - name: Close or Delete Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          const { Octokit } = require("@octokit/rest");
+          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+          async function closeOrDeleteIssues() {
+            const { data: openIssues } = await octokit.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+
+            for (const issue of openIssues) {
+              // Uncomment the following line to close issues instead of deleting
+              // await octokit.issues.update({
+              //   owner: context.repo.owner,
+              //   repo: context.repo.repo,
+              //   issue_number: issue.number,
+              //   state: 'closed'
+              // });
+
+              // Delete the issue
+              await octokit.issues.delete({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number
+              });
+
+              console.log(`Deleted issue #${issue.number}`);
+            }
+          }
+
+          closeOrDeleteIssues().catch(console.error);
