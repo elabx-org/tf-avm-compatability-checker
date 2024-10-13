@@ -385,10 +385,10 @@ jobs:
             local timezone="${is_bst/BST/BST}"
             timezone="${timezone/GMT/GMT}"
             
-            # Convert UTC time to London time
-            local london_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+            # Convert UTC time to UK time
+            local uk_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
             
-            echo "$london_time $timezone"
+            echo "$uk_time $timezone"
           }
           
           # Extract cron schedule from workflow file
@@ -632,9 +632,9 @@ jobs:
             timezone="${timezone/GMT/GMT}"
             
             # Convert UTC time to London time
-            local london_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+            local uk_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
             
-            echo "$london_time $timezone"
+            echo "$uk_time $timezone"
           }
           
           # Extract cron schedule from workflow file
