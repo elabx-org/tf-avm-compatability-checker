@@ -22,7 +22,7 @@ on:
   schedule:
     # Run 4 times a day at 8am, 2pm, 8pm, and 2am UK time (BST/GMT)
     # Note: GitHub Actions uses UTC, so times are adjusted accordingly
-    - cron: '0 7,13,19,1 * * *'
+    - cron: '0 7,13,19,2 * * *'
 
 env:
   DEFAULT_AZURERM_VERSION: '4.3.0'
