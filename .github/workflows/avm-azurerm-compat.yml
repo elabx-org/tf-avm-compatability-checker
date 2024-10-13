@@ -432,7 +432,7 @@ jobs:
             module_version=$(echo "${fields[6]}" | xargs)
             azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
-            echo "Processing AVM: $avm_source"
+            echo "Processing AVM: $avm_name"
             echo "Compatibility: $compatibility"
             
             # Extract base AVM source and submodule path
@@ -440,7 +440,7 @@ jobs:
             submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
             
             # Check for existing issue
-            issue_number=$(gh issue list --search "$base_avm_source in:title" --json number --jq '.[0].number')
+            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
             # Generate the correct registry URL
@@ -469,7 +469,7 @@ jobs:
               echo "AVM is incompatible. Preparing issue..."
               
               # Prepare issue title and body
-              title="Incompatibility Detected: $avm_source with AzureRM $azurerm_version"
+              title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
               body="An incompatibility has been detected for the following AVM:
 
           $issue_body
@@ -480,17 +480,17 @@ jobs:
                 echo "Creating new issue..."
                 gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
                 if [ $? -eq 0 ]; then
-                  echo "Successfully created new issue for incompatible AVM: $avm_source"
+                  echo "Successfully created new issue for incompatible AVM: $avm_name"
                 else
-                  echo "Error: Failed to create issue for AVM: $avm_source"
+                  echo "Error: Failed to create issue for AVM: $avm_name"
                 fi
               else
                 echo "Updating existing issue..."
                 gh issue edit $issue_number --title "$title" --body "$body"
                 if [ $? -eq 0 ]; then
-                  echo "Successfully updated existing issue for incompatible AVM: $avm_source"
+                  echo "Successfully updated existing issue for incompatible AVM: $avm_name"
                 else
-                  echo "Error: Failed to update issue for AVM: $avm_source"
+                  echo "Error: Failed to update issue for AVM: $avm_name"
                 fi
               fi
             elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
@@ -500,10 +500,10 @@ jobs:
               all_compatible=true
               while IFS= read -r related_line; do
                 IFS='|' read -ra related_fields <<< "$related_line"
-                related_avm_source=$(echo "${related_fields[1]}" | xargs)
+                related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
                 related_compatibility=$(echo "${related_fields[4]}" | xargs)
                 
-                if [[ "$related_avm_source" == "$base_avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
+                if [[ "$related_avm_name" == "$avm_name"* ]] && [ "$related_compatibility" == "incompatible" ]; then
                   all_compatible=false
                   break
                 fi
@@ -511,23 +511,23 @@ jobs:
               
               if $all_compatible; then
                 echo "All related modules are compatible. Closing existing issue..."
-                closing_comment="All modules related to $base_avm_source are now compatible with AzureRM $azurerm_version. Closing this issue.
+                closing_comment="All modules related to $avm_name are now compatible with AzureRM $azurerm_version. Closing this issue.
 
           $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
                 if [ $? -eq 0 ]; then
-                  echo "Successfully closed issue for now compatible AVM: $base_avm_source"
+                  echo "Successfully closed issue for now compatible AVM: $avm_name"
                 else
-                  echo "Error: Failed to close issue for AVM: $base_avm_source"
+                  echo "Error: Failed to close issue for AVM: $avm_name"
                 fi
               else
                 echo "Some related modules are still incompatible. Keeping the issue open."
               fi
             else
-              echo "No action needed for AVM: $avm_source"
+              echo "No action needed for AVM: $avm_name"
             fi
             
-            echo "Finished processing AVM: $avm_source"
+            echo "Finished processing AVM: $avm_name"
             echo "-----------------------------------"
           done
           
