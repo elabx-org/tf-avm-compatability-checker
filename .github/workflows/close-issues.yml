@@ -34,7 +34,7 @@ jobs:
           && sudo apt install gh -y
 
       - name: Authenticate with GitHub CLI
-        run: echo "${{ secrets.PERSONAL_ACCESS_TOKEN }}" | gh auth login --with-token
+        run: gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Manage issues
         run: |
