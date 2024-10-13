@@ -1,2 +1,2 @@
 Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups 0.3.0
-Azure/avm-res-network-firewallpolicy/azurerm 0.2.3
+Azure/avm-res-network-firewallpolicy/azurerm 0.3.0
