@@ -487,7 +487,7 @@ jobs:
             | AzureRM Constraints | $azurerm_constraints |
 
             🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
-            🔄 Next scheduled run: $NEXT_RUN (UK time)"
+            🔄 Next scheduled run: $NEXT_RUN"
             
             if [ "$compatibility" == "incompatible" ]; then
               echo "AVM is incompatible. Preparing issue..."
@@ -647,20 +647,20 @@ jobs:
             fi
             
             # Determine if it's BST or GMT
-            local is_bst=$(TZ='Europe/London' date +%Z)
-            local timezone="${is_bst/BST/BST}"
-            timezone="${timezone/GMT/GMT}"
+              local is_bst=$(TZ='Europe/London' date +%Z)
+              local timezone="${is_bst/BST/BST}"
+              timezone="${timezone/GMT/GMT}"
             
-            # Convert UTC time to London time
+            # Convert UTC time to UK time
             local london_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
             
             # If next_run includes a day, format it accordingly
-            if [[ "$next_run" == *"("* ]]; then
-              local day=$(echo "$next_run" | grep -oP '\(\K[^)]+')
-              echo "$london_time $timezone ($day)"
-            else
-              echo "$london_time $timezone"
-            fi
+              if [[ "$next_run" == *"("* ]]; then
+                local day=$(echo "$next_run" | grep -oP '\(\K[^)]+')
+                echo "$london_time $timezone ($day)"
+              else
+                echo "$london_time $timezone"
+              fi
           }
           
           # Extract cron schedule from workflow file
@@ -738,7 +738,7 @@ jobs:
           echo "" >> "$temp_dashboard"
           echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
-          echo "🔄 Next scheduled run: $NEXT_RUN (UK time)" >> "$temp_dashboard"
+          echo "🔄 Next scheduled run: $NEXT_RUN" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
