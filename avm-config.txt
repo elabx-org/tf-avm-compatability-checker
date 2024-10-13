@@ -8,7 +8,7 @@ Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups 0.3
 Azure/avm-res-network-privatednszone/azurerm
 Azure/avm-ptn-vnetgateway/azurerm
 Azure/avm-res-network-azurefirewall/azurerm
-Azure/avm-res-network-firewallpolicy/azurerm 0.3.0
+Azure/avm-res-network-firewallpolicy/azurerm
 Azure/avm-res-network-ddosprotectionplan/azurerm
 Azure/avm-res-network-bastionhost/azurerm
 Azure/avm-res-network-publicipaddress/azurerm
