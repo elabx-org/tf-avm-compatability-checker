@@ -433,6 +433,7 @@ jobs:
             azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
             echo "Processing AVM: $avm_name"
+            echo "AVM Source: $avm_source"
             echo "Compatibility: $compatibility"
             
             # Extract base AVM source and submodule path
@@ -448,7 +449,8 @@ jobs:
             echo "Module type: $module_type"
             
             # Check for existing issue
-            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
+            issue_search_query="$avm_name in:title"
+            issue_number=$(gh issue list --search "$issue_search_query" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
             # Generate the correct registry URL
@@ -509,13 +511,12 @@ jobs:
                 all_compatible=true
                 while IFS= read -r related_line; do
                   IFS='|' read -ra related_fields <<< "$related_line"
-                  related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
                   related_avm_source=$(echo "${related_fields[1]}" | xargs)
                   related_compatibility=$(echo "${related_fields[4]}" | xargs)
                   
-                  if [[ "$related_avm_source" == "$base_avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
+                  if [[ "$related_avm_source" == "$avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
                     all_compatible=false
-                    echo "Related module $related_avm_name is still incompatible"
+                    echo "Related module $related_avm_source is still incompatible"
                     break
                   fi
                 done < <(tail -n +4 summary.md)
