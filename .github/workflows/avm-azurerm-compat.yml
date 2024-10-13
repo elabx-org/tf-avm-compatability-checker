@@ -432,7 +432,7 @@ jobs:
             module_version=$(echo "${fields[6]}" | xargs)
             azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
-            echo "Processing AVM: $avm_source"
+            echo "Processing AVM: $avm_name"
             echo "Compatibility: $compatibility"
             
             # Extract base AVM source and submodule path
@@ -500,10 +500,10 @@ jobs:
               all_compatible=true
               while IFS= read -r related_line; do
                 IFS='|' read -ra related_fields <<< "$related_line"
-                related_avm_source=$(echo "${related_fields[1]}" | xargs)
+                related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
                 related_compatibility=$(echo "${related_fields[4]}" | xargs)
                 
-                if [[ "$related_avm_source" == "$base_avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
+                if [[ "$related_avm_name" == "$avm_name"* ]] && [ "$related_compatibility" == "incompatible" ]; then
                   all_compatible=false
                   break
                 fi
@@ -524,10 +524,10 @@ jobs:
                 echo "Some related modules are still incompatible. Keeping the issue open."
               fi
             else
-              echo "No action needed for AVM: $avm_source"
+              echo "No action needed for AVM: $avm_name"
             fi
             
-            echo "Finished processing AVM: $avm_source"
+            echo "Finished processing AVM: $avm_name"
             echo "-----------------------------------"
           done
           
@@ -683,7 +683,7 @@ jobs:
             total_avms=$((total_avms + 1))
             
             avm_full="${fields[0]}"
-            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
             avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
             azurerm_version=$(echo "${fields[2]}" | xargs)
             tf_version=$(echo "${fields[3]}" | xargs)
