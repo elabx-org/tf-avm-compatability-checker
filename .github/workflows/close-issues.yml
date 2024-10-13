@@ -1,61 +1,20 @@
-name: Close or Delete Open Issues
+name: Close All Open Issues
 
 on:
   workflow_dispatch:  # This allows manual triggering only
 
 jobs:
-  cleanup-issues:
+  close-issues:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
+      - name: Setup GitHub CLI
+        uses: cli/cli@v2
         with:
-          node-version: '14'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Octokit
-        run: npm install @octokit/rest
-
-      - name: Create script file
+      - name: Close all open issues
         run: |
-          cat << EOF > cleanup-issues.js
-          const { Octokit } = require("@octokit/rest");
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-
-          async function closeOrDeleteIssues() {
-            const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
-            const { data: openIssues } = await octokit.issues.listForRepo({
-              owner,
-              repo,
-              state: 'open',
-            });
-
-            for (const issue of openIssues) {
-              // Uncomment the following block to close issues instead of deleting
-              // await octokit.issues.update({
-              //   owner,
-              //   repo,
-              //   issue_number: issue.number,
-              //   state: 'closed'
-              // });
-
-              // Delete the issue
-              await octokit.issues.delete({
-                owner,
-                repo,
-                issue_number: issue.number
-              });
-
-              console.log(`Deleted issue #${issue.number}`);
-            }
-          }
-
-          closeOrDeleteIssues().catch(console.error);
-          EOF
-
-      - name: Run cleanup script
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node cleanup-issues.js
+          gh issue list --state open --limit 1000 --json number --jq '.[].number' | xargs -I {} gh issue close {}
