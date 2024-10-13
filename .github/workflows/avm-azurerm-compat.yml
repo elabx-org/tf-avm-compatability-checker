@@ -683,7 +683,7 @@ jobs:
             total_avms=$((total_avms + 1))
             
             avm_full="${fields[0]}"
-            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\
             avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
             azurerm_version=$(echo "${fields[2]}" | xargs)
             tf_version=$(echo "${fields[3]}" | xargs)
@@ -758,4 +758,3 @@ jobs:
           ls -la
           echo "Git status:"
           git status
-
