@@ -25,6 +25,10 @@ on:
     # 8am, 2pm, 8pm, 2am BST
     - cron: '0 7,13,19,1 * * *'
 
+env:
+  DEFAULT_AZURERM_VERSION: '4.3.0'
+  DEFAULT_TF_VERSION: '1.9.7'
+
 permissions:
   id-token: write
   contents: write
@@ -64,6 +68,10 @@ jobs:
             mapfile -t AVM_SOURCES < avm-config.txt
           fi
 
+          # Use input values or default values
+          AZURERM_VERSION="${{ github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
+          TF_VERSION="${{ github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
+
           # Process AVM sources
           MATRIX=()
           for source in "${AVM_SOURCES[@]}"; do
@@ -76,7 +84,7 @@ jobs:
               avm_version="latest"
             fi
             
-            MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"${{ github.event.inputs.azurerm_versions }}\",\"tf_version\":\"${{ github.event.inputs.tf_versions }}\"}")
+            MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"$AZURERM_VERSION\",\"tf_version\":\"$TF_VERSION\"}")
           done
 
           # Join the matrix entries into a JSON array
