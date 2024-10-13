@@ -352,7 +352,7 @@ jobs:
           echo "Starting issue management process..."
           
           # Function to parse cron schedule and calculate next run time
-          calculate_next_run() {
+          () {
             local cron_schedule="$1"
             local current_time=$(TZ='UTC' date +%H%M)
             local current_day=$(TZ='UTC' date +%u)  # 1-7, where 1 is Monday
@@ -372,7 +372,7 @@ jobs:
             
             # Find the next run time
             for h in "${hours[@]}"; do
-              if (( 10#$h > 10#$current_time / 100 )); then
+              if (( 10#$h > 1calculate_next_run0#$current_time / 100 )); then
                 next_run=$(printf "%02d:00" $h)
                 break
               fi
@@ -612,55 +612,34 @@ jobs:
             local next_run=""
             
             # Parse cron schedule
-            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
-            
-            # Convert day of week to 1-7 format if necessary
-            if [[ "$day_of_week" == "0" ]]; then
-              day_of_week="7"
-            fi
+            IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
             
             # Convert comma-separated values to arrays
             IFS=',' read -ra hours <<< "$hour"
-            IFS=',' read -ra days_of_week <<< "$day_of_week"
             
             # Find the next run time
             for h in "${hours[@]}"; do
-              if (( 10#$h > 10#$current_time / 100 )); then
-                next_run=$(printf "%02d:00" $h)
+              if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
+                next_run=$(printf "%02d:%02d" $h $minute)
                 break
               fi
             done
             
-            # If no next run time found today, find the next day
+            # If no next run time found today, it's the first time slot next day
             if [ -z "$next_run" ]; then
-              for d in "${days_of_week[@]}"; do
-                if (( d > current_day )); then
-                  next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
-                  break
-                fi
-              done
+              next_run=$(printf "%02d:%02d" ${hours[0]} $minute)
+              current_day=$((current_day % 7 + 1))
             fi
-            
-            # If still no next run time, it's the first time slot next week
-            if [ -z "$next_run" ]; then
-              next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
-            fi
-            
+
             # Determine if it's BST or GMT
-              local is_bst=$(TZ='Europe/London' date +%Z)
-              local timezone="${is_bst/BST/BST}"
-              timezone="${timezone/GMT/GMT}"
+            local is_bst=$(TZ='Europe/London' date +%Z)
+            local timezone="${is_bst/BST/BST}"
+            timezone="${timezone/GMT/GMT}"
             
-            # Convert UTC time to UK time
+            # Convert UTC time to London time
             local london_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
             
-            # If next_run includes a day, format it accordingly
-              if [[ "$next_run" == *"("* ]]; then
-                local day=$(echo "$next_run" | grep -oP '\(\K[^)]+')
-                echo "$london_time $timezone ($day)"
-              else
-                echo "$london_time $timezone"
-              fi
+            echo "$london_time $timezone"
           }
           
           # Extract cron schedule from workflow file
