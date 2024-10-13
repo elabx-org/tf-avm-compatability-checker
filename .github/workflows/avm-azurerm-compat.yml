@@ -340,12 +340,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-  
+
       - name: Download summary
         uses: actions/download-artifact@v4
         with:
           name: compatibility-summary
-  
+
       - name: Manage issues for AVMs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -416,11 +416,22 @@ jobs:
           
           # Read the summary file, skipping the header lines
           tail -n +4 summary.md | while IFS= read -r line; do
+            # Skip lines that contain only dashes
+            if [[ "$line" =~ ^[-|[:space:]]+$ ]]; then
+              continue
+            fi
+            
             # Remove leading and trailing | and spaces
             line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
             
             # Split the line into fields
             IFS='|' read -ra fields <<< "$line"
+            
+            # Check if we have the expected number of fields
+            if [ ${#fields[@]} -ne 8 ]; then
+              echo "Skipping invalid line: $line"
+              continue
+            fi
             
             # Extract AVM name without the link
             avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
@@ -449,7 +460,11 @@ jobs:
             echo "Module type: $module_type"
             
             # Check for existing issue
-            issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
+            if [[ "$module_type" == "submodule" ]]; then
+              issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
+            else
+              issue_search_query="\"Incompatibility Detected: $avm_name with AzureRM\" in:title"
+            fi
             issue_number=$(gh issue list --search "$issue_search_query" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
@@ -488,9 +503,10 @@ jobs:
         
               if [ -z "$issue_number" ]; then
                 echo "Creating new issue..."
-                gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
+                new_issue=$(gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY)
                 if [ $? -eq 0 ]; then
                   echo "Successfully created new issue for incompatible AVM: $avm_name"
+                  echo "New issue URL: $new_issue"
                 else
                   echo "Error: Failed to create issue for AVM: $avm_name"
                 fi
