@@ -449,7 +449,7 @@ jobs:
             echo "Module type: $module_type"
             
             # Check for existing issue
-            issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
+            issue_search_query="\"Incompatibility Detected: $avm_source\" in:title"
             issue_number=$(gh issue list --search "$issue_search_query" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
@@ -479,7 +479,7 @@ jobs:
               echo "AVM is incompatible. Preparing issue..."
               
               # Prepare issue title and body
-              title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
+              title="Incompatibility Detected: $avm_source with AzureRM $azurerm_version"
               body="An incompatibility has been detected for the following AVM:
 
           $issue_body
@@ -490,17 +490,17 @@ jobs:
                 echo "Creating new issue..."
                 gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
                 if [ $? -eq 0 ]; then
-                  echo "Successfully created new issue for incompatible AVM: $avm_name"
+                  echo "Successfully created new issue for incompatible AVM: $avm_source"
                 else
-                  echo "Error: Failed to create issue for AVM: $avm_name"
+                  echo "Error: Failed to create issue for AVM: $avm_source"
                 fi
               else
                 echo "Updating existing issue..."
                 gh issue edit $issue_number --title "$title" --body "$body"
                 if [ $? -eq 0 ]; then
-                  echo "Successfully updated existing issue for incompatible AVM: $avm_name"
+                  echo "Successfully updated existing issue for incompatible AVM: $avm_source"
                 else
-                  echo "Error: Failed to update issue for AVM: $avm_name"
+                  echo "Error: Failed to update issue for AVM: $avm_source"
                 fi
               fi
             elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
@@ -510,25 +510,25 @@ jobs:
               issue_title=$(gh issue view $issue_number --json title --jq .title)
               
               # Check if the issue title exactly matches the expected title for this AVM
-              if [[ "$issue_title" == "Incompatibility Detected: $avm_name with AzureRM"* ]]; then
-                echo "This is the correct issue for $avm_name. Closing the issue..."
-                closing_comment="The module $avm_name is now compatible with AzureRM $azurerm_version. Closing this issue.
+              if [[ "$issue_title" == "Incompatibility Detected: $avm_source with AzureRM"* ]]; then
+                echo "This is the correct issue for $avm_source. Closing the issue..."
+                closing_comment="The module $avm_source is now compatible with AzureRM $azurerm_version. Closing this issue.
 
           $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
                 if [ $? -eq 0 ]; then
-                  echo "Successfully closed issue for now compatible AVM: $avm_name"
+                  echo "Successfully closed issue for now compatible AVM: $avm_source"
                 else
-                  echo "Error: Failed to close issue for AVM: $avm_name"
+                  echo "Error: Failed to close issue for AVM: $avm_source"
                 fi
               else
-                echo "This issue does not belong to $avm_name. Skipping closure."
+                echo "This issue does not belong to $avm_source. Skipping closure."
               fi
             else
-              echo "No action needed for AVM: $avm_name"
+              echo "No action needed for AVM: $avm_source"
             fi
             
-            echo "Finished processing AVM: $avm_name"
+            echo "Finished processing AVM: $avm_source"
             echo "-----------------------------------"
           done
           
