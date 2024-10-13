@@ -20,9 +20,8 @@ on:
         default: false
         type: boolean
   schedule:
-    # Run 4 times a day between 8am and 6am BST
-    # Note: GitHub Actions uses UTC, so adjusted for BST (UTC+1)
-    # 8am, 2pm, 8pm, 2am BST
+    # Run 4 times a day at 8am, 2pm, 8pm, and 2am UK time (BST/GMT)
+    # Note: GitHub Actions uses UTC, so times are adjusted accordingly
     - cron: '0 7,13,19,1 * * *'
 
 env:
@@ -340,12 +339,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-  
+
       - name: Download summary
         uses: actions/download-artifact@v4
         with:
           name: compatibility-summary
-  
+
       - name: Manage issues for AVMs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -416,11 +415,22 @@ jobs:
           
           # Read the summary file, skipping the header lines
           tail -n +4 summary.md | while IFS= read -r line; do
+            # Skip lines that contain only dashes
+            if [[ "$line" =~ ^[-|[:space:]]+$ ]]; then
+              continue
+            fi
+            
             # Remove leading and trailing | and spaces
             line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
             
             # Split the line into fields
             IFS='|' read -ra fields <<< "$line"
+            
+            # Check if we have the expected number of fields
+            if [ ${#fields[@]} -ne 8 ]; then
+              echo "Skipping invalid line: $line"
+              continue
+            fi
             
             # Extract AVM name without the link
             avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
@@ -433,21 +443,35 @@ jobs:
             azurerm_constraints=$(echo "${fields[7]}" | xargs)
             
             echo "Processing AVM: $avm_name"
+            echo "AVM Source: $avm_source"
             echo "Compatibility: $compatibility"
             
             # Extract base AVM source and submodule path
             base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
             submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
             
+            # Determine if this is a main module or submodule
+            if [[ "$avm_source" == *"//"* ]]; then
+              module_type="submodule"
+            else
+              module_type="main"
+            fi
+            echo "Module type: $module_type"
+            
             # Check for existing issue
-            issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
+            if [[ "$module_type" == "submodule" ]]; then
+              issue_search_query="\"Incompatibility Detected: $avm_name\" in:title"
+            else
+              issue_search_query="\"Incompatibility Detected: $avm_name with AzureRM\" in:title"
+            fi
+            issue_number=$(gh issue list --search "$issue_search_query" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
             
             # Generate the correct registry URL
             if [[ "$avm_source" == *"//"* ]]; then
               registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
             else
-              registry_url="https://registry.terraform.io/modules/$avm_source/$module_version"
+              registry_url="https://registry.terraform.io/modules/$avm_source"
             fi
             
             # Prepare issue body
@@ -478,9 +502,10 @@ jobs:
         
               if [ -z "$issue_number" ]; then
                 echo "Creating new issue..."
-                gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY
+                new_issue=$(gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY)
                 if [ $? -eq 0 ]; then
                   echo "Successfully created new issue for incompatible AVM: $avm_name"
+                  echo "New issue URL: $new_issue"
                 else
                   echo "Error: Failed to create issue for AVM: $avm_name"
                 fi
@@ -494,24 +519,15 @@ jobs:
                 fi
               fi
             elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
-              echo "AVM is now compatible. Checking if all related modules are compatible..."
+              echo "AVM is now compatible. Checking if this is the correct issue to close..."
               
-              # Check if all related modules are compatible
-              all_compatible=true
-              while IFS= read -r related_line; do
-                IFS='|' read -ra related_fields <<< "$related_line"
-                related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
-                related_compatibility=$(echo "${related_fields[4]}" | xargs)
-                
-                if [[ "$related_avm_name" == "$avm_name"* ]] && [ "$related_compatibility" == "incompatible" ]; then
-                  all_compatible=false
-                  break
-                fi
-              done < <(tail -n +4 summary.md)
+              # Get the title of the existing issue
+              issue_title=$(gh issue view $issue_number --json title --jq .title)
               
-              if $all_compatible; then
-                echo "All related modules are compatible. Closing existing issue..."
-                closing_comment="All modules related to $avm_name are now compatible with AzureRM $azurerm_version. Closing this issue.
+              # Check if the issue title exactly matches the expected title for this AVM
+              if [[ "$issue_title" == "Incompatibility Detected: $avm_name with AzureRM"* ]]; then
+                echo "This is the correct issue for $avm_name. Closing the issue..."
+                closing_comment="The module $avm_name is now compatible with AzureRM $azurerm_version. Closing this issue.
 
           $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
@@ -521,7 +537,7 @@ jobs:
                   echo "Error: Failed to close issue for AVM: $avm_name"
                 fi
               else
-                echo "Some related modules are still incompatible. Keeping the issue open."
+                echo "This issue does not belong to $avm_name. Skipping closure."
               fi
             else
               echo "No action needed for AVM: $avm_name"
@@ -630,9 +646,21 @@ jobs:
               next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
             fi
             
-            # Convert UTC time to BST
-            local bst_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
-            echo "$bst_time BST"
+            # Determine if it's BST or GMT
+              local is_bst=$(TZ='Europe/London' date +%Z)
+              local timezone="${is_bst/BST/BST}"
+              timezone="${timezone/GMT/GMT}"
+            
+            # Convert UTC time to UK time
+            local london_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+            
+            # If next_run includes a day, format it accordingly
+              if [[ "$next_run" == *"("* ]]; then
+                local day=$(echo "$next_run" | grep -oP '\(\K[^)]+')
+                echo "$london_time $timezone ($day)"
+              else
+                echo "$london_time $timezone"
+              fi
           }
           
           # Extract cron schedule from workflow file
@@ -681,7 +709,7 @@ jobs:
             fi
             
             total_avms=$((total_avms + 1))
-            
+             
             avm_full="${fields[0]}"
             avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
             avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
