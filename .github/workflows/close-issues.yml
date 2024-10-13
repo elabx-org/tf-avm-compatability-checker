@@ -18,33 +18,33 @@ jobs:
       - name: Install Octokit
         run: npm install @octokit/rest
 
-      - name: Close or Delete Issues
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create script file
         run: |
+          cat << EOF > cleanup-issues.js
           const { Octokit } = require("@octokit/rest");
           const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
           async function closeOrDeleteIssues() {
+            const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
             const { data: openIssues } = await octokit.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner,
+              repo,
               state: 'open',
             });
 
             for (const issue of openIssues) {
-              // Uncomment the following line to close issues instead of deleting
+              // Uncomment the following block to close issues instead of deleting
               // await octokit.issues.update({
-              //   owner: context.repo.owner,
-              //   repo: context.repo.repo,
+              //   owner,
+              //   repo,
               //   issue_number: issue.number,
               //   state: 'closed'
               // });
 
               // Delete the issue
               await octokit.issues.delete({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 issue_number: issue.number
               });
 
@@ -53,3 +53,9 @@ jobs:
           }
 
           closeOrDeleteIssues().catch(console.error);
+          EOF
+
+      - name: Run cleanup script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node cleanup-issues.js
