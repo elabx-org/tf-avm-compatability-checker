@@ -8,11 +8,11 @@ on:
         required: false
       azurerm_versions:
         description: 'AzureRM version to check'
-        required: true
+        required: false
         default: '4.3.0'
       tf_versions:
         description: 'Terraform version to check'
-        required: true
+        required: false
         default: '1.9.7'
       skip_issue_creation:
         description: 'Skip creating or updating GitHub issues'
@@ -68,9 +68,19 @@ jobs:
             mapfile -t AVM_SOURCES < avm-config.txt
           fi
 
-          # Use input values or default values
-          AZURERM_VERSION="${{ github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
-          TF_VERSION="${{ github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
+          # Use input values or default values with clear precedence
+          AZURERM_VERSION="${{ github.event.inputs.azurerm_versions }}"
+          if [ -z "$AZURERM_VERSION" ]; then
+            AZURERM_VERSION="${{ github.event.inputs.azurerm_versions != '' && github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
+          fi
+
+          TF_VERSION="${{ github.event.inputs.tf_versions }}"
+          if [ -z "$TF_VERSION" ]; then
+            TF_VERSION="${{ github.event.inputs.tf_versions != '' && github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
+          fi
+
+          echo "Using AzureRM version: $AZURERM_VERSION"
+          echo "Using Terraform version: $TF_VERSION"
 
           # Process AVM sources
           MATRIX=()
