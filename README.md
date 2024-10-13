@@ -30,4 +30,5 @@
 🔄 Next scheduled run: 02:00 PM BST
 
 🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11313718873)
+
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
