@@ -439,6 +439,14 @@ jobs:
             base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
             submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
             
+            # Determine if this is a main module or submodule
+            if [[ "$avm_source" == *"//"* ]]; then
+              module_type="submodule"
+            else
+              module_type="main"
+            fi
+            echo "Module type: $module_type"
+            
             # Check for existing issue
             issue_number=$(gh issue list --search "$avm_name in:title" --json number --jq '.[0].number')
             echo "Existing issue number: $issue_number"
@@ -496,33 +504,48 @@ jobs:
             elif [ "$compatibility" == "compatible" ] && [ ! -z "$issue_number" ]; then
               echo "AVM is now compatible. Checking if all related modules are compatible..."
               
-              # Check if all related modules are compatible
-              all_compatible=true
-              while IFS= read -r related_line; do
-                IFS='|' read -ra related_fields <<< "$related_line"
-                related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
-                related_compatibility=$(echo "${related_fields[4]}" | xargs)
+              # For main modules, check all related submodules
+              if [ "$module_type" == "main" ]; then
+                all_compatible=true
+                while IFS= read -r related_line; do
+                  IFS='|' read -ra related_fields <<< "$related_line"
+                  related_avm_name=$(echo "${related_fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
+                  related_avm_source=$(echo "${related_fields[1]}" | xargs)
+                  related_compatibility=$(echo "${related_fields[4]}" | xargs)
+                  
+                  if [[ "$related_avm_source" == "$base_avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
+                    all_compatible=false
+                    echo "Related module $related_avm_name is still incompatible"
+                    break
+                  fi
+                done < <(tail -n +4 summary.md)
                 
-                if [[ "$related_avm_name" == "$base_avm_source"* ]] && [ "$related_compatibility" == "incompatible" ]; then
-                  all_compatible=false
-                  echo "Related module $related_avm_name is still incompatible"
-                  break
+                if $all_compatible; then
+                  echo "All related modules are compatible. Closing existing issue..."
+                  closing_comment="All modules related to $avm_name are now compatible with AzureRM $azurerm_version. Closing this issue.
+
+          $issue_body"
+                  gh issue close $issue_number --comment "$closing_comment"
+                  if [ $? -eq 0 ]; then
+                    echo "Successfully closed issue for now compatible AVM: $avm_name"
+                  else
+                    echo "Error: Failed to close issue for AVM: $avm_name"
+                  fi
+                else
+                  echo "Some related modules are still incompatible. Keeping the issue open."
                 fi
-              done < <(tail -n +4 summary.md)
-              
-              if $all_compatible; then
-                echo "All related modules are compatible. Closing existing issue..."
-                closing_comment="All modules related to $avm_name are now compatible with AzureRM $azurerm_version. Closing this issue.
+              else
+                # For submodules, only close their own issue
+                echo "Submodule is now compatible. Closing its issue..."
+                closing_comment="The submodule $avm_name is now compatible with AzureRM $azurerm_version. Closing this issue.
 
           $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
                 if [ $? -eq 0 ]; then
-                  echo "Successfully closed issue for now compatible AVM: $avm_name"
+                  echo "Successfully closed issue for now compatible submodule: $avm_name"
                 else
-                  echo "Error: Failed to close issue for AVM: $avm_name"
+                  echo "Error: Failed to close issue for submodule: $avm_name"
                 fi
-              else
-                echo "Some related modules are still incompatible. Keeping the issue open."
               fi
             else
               echo "No action needed for AVM: $avm_name"
