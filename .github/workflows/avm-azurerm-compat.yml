@@ -350,15 +350,15 @@ jobs:
 
         - name: Calculate Project Compatibility
           run: |
-            echo "# Project Compatibility with AzureRM 4.x" > project_summary.md
+            echo "# Project Compatibility with AzureRM" > project_summary.md
             echo "" >> project_summary.md
             echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
             echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
-
+        
             current_project=""
             compatible_count=0
             total_count=0
-
+        
             while IFS= read -r line || [ -n "$line" ]; do
               if [[ $line =~ ^\[(.*)\]$ ]]; then
                 # New project found
@@ -378,17 +378,17 @@ jobs:
                 fi
               fi
             done < projects-config.txt
-
+        
             # Output last project results
             if [ -n "$current_project" ]; then
               compatibility_percentage=$((compatible_count * 100 / total_count))
               echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
             fi
-
+        
             echo "" >> project_summary.md
             echo "## Details" >> project_summary.md
             echo "" >> project_summary.md
-
+        
             current_project=""
             while IFS= read -r line || [ -n "$line" ]; do
               if [[ $line =~ ^\[(.*)\]$ ]]; then
@@ -398,12 +398,12 @@ jobs:
                 echo "| AVM | Compatibility | AzureRM Version |" >> project_summary.md
                 echo "|-----|---------------|-----------------|" >> project_summary.md
               elif [ -n "$line" ]; then
-                compatibility=$(grep "$line" summary.md | awk -F'|' '{print $4}' | xargs)
+                compatibility=$(grep "$line" summary.md | awk -F'|' '{print $5}' | xargs)
                 azurerm_version=$(grep "$line" summary.md | awk -F'|' '{print $3}' | xargs)
                 echo "| $line | $compatibility | $azurerm_version |" >> project_summary.md
               fi
             done < projects-config.txt
-
+        
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
 
         - name: Upload Project Summary
