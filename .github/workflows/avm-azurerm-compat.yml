@@ -399,10 +399,10 @@ jobs:
                 echo "|-----|------------|----------------|---------------|" >> project_summary.md
               elif [ -n "$line" ]; then
                 summary_line=$(grep "$line" summary.md)
-                avm=$(echo "$summary_line" | awk -F'|' '{print $1}' | sed 's/^\[//;s/\].*$//' | xargs)
-                avm_source=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                module_version=$(echo "$summary_line" | awk -F'|' '{print $7}' | xargs)
-                compatibility=$(echo "$summary_line" | awk -F'|' '{print $5}' | xargs)
+                avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                module_version=$(echo "$summary_line" | awk -F'|' '{print $5}' | xargs)
+                compatibility=$(echo "$summary_line" | awk -F'|' '{print $7}' | xargs)
                 echo "| $avm | $avm_source | $module_version | $compatibility |" >> project_summary.md
               fi
             done < projects-config.txt
