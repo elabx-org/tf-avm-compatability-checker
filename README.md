@@ -25,11 +25,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Mon Oct 14 17:53:49 BST 2024
+🕒 Last updated: Mon Oct 14 21:48:41 BST 2024
 
-🔄 Next scheduled run: 08:00 PM BST
+🔄 Next scheduled run: 02:00 AM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11331830872)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11334789547)
 
 ## Project-Specific Compatibility
 
@@ -45,18 +45,18 @@
 
 | AVM | Compatibility | AzureRM Version |
 |-----|---------------|-----------------|
-| Azure/avm-res-storage-storageaccount/azurerm | 4.3.0 | Azure/avm-res-storage-storageaccount/azurerm |
-| Azure/avm-res-compute-virtualmachine/azurerm | 4.3.0 | Azure/avm-res-compute-virtualmachine/azurerm |
+| Azure/avm-res-storage-storageaccount/azurerm | 1.9.7 | Azure/avm-res-storage-storageaccount/azurerm |
+| Azure/avm-res-compute-virtualmachine/azurerm | 1.9.7 | Azure/avm-res-compute-virtualmachine/azurerm |
 ### ProjectB
 
 | AVM | Compatibility | AzureRM Version |
 |-----|---------------|-----------------|
-| Azure/avm-res-storage-storageaccount/azurerm | 4.3.0 | Azure/avm-res-storage-storageaccount/azurerm |
-| Azure/caf-enterprise-scale/azurerm | 4.3.0 | Azure/caf-enterprise-scale/azurerm |
+| Azure/avm-res-storage-storageaccount/azurerm | 1.9.7 | Azure/avm-res-storage-storageaccount/azurerm |
+| Azure/caf-enterprise-scale/azurerm | 1.9.7 | Azure/caf-enterprise-scale/azurerm |
 ### ProjectC
 
 | AVM | Compatibility | AzureRM Version |
 |-----|---------------|-----------------|
-| Azure/avm-res-compute-virtualmachine/azurerm | 4.3.0 | Azure/avm-res-compute-virtualmachine/azurerm |
-| Azure/avm-res-keyvault-vault/azurerm | 4.3.0 | Azure/avm-res-keyvault-vault/azurerm |
+| Azure/avm-res-compute-virtualmachine/azurerm | 1.9.7 | Azure/avm-res-compute-virtualmachine/azurerm |
+| Azure/avm-res-keyvault-vault/azurerm | 1.9.7 | Azure/avm-res-keyvault-vault/azurerm |
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
