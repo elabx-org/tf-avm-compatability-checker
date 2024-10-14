@@ -25,9 +25,38 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Mon Oct 14 14:18:02 BST 2024
+🕒 Last updated: Mon Oct 14 17:53:49 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11328364238)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11331830872)
+
+## Project-Specific Compatibility
+
+| Project | Compatible AVMs | Total AVMs | Compatibility % |
+|---------|-----------------|------------|-----------------|
+| ProjectA | 2 | 2 | 100% |
+| ProjectB | 2 | 2 | 100% |
+| ProjectC | 2 | 2 | 100% |
+
+## Details
+
+### ProjectA
+
+| AVM | Compatibility | AzureRM Version |
+|-----|---------------|-----------------|
+| Azure/avm-res-storage-storageaccount/azurerm | 4.3.0 | Azure/avm-res-storage-storageaccount/azurerm |
+| Azure/avm-res-compute-virtualmachine/azurerm | 4.3.0 | Azure/avm-res-compute-virtualmachine/azurerm |
+### ProjectB
+
+| AVM | Compatibility | AzureRM Version |
+|-----|---------------|-----------------|
+| Azure/avm-res-storage-storageaccount/azurerm | 4.3.0 | Azure/avm-res-storage-storageaccount/azurerm |
+| Azure/caf-enterprise-scale/azurerm | 4.3.0 | Azure/caf-enterprise-scale/azurerm |
+### ProjectC
+
+| AVM | Compatibility | AzureRM Version |
+|-----|---------------|-----------------|
+| Azure/avm-res-compute-virtualmachine/azurerm | 4.3.0 | Azure/avm-res-compute-virtualmachine/azurerm |
+| Azure/avm-res-keyvault-vault/azurerm | 4.3.0 | Azure/avm-res-keyvault-vault/azurerm |
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
