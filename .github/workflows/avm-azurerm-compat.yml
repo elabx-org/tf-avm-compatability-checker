@@ -1,4 +1,4 @@
-name: Check AVM Compatibility with Azurerm
+name: avm-azurerm-check
 
 on:
   workflow_dispatch:
