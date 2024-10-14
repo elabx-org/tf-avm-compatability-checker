@@ -370,31 +370,11 @@ jobs:
                 current_project="${BASH_REMATCH[1]}"
                 compatible_count=0
                 total_count=0
-                
-                # Add header for the new project
-                echo "" >> project_summary.md
-                echo "### $current_project" >> project_summary.md
-                echo "" >> project_summary.md
-                echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
-                echo "|-----|------------|----------------|---------------|" >> project_summary.md
               elif [ -n "$line" ]; then
                 # AVM line
                 total_count=$((total_count + 1))
-                summary_line=$(grep -F "$line" summary.md)
-                if [ -n "$summary_line" ]; then
-                  IFS='|' read -ra fields <<< "$summary_line"
-                  avm=$(echo "${fields[1]}" | xargs)
-                  avm_source=$(echo "${fields[2]}" | xargs)
-                  module_version=$(echo "${fields[7]}" | xargs)
-                  compatibility=$(echo "${fields[5]}" | xargs)
-                  
-                  echo "| $avm | $avm_source | $module_version | $compatibility |" >> project_summary.md
-                  
-                  if [[ "$compatibility" == "compatible" ]]; then
-                    compatible_count=$((compatible_count + 1))
-                  fi
-                else
-                  echo "| $line | N/A | N/A | Not found in summary |" >> project_summary.md
+                if grep -q "$line.*| compatible |" summary.md; then
+                  compatible_count=$((compatible_count + 1))
                 fi
               fi
             done < projects-config.txt
@@ -404,6 +384,28 @@ jobs:
               compatibility_percentage=$((compatible_count * 100 / total_count))
               echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
             fi
+        
+            echo "" >> project_summary.md
+            echo "## Details" >> project_summary.md
+            echo "" >> project_summary.md
+        
+            current_project=""
+            while IFS= read -r line || [ -n "$line" ]; do
+              if [[ $line =~ ^\[(.*)\]$ ]]; then
+                current_project="${BASH_REMATCH[1]}"
+                echo "### $current_project" >> project_summary.md
+                echo "" >> project_summary.md
+                echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
+                echo "|-----|------------|----------------|---------------|" >> project_summary.md
+              elif [ -n "$line" ]; then
+                summary_line=$(grep "$line" summary.md)
+                avm=$(echo "$summary_line" | awk -F'|' '{print $1}' | sed 's/^\[//;s/\].*$//' | xargs)
+                avm_source=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                module_version=$(echo "$summary_line" | awk -F'|' '{print $7}' | xargs)
+                compatibility=$(echo "$summary_line" | awk -F'|' '{print $5}' | xargs)
+                echo "| $avm | $avm_source | $module_version | $compatibility |" >> project_summary.md
+              fi
+            done < projects-config.txt
         
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
 
