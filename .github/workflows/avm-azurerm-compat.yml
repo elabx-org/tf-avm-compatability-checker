@@ -626,7 +626,7 @@ jobs:
           echo "Issue management process completed."
 
   generate-dashboard:
-    needs: summarise-results
+    needs: [summarise-results, project-compatibility]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
