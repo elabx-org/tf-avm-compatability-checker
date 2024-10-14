@@ -25,11 +25,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Mon Oct 14 21:54:02 BST 2024
+🕒 Last updated: Mon Oct 14 22:34:40 BST 2024
 
 🔄 Next scheduled run: 02:00 AM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11334852493)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11335350696)
 
 ## Project-Specific Compatibility
 
@@ -43,20 +43,20 @@
 
 ### ProjectA
 
-| AVM | Compatibility | AzureRM Version |
-|-----|---------------|-----------------|
-| Azure/avm-res-storage-storageaccount/azurerm | 1.9.7 | Azure/avm-res-storage-storageaccount/azurerm |
-| Azure/avm-res-compute-virtualmachine/azurerm | 1.9.7 | Azure/avm-res-compute-virtualmachine/azurerm |
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
+|  | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Version constraint mismatch | 1.9.7 |
+|  | [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Version constraint mismatch | 1.9.7 |
 ### ProjectB
 
-| AVM | Compatibility | AzureRM Version |
-|-----|---------------|-----------------|
-| Azure/avm-res-storage-storageaccount/azurerm | 1.9.7 | Azure/avm-res-storage-storageaccount/azurerm |
-| Azure/caf-enterprise-scale/azurerm | 1.9.7 | Azure/caf-enterprise-scale/azurerm |
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
+|  | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Version constraint mismatch | 1.9.7 |
+|  | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | Version constraint mismatch | 1.9.7 |
 ### ProjectC
 
-| AVM | Compatibility | AzureRM Version |
-|-----|---------------|-----------------|
-| Azure/avm-res-compute-virtualmachine/azurerm | 1.9.7 | Azure/avm-res-compute-virtualmachine/azurerm |
-| Azure/avm-res-keyvault-vault/azurerm | 1.9.7 | Azure/avm-res-keyvault-vault/azurerm |
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
+|  | [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Version constraint mismatch | 1.9.7 |
+|  | [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | Init successful | 1.9.7 |
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
