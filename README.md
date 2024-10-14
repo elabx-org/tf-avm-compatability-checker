@@ -25,19 +25,34 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Mon Oct 14 23:12:22 BST 2024
+🕒 Last updated: Mon Oct 14 23:28:30 BST 2024
 
 🔄 Next scheduled run: 02:00 AM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11335728601)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11335906899)
 
 ## Project-Specific Compatibility
 
 | Project | Compatible AVMs | Total AVMs | Compatibility % |
 |---------|-----------------|------------|-----------------|
-| ProjectA | 0 | 2 | 0% |
-| ProjectB | 0 | 2 | 0% |
-| ProjectC | 1 | 2 | 50% |
+### ProjectA
+
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 1.9.7 | Incompatible |
+| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Azure/avm-res-compute-virtualmachine/azurerm | 1.9.7 | Incompatible |
+### ProjectB
+
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 1.9.7 | Incompatible |
+| [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | Azure/caf-enterprise-scale/azurerm | 1.9.7 | Incompatible |
+### ProjectC
+
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
+| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Azure/avm-res-compute-virtualmachine/azurerm | 1.9.7 | Incompatible |
+| [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | Azure/avm-res-keyvault-vault/azurerm | 1.9.7 | Compatible |
 
 ## Details
 
