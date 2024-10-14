@@ -19,6 +19,12 @@ on:
         required: true
         default: false
         type: boolean
+      check_projects:
+        description: 'Check project-specific compatibility'
+        required: true
+        default: false
+        type: boolean
+  
   schedule:
     # Run 4 times a day at 8am, 2pm, 8pm, and 2am UK time (BST/GMT)
     # Note: GitHub Actions uses UTC, so times are adjusted accordingly
@@ -329,6 +335,83 @@ jobs:
         name: compatibility-summary
         path: summary.md
 
+  project-compatibility:
+      needs: summarise-results
+      runs-on: ubuntu-latest
+      if: ${{ github.event.inputs.check_projects == 'true' }}
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Download summary
+          uses: actions/download-artifact@v4
+          with:
+            name: compatibility-summary
+
+        - name: Calculate Project Compatibility
+          run: |
+            echo "# Project Compatibility with AzureRM 4.x" > project_summary.md
+            echo "" >> project_summary.md
+            echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
+            echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
+
+            current_project=""
+            compatible_count=0
+            total_count=0
+
+            while IFS= read -r line || [ -n "$line" ]; do
+              if [[ $line =~ ^\[(.*)\]$ ]]; then
+                # New project found
+                if [ -n "$current_project" ]; then
+                  # Output previous project results
+                  compatibility_percentage=$((compatible_count * 100 / total_count))
+                  echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+                fi
+                current_project="${BASH_REMATCH[1]}"
+                compatible_count=0
+                total_count=0
+              elif [ -n "$line" ]; then
+                # AVM line
+                total_count=$((total_count + 1))
+                if grep -q "$line.*compatible" summary.md; then
+                  compatible_count=$((compatible_count + 1))
+                fi
+              fi
+            done < projects-config.txt
+
+            # Output last project results
+            if [ -n "$current_project" ]; then
+              compatibility_percentage=$((compatible_count * 100 / total_count))
+              echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+            fi
+
+            echo "" >> project_summary.md
+            echo "## Details" >> project_summary.md
+            echo "" >> project_summary.md
+
+            current_project=""
+            while IFS= read -r line || [ -n "$line" ]; do
+              if [[ $line =~ ^\[(.*)\]$ ]]; then
+                current_project="${BASH_REMATCH[1]}"
+                echo "### $current_project" >> project_summary.md
+                echo "" >> project_summary.md
+                echo "| AVM | Compatibility | AzureRM Version |" >> project_summary.md
+                echo "|-----|---------------|-----------------|" >> project_summary.md
+              elif [ -n "$line" ]; then
+                compatibility=$(grep "$line" summary.md | awk -F'|' '{print $4}' | xargs)
+                azurerm_version=$(grep "$line" summary.md | awk -F'|' '{print $3}' | xargs)
+                echo "| $line | $compatibility | $azurerm_version |" >> project_summary.md
+              fi
+            done < projects-config.txt
+
+            cat project_summary.md >> $GITHUB_STEP_SUMMARY
+
+        - name: Upload Project Summary
+          uses: actions/upload-artifact@v4
+          with:
+            name: project-compatibility-summary
+            path: project_summary.md      
+
   create-issues:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
@@ -554,6 +637,13 @@ jobs:
         with:
           name: compatibility-summary
 
+
+      - name: Download Project Summary
+        uses: actions/download-artifact@v4
+        with:
+          name: project-compatibility-summary
+        if: ${{ github.event.inputs.check_projects == 'true' }}          
+
       - name: Check File Permissions
         run: |
           echo "Current directory: $(pwd)"
@@ -716,6 +806,14 @@ jobs:
           echo "" >> "$temp_dashboard"
           echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
+
+          # Add project-specific information if available
+          if [ -f "project_summary.md" ]; then
+            echo "" >> "$temp_dashboard"
+            echo "## Project-Specific Compatibility" >> "$temp_dashboard"
+            echo "" >> "$temp_dashboard"
+            sed '1,2d' project_summary.md >> "$temp_dashboard"
+          fi
           
           # Update README.md with new dashboard content
           awk '
