@@ -432,6 +432,13 @@ jobs:
     
         - name: Calculate Project Compatibility
           run: |
+            # Ensure we're in the correct directory
+            cd $GITHUB_WORKSPACE
+    
+            # Create the project summary file with proper permissions
+            touch project_summary.md
+            chmod 644 project_summary.md
+    
             echo "# Project Compatibility with AzureRM" > project_summary.md
             echo "" >> project_summary.md
             echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
@@ -471,14 +478,19 @@ jobs:
                 echo "| AVM | Compatibility |" >> project_summary.md
                 echo "|-----|---------------|" >> project_summary.md
               elif [ -n "$line" ]; then
-                summary_line=$(grep "$line" summary.md)
-                avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm | $compatibility |" >> project_summary.md
+                summary_line=$(grep "$line" summary.md || echo "")
+                if [ -n "$summary_line" ]; then
+                  avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                  compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                  echo "| $avm | $compatibility |" >> project_summary.md
+                else
+                  echo "| $line | Not found in summary |" >> project_summary.md
+                fi
               fi
             done < project_avm_mappings.txt
         
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
+          shell: bash
     
         - name: Upload Project Summary
           uses: actions/upload-artifact@v4
