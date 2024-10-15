@@ -61,7 +61,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
+          set -eo pipefail  # Exit on error, and consider pipeline failures
+      
+          function log_error() {
+            echo "ERROR: $1" >&2
+          }
+      
+          function log_debug() {
+            echo "DEBUG: $1"
+          }
+      
+          trap 'log_error "Script failed on line $LINENO"' ERR
+      
           echo "Processing projects-config.txt and extracting AVMs..."
           
           # Initialize arrays to store AVMs
@@ -94,10 +105,11 @@ jobs:
             repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
             readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
             
+            log_debug "Fetching README from: $readme_url"
             readme_response=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" "$readme_url")
             
             if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
-              echo "Error: README not found for $repo_url"
+              log_error "README not found for $repo_url"
               return
             fi
             
@@ -105,24 +117,24 @@ jobs:
             
             sources=($(extract_sources))
             
-            echo "Extracted Sources:"
+            log_debug "Extracted Sources:"
             printf '%s\n' "${sources[@]}"
             
             for source in "${sources[@]}"; do
               if [[ $source =~ Azure/avm- ]]; then
                 avm_name=$(echo "$source" | awk -F'/' '{print $1"/"$2}')
-                echo "Debug: Checking AVM $avm_name"
-                echo "Debug: existing_avms[$avm_name] = ${existing_avms[$avm_name]}"
+                log_debug "Checking AVM $avm_name"
+                log_debug "existing_avms[$avm_name] = ${existing_avms[$avm_name]}"
                 if [[ -z "${existing_avms[$avm_name]}" ]]; then
-                  echo "Debug: $avm_name not found in existing_avms"
+                  log_debug "$avm_name not found in existing_avms"
                   if [[ -z "${new_avms[$avm_name]}" ]]; then
                     new_avms["$avm_name"]=1
                     echo "Found new AVM: $avm_name"
                   else
-                    echo "AVM $avm_name already in new_avms"
+                    log_debug "AVM $avm_name already in new_avms"
                   fi
                 else
-                  echo "AVM already exists in avm-config.txt: $avm_name"
+                  log_debug "AVM already exists in avm-config.txt: $avm_name"
                 fi
               fi
             done
@@ -147,22 +159,21 @@ jobs:
             echo "Checking AVM: $avm"
             if ! grep -q "^$avm/azurerm" avm-config.txt; then
               echo "$avm"
-              if echo "$avm/azurerm" >> avm-config.txt; then
-                echo "Added $avm/azurerm to avm-config.txt"
-                ((true_new_avms++))
-              else
-                echo "Error: Failed to add $avm/azurerm to avm-config.txt" >&2
+              if ! echo "$avm/azurerm" >> avm-config.txt; then
+                log_error "Failed to add $avm/azurerm to avm-config.txt"
                 exit 1
               fi
+              log_debug "Added $avm/azurerm to avm-config.txt"
+              ((true_new_avms++))
             else
-              echo "$avm/azurerm already exists in avm-config.txt"
+              log_debug "$avm/azurerm already exists in avm-config.txt"
               unset new_avms["$avm"]
             fi
           done
-          
+      
           echo "Updated avm-config.txt:"
           cat avm-config.txt
-          
+      
           echo "Summary of changes:"
           echo "Total existing AVMs: ${#existing_avms[@]}"
           echo "Total new AVMs added: $true_new_avms"
