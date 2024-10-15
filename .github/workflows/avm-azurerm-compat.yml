@@ -150,7 +150,12 @@ jobs:
           echo "New AVMs to be added:"
           for avm in "${!new_avms[@]}"; do
             echo "$avm"
-            echo "$avm/azurerm" >> avm-config.txt
+            if ! grep -q "$avm/azurerm" avm-config.txt; then
+              echo "$avm/azurerm" >> avm-config.txt
+              echo "Added $avm/azurerm to avm-config.txt"
+            else
+              echo "$avm/azurerm already exists in avm-config.txt"
+            fi
           done
           
           echo "Updated avm-config.txt:"
