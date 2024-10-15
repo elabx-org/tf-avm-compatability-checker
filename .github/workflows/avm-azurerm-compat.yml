@@ -62,17 +62,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -eo pipefail  # Exit on error, and consider pipeline failures
-      
+
           function log_error() {
             echo "ERROR: $1" >&2
           }
-      
+
           function log_debug() {
             echo "DEBUG: $1"
           }
-      
+
           trap 'log_error "Script failed on line $LINENO"' ERR
-      
+
           echo "Processing projects-config.txt and extracting AVMs..."
           
           # Initialize arrays to store AVMs
@@ -154,43 +154,51 @@ jobs:
           done < projects-config.txt
           
           echo "New AVMs to be added:"
-            true_new_avms=0
-            for avm in "${!new_avms[@]}"; do
-              echo "Checking AVM: $avm"
-              if ! grep -q "^$avm/azurerm" avm-config.txt; then
-                echo "$avm"
-                log_debug "Attempting to add $avm/azurerm to avm-config.txt"
-                if echo "$avm/azurerm" >> avm-config.txt; then
-                  log_debug "Successfully added $avm/azurerm to avm-config.txt"
-                  ((true_new_avms++))
-                else
-                  log_error "Failed to add $avm/azurerm to avm-config.txt"
-                  log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
-                  log_debug "Current directory: $(pwd)"
-                  log_debug "Contents of current directory: $(ls -la)"
-                  exit 1
-                fi
+          true_new_avms=0
+          for avm in "${!new_avms[@]}"; do
+            echo "Checking AVM: $avm"
+            if ! grep -q "^$avm/azurerm" avm-config.txt; then
+              echo "$avm"
+              log_debug "Attempting to add $avm/azurerm to avm-config.txt"
+              if echo "$avm/azurerm" >> avm-config.txt; then
+                log_debug "Successfully added $avm/azurerm to avm-config.txt"
+                ((true_new_avms++))
               else
-                log_debug "$avm/azurerm already exists in avm-config.txt"
-                unset new_avms["$avm"]
+                log_error "Failed to add $avm/azurerm to avm-config.txt"
+                log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
+                log_debug "Current directory: $(pwd)"
+                log_debug "Contents of current directory: $(ls -la)"
+                exit 1
               fi
-            done
+            else
+              log_debug "$avm/azurerm already exists in avm-config.txt"
+              unset new_avms["$avm"]
+            fi
+          done
 
-            echo "Updated avm-config.txt:"
-            cat avm-config.txt
+          log_debug "After adding new AVMs"
 
-            echo "Summary of changes:"
-            echo "Total existing AVMs: ${#existing_avms[@]}"
-            echo "Total new AVMs added: $true_new_avms"
-            echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
-            
-            echo "List of new AVMs added:"
-            for avm in "${!new_avms[@]}"; do
-              echo "- $avm"
-            done
+          echo "Updated avm-config.txt:"
+          cat avm-config.txt
 
-            echo "Script completed successfully."
-          shell: bash
+          log_debug "After cat avm-config.txt"
+
+          echo "Summary of changes:"
+          echo "Total existing AVMs: ${#existing_avms[@]}"
+          echo "Total new AVMs added: $true_new_avms"
+          echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
+          
+          log_debug "After summary of changes"
+
+          echo "List of new AVMs added:"
+          for avm in "${!new_avms[@]}"; do
+            echo "- $avm"
+          done
+
+          log_debug "After listing new AVMs"
+
+          echo "Script completed successfully."
+        shell: bash
 
       - name: Set up matrix
         id: set-matrix
