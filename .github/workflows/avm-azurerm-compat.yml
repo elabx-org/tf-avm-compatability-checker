@@ -359,6 +359,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Create the project_avm_mappings.txt file
+          echo "# Project AVM Mappings" > project_avm_mappings.txt
+          
           function process_github_url() {
             local repo_url=$1
             repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
@@ -366,54 +369,74 @@ jobs:
             readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
             echo "Constructed README URL: $readme_url"
             
-              echo "Extracting modules from README:"
-              modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
-              echo "$modules_section"
-
-              if [ -z "$modules_section" ]; then
-                echo "Warning: No '## Modules' section found in README"
-              else
-                echo "$modules_section" | grep 'Azure/avm-' | 
-                while IFS='|' read -r _ _ source version; do
-                  if [[ $source =~ Azure/avm- ]]; then
-                    # Extract the base module name
-                    base_module=$(echo "$source" | cut -d'/' -f2)
-                    # Check if it's a submodule
-                    if [[ $source == *"//"* ]]; then
-                      submodule=$(echo "$source" | cut -d'/' -f4-)
-                      echo "Found AVM submodule: $base_module//$submodule"
-                      echo "$base_module//$submodule|$version" >> project_avm_mappings.txt
-                    else
-                      echo "Found AVM base module: $base_module"
-                      echo "$base_module|$version" >> project_avm_mappings.txt
-                    fi
+            echo "Fetching README from: $readme_url"
+            readme_response=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" "$readme_url")
+            echo "GitHub API Response:"
+            echo "$readme_response" | jq '.'
+            
+            if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
+              echo "Error: README not found for $repo_url"
+              return
+            fi
+            
+            readme_content=$(echo "$readme_response" | jq -r '.content' | base64 --decode)
+            
+            echo "README content (first 500 characters):"
+            echo "$readme_content" | head -c 500
+            
+            echo "Extracting modules from README:"
+            modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
+            echo "$modules_section"
+            
+            if [ -z "$modules_section" ]; then
+              echo "Warning: No '## Modules' section found in README"
+            else
+              echo "$modules_section" | grep 'Azure/avm-' | 
+              while IFS='|' read -r _ _ source version; do
+                if [[ $source =~ Azure/avm- ]]; then
+                  # Extract the base module name
+                  base_module=$(echo "$source" | cut -d'/' -f2)
+                  # Check if it's a submodule
+                  if [[ $source == *"//"* ]]; then
+                    submodule=$(echo "$source" | cut -d'/' -f4-)
+                    echo "Found AVM submodule: $base_module//$submodule"
+                    echo "$base_module//$submodule|$version" >> project_avm_mappings.txt
+                  else
+                    echo "Found AVM base module: $base_module"
+                    echo "$base_module|$version" >> project_avm_mappings.txt
                   fi
-                done
+                fi
+              done
+            fi
+          }
+
+          echo "Contents of projects-config.txt:"
+          cat projects-config.txt
+          
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            echo "Processing line: $line"
+            if [[ $line =~ ^\[(.*)\](.*)$ ]]; then
+              project="${BASH_REMATCH[1]}"
+              remainder="${BASH_REMATCH[2]}"
+              echo -e "\n[$project]" >> project_avm_mappings.txt
+              echo "Processing project: $project"
+              
+              if [[ $remainder =~ https://github.com/ ]]; then
+                repo_url=$(echo "$remainder" | xargs)
+                echo "Found GitHub URL on same line: $repo_url"
+                process_github_url "$repo_url"
               fi
-            }
-
-            # In the Calculate Project Compatibility step:
-
-            echo "| AVM | Version | Compatibility |" >> project_summary.md
-            echo "|-----|---------|---------------|" >> project_summary.md
-
-            while IFS='|' read -r module version; do
-              base_module=$(echo "$module" | cut -d'/' -f1)
-              if [[ $module == *"//"* ]]; then
-                submodule=$(echo "$module" | cut -d'/' -f2-)
-                summary_line=$(grep "$base_module.*$submodule" summary.md || echo "")
-              else
-                summary_line=$(grep "$module" summary.md | grep -v '//' || echo "")
-              fi
-
-              if [ -n "$summary_line" ]; then
-                avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm | $version | $compatibility |" >> project_summary.md
-              else
-                echo "| $module | $version | Not found in summary |" >> project_summary.md
-              fi
-            done < project_avm_mappings.txt
+            elif [[ $line =~ ^https://github.com/ ]]; then
+              repo_url=$(echo "$line" | xargs)
+              echo "Found GitHub URL: $repo_url"
+              process_github_url "$repo_url"
+            else
+              echo "Unrecognized line: $line"
+            fi
+          done < projects-config.txt
+          
+          echo "Contents of project_avm_mappings.txt:"
+          cat project_avm_mappings.txt
 
       - name: Calculate Project Compatibility
         run: |
