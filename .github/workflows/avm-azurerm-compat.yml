@@ -153,7 +153,7 @@ jobs:
               process_github_url "$repo_url"
             fi
           done < projects-config.txt
-          
+                    
           echo "New AVMs to be added:"
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
@@ -166,6 +166,8 @@ jobs:
                 log_debug "$line"
               done < avm-config.txt
               
+              # Ensure the file ends with a newline before adding the new AVM
+              sed -i -e '$a\' avm-config.txt
               if echo "$avm/azurerm" >> avm-config.txt; then
                 log_debug "Line 103: Successfully added $avm/azurerm to avm-config.txt"
                 ((true_new_avms++))
@@ -186,6 +188,8 @@ jobs:
             fi
           done
 
+          # Ensure the file ends with a newline
+          sed -i -e '$a\' avm-config.txt
           log_debug "After adding new AVMs"
 
           echo "Updated avm-config.txt:"
