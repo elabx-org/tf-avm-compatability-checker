@@ -25,9 +25,31 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Tue Oct 15 15:02:48 BST 2024
+🕒 Last updated: Tue Oct 15 15:23:51 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11347700022)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11348098421)
+
+## Project-Specific Compatibility
+
+| Project | Compatible AVMs | Total AVMs | Compatibility % |
+|---------|-----------------|------------|-----------------|
+| ProjectA | 0 | 9 | 0% |
+
+## Details
+
+### ProjectA
+
+| AVM | Compatibility |
+|-----|---------------|
+| 0.5.1 | Not found in summary |
+| 0.1.4 | Not found in summary |
+| [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | compatible incompatible incompatible |
+| 0.2.1 | Not found in summary |
+| [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | compatible incompatible incompatible |
+| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | compatible |
+| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | compatible |
+| [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | compatible incompatible incompatible |
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | incompatible |
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
