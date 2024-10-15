@@ -42,7 +42,14 @@ permissions:
   issues: write
 
 jobs:
-  prepare-matrix:
+  determine-workflow:
+    runs-on: ubuntu-latest
+    outputs:
+      run-project-compatibility: ${{ github.event.inputs.check_projects == 'true' }}
+    steps:
+      - run: echo "Determining workflow"  
+
+      prepare-matrix:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -336,7 +343,8 @@ jobs:
         path: summary.md
 
   project-compatibility:
-      needs: summarise-results
+      needs: [summarise-results, determine-workflow]
+      if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
       runs-on: ubuntu-latest
       if: ${{ github.event.inputs.check_projects == 'true' }}
       steps:
@@ -629,7 +637,8 @@ jobs:
           echo "Issue management process completed."
 
   generate-dashboard:
-    needs: [summarise-results]
+    needs: [summarise-results, determine-workflow, project-compatibility]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -645,7 +654,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: project-compatibility-summary
-        if: ${{ github.event.inputs.check_projects == 'true' }}
+        if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
         continue-on-error: true          
 
       - name: Check File Permissions
