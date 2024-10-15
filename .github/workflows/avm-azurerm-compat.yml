@@ -449,20 +449,18 @@ jobs:
           compatible_count=0
           total_count=0
           
-          while IFS= read -r line; do
-            if [[ $line =~ ^\[(.*)\]$ ]]; then
-              if [ -n "$current_project" ]; then
-                if [ $total_count -gt 0 ]; then
-                  compatibility_percentage=$((compatible_count * 100 / total_count))
-                  echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
-                fi
+          while IFS='|' read -r module version || [ -n "$module" ]; do
+            if [[ $module == \[*\] ]]; then
+              if [ -n "$current_project" ] && [ $total_count -gt 0 ]; then
+                compatibility_percentage=$((compatible_count * 100 / total_count))
+                echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
               fi
-              current_project="${BASH_REMATCH[1]}"
+              current_project="${module//[\[\]]/}"
               compatible_count=0
               total_count=0
-            elif [[ $line =~ ^Azure/avm- ]]; then
+            elif [[ $module =~ ^avm- ]]; then
               total_count=$((total_count + 1))
-              if grep -q "$line.*| compatible |" summary.md; then
+              if grep -q "$module.*| compatible" summary.md; then
                 compatible_count=$((compatible_count + 1))
               fi
             fi
@@ -479,21 +477,21 @@ jobs:
           echo "" >> project_summary.md
           
           current_project=""
-          while IFS= read -r line; do
-            if [[ $line =~ ^\[(.*)\]$ ]]; then
-              current_project="${BASH_REMATCH[1]}"
+          while IFS='|' read -r module version || [ -n "$module" ]; do
+            if [[ $module == \[*\] ]]; then
+              current_project="${module//[\[\]]/}"
               echo "### $current_project" >> project_summary.md
               echo "" >> project_summary.md
-              echo "| AVM | Compatibility |" >> project_summary.md
-              echo "|-----|---------------|" >> project_summary.md
-            elif [[ $line =~ ^Azure/avm- ]]; then
-              summary_line=$(grep "$line" summary.md || echo "")
+              echo "| AVM | Version | Compatibility |" >> project_summary.md
+              echo "|-----|---------|---------------|" >> project_summary.md
+            elif [[ $module =~ ^avm- ]]; then
+              summary_line=$(grep "$module" summary.md || echo "")
               if [ -n "$summary_line" ]; then
                 avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
                 compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm | $compatibility |" >> project_summary.md
+                echo "| $avm | $version | $compatibility |" >> project_summary.md
               else
-                echo "| $line | Not found in summary |" >> project_summary.md
+                echo "| $module | $version | Not found in summary |" >> project_summary.md
               fi
             fi
           done < project_avm_mappings.txt
