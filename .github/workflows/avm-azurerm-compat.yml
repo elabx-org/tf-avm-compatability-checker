@@ -61,7 +61,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -eo pipefail  # Exit on error, and consider pipeline failures
+          set +e  # Disable exit on error
+          set -o pipefail  # Consider pipeline failures
 
           function log_error() {
             echo "ERROR: $1" >&2
@@ -173,7 +174,6 @@ jobs:
                 log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
                 log_debug "Current directory: $(pwd)"
                 log_debug "Contents of current directory: $(ls -la)"
-                exit 1
               fi
               
               log_debug "Line 111: Content of avm-config.txt after addition:"
@@ -197,7 +197,7 @@ jobs:
           echo "Total existing AVMs: ${#existing_avms[@]}"
           echo "Total new AVMs added: $true_new_avms"
           echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
-
+          
           log_debug "After summary of changes"
 
           echo "List of new AVMs added:"
@@ -208,7 +208,13 @@ jobs:
           log_debug "After listing new AVMs"
 
           echo "Script completed successfully."
-          shell: bash
+
+          # If there were any errors, exit with a non-zero status
+          if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
+            log_error "Failed to add all new AVMs"
+            exit 1
+          fi
+        shell: bash
 
       - name: Set up matrix
         id: set-matrix
