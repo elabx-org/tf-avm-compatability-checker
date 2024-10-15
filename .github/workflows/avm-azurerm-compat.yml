@@ -72,8 +72,8 @@ jobs:
           
           # Read existing AVMs from avm-config.txt
           while IFS=' ' read -r avm version; do
-            existing_avms["$avm"]="$version"
-            echo "Existing AVM: $avm ${existing_avms[$avm]}"
+            existing_avms["$avm"]=1
+            echo "Existing AVM: $avm"
           done < avm-config.txt
           
           function process_github_url() {
@@ -85,8 +85,6 @@ jobs:
             
             echo "Fetching README from: $readme_url"
             readme_response=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" "$readme_url")
-            echo "GitHub API Response:"
-            echo "$readme_response" | jq '.'
             
             if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
               echo "Error: README not found for $repo_url"
@@ -94,9 +92,6 @@ jobs:
             fi
             
             readme_content=$(echo "$readme_response" | jq -r '.content' | base64 --decode)
-            
-            echo "README content (first 500 characters):"
-            echo "$readme_content" | head -c 500
             
             echo "Extracting modules from README:"
             modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
@@ -106,22 +101,14 @@ jobs:
               echo "Warning: No '## Modules' section found in README"
             else
               echo "$modules_section" | grep 'Azure/avm-' | 
-              while IFS='|' read -r _ _ source version; do
+              while IFS='|' read -r _ _ source _; do
+                source=$(echo "$source" | xargs)
                 if [[ $source =~ Azure/avm- ]]; then
-                  # Extract the base module name
-                  base_module=$(echo "$source" | cut -d'/' -f2)
-                  # Check if it's a submodule
-                  if [[ $source == *"//"* ]]; then
-                    submodule=$(echo "$source" | cut -d'/' -f4-)
-                    avm_name="$base_module//$submodule"
-                  else
-                    avm_name="$base_module"
-                  fi
-                  avm_name="Azure/$avm_name/azurerm"
-                  version=$(echo "$version" | xargs)
+                  # Extract the base module name without version
+                  avm_name=$(echo "$source" | sed 's|/azurerm$||')
                   if [[ ! ${existing_avms["$avm_name"]} ]]; then
-                    new_avms["$avm_name"]="$version"
-                    echo "Found new AVM: $avm_name $version"
+                    new_avms["$avm_name"]=1
+                    echo "Found new AVM: $avm_name"
                   else
                     echo "AVM already exists: $avm_name"
                   fi
@@ -156,12 +143,17 @@ jobs:
           
           echo "Newly added AVMs:"
           for avm in "${!new_avms[@]}"; do
-            echo "$avm ${new_avms[$avm]}"
-            echo "$avm ${new_avms[$avm]}" >> avm-config.txt
+            echo "$avm"
+            echo "$avm" >> avm-config.txt
           done
           
           echo "Updated avm-config.txt:"
-          cat avm-config.txt      
+          cat avm-config.txt
+      
+          echo "Summary of changes:"
+          echo "Total existing AVMs: ${#existing_avms[@]}"
+          echo "Total new AVMs added: ${#new_avms[@]}"
+          echo "Final total AVMs: $((${#existing_avms[@]} + ${#new_avms[@]}))"      
 
       - name: Set up matrix
         id: set-matrix
