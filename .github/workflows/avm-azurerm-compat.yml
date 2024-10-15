@@ -71,8 +71,8 @@ jobs:
           cat avm-config.txt
           
           # Read existing AVMs from avm-config.txt
-          while IFS=' ' read -r avm version; do
-            avm=$(echo "$avm" | sed 's|/azurerm$||')
+          while IFS= read -r line; do
+            avm=$(echo "$line" | awk '{print $1}' | sed 's|/azurerm$||')
             existing_avms["$avm"]=1
             echo "Existing AVM: $avm"
           done < avm-config.txt
@@ -117,7 +117,7 @@ jobs:
               done
             fi
           }
-      
+          
           echo "Contents of projects-config.txt:"
           cat projects-config.txt
           
@@ -150,12 +150,12 @@ jobs:
           
           echo "Updated avm-config.txt:"
           cat avm-config.txt
-      
+          
           echo "Summary of changes:"
           echo "Total existing AVMs: ${#existing_avms[@]}"
           echo "Total new AVMs added: ${#new_avms[@]}"
           echo "Final total AVMs: $((${#existing_avms[@]} + ${#new_avms[@]}))"
-      
+          
           echo "List of new AVMs added:"
           for avm in "${!new_avms[@]}"; do
             echo "- $avm"
