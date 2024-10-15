@@ -141,6 +141,7 @@ jobs:
             fi
           done < projects-config.txt
           
+          set +e  # Temporarily disable exit on error          
           echo "New AVMs to be added:"
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
@@ -155,6 +156,7 @@ jobs:
               unset new_avms["$avm"]
             fi
           done
+          set -e  # Re-enable exit on error
           
           echo "Updated avm-config.txt:"
           cat avm-config.txt
