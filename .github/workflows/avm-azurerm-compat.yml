@@ -152,7 +152,7 @@ jobs:
           
           echo "Updated avm-config.txt:"
           cat avm-config.txt
-      
+          echo
           echo "Summary of changes:"
           echo "Total existing AVMs: ${#existing_avms[@]}"
           echo "Total new AVMs added: ${#new_avms[@]}"
