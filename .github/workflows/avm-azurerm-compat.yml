@@ -141,22 +141,24 @@ jobs:
             fi
           done < projects-config.txt
           
-          set +e  # Temporarily disable exit on error          
           echo "New AVMs to be added:"
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
             echo "Checking AVM: $avm"
             if ! grep -q "^$avm/azurerm" avm-config.txt; then
               echo "$avm"
-              echo "$avm/azurerm" >> avm-config.txt
-              echo "Added $avm/azurerm to avm-config.txt"
-              ((true_new_avms++))
+              if echo "$avm/azurerm" >> avm-config.txt; then
+                echo "Added $avm/azurerm to avm-config.txt"
+                ((true_new_avms++))
+              else
+                echo "Error: Failed to add $avm/azurerm to avm-config.txt" >&2
+                exit 1
+              fi
             else
               echo "$avm/azurerm already exists in avm-config.txt"
               unset new_avms["$avm"]
             fi
           done
-          set -e  # Re-enable exit on error
           
           echo "Updated avm-config.txt:"
           cat avm-config.txt
