@@ -25,31 +25,9 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Tue Oct 15 16:17:35 BST 2024
+🕒 Last updated: Tue Oct 15 16:34:19 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11349117409)
-
-## Project-Specific Compatibility
-
-| Project | Compatible AVMs | Total AVMs | Compatibility % |
-|---------|-----------------|------------|-----------------|
-| ProjectA | 4 | 9 | 44% |
-
-## Details
-
-### ProjectA
-
-| AVM | Compatibility |
-|-----|---------------|
-| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | incompatible |
-| [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | compatible |
-| [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | incompatible |
-| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.1/submodules/rule_collection_groups) [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | compatible compatible |
-| [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) | incompatible |
-| [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | incompatible |
-| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | compatible |
-| [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) | compatible |
-| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | incompatible |
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11349419756)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
