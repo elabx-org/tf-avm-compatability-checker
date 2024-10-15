@@ -102,11 +102,20 @@ jobs:
               echo "Warning: No '## Modules' section found in README"
             else
               echo "$modules_section" | grep 'Azure/avm-' | 
-              while IFS='|' read -r _ _ source _; do
-                source=$(echo "$source" | xargs)
+              while IFS='|' read -r _ _ source version; do
                 if [[ $source =~ Azure/avm- ]]; then
-                  avm_name=$(echo "$source" | sed 's|/azurerm$||')
-                  echo "Checking AVM: $avm_name"
+                  # Extract the base module name
+                  base_module=$(echo "$source" | cut -d'/' -f2)
+                  # Check if it's a submodule
+                  if [[ $source == *"//"* ]]; then
+                    submodule=$(echo "$source" | cut -d'/' -f4-)
+                    avm_name="Azure/$base_module//$submodule"
+                    echo "Found AVM submodule: $avm_name"
+                  else
+                    avm_name="Azure/$base_module"
+                    echo "Found AVM base module: $avm_name"
+                  fi
+                  
                   if [[ -z "${existing_avms[$avm_name]}" ]]; then
                     echo "AVM $avm_name not in existing_avms"
                     if [[ -z "${new_avms[$avm_name]}" ]]; then
