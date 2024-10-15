@@ -61,6 +61,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -e
           echo "Processing projects-config.txt and extracting AVMs..."
           
           # Initialize arrays to store AVMs
@@ -132,6 +133,7 @@ jobs:
           echo "New AVMs to be added:"
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
+            echo "Checking AVM: $avm"
             if ! grep -q "^$avm/azurerm" avm-config.txt; then
               echo "$avm"
               echo "$avm/azurerm" >> avm-config.txt
@@ -155,6 +157,9 @@ jobs:
           for avm in "${!new_avms[@]}"; do
             echo "- $avm"
           done
+      
+          echo "Script completed successfully."
+        shell: bash
 
       - name: Set up matrix
         id: set-matrix
