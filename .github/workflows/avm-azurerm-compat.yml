@@ -130,13 +130,16 @@ jobs:
           done < projects-config.txt
           
           echo "New AVMs to be added:"
+          true_new_avms=0
           for avm in "${!new_avms[@]}"; do
-            echo "$avm"
             if ! grep -q "^$avm/azurerm" avm-config.txt; then
+              echo "$avm"
               echo "$avm/azurerm" >> avm-config.txt
               echo "Added $avm/azurerm to avm-config.txt"
+              ((true_new_avms++))
             else
               echo "$avm/azurerm already exists in avm-config.txt"
+              unset new_avms["$avm"]
             fi
           done
           
@@ -145,14 +148,12 @@ jobs:
           
           echo "Summary of changes:"
           echo "Total existing AVMs: ${#existing_avms[@]}"
-          echo "Total new AVMs added: ${#new_avms[@]}"
-          echo "Final total AVMs: $((${#existing_avms[@]} + ${#new_avms[@]}))"
+          echo "Total new AVMs added: $true_new_avms"
+          echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
           
           echo "List of new AVMs added:"
           for avm in "${!new_avms[@]}"; do
-            if ! grep -q "^$avm/azurerm" <(head -n -1 avm-config.txt); then
-              echo "- $avm"
-            fi
+            echo "- $avm"
           done
 
       - name: Set up matrix
