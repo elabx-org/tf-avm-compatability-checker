@@ -142,7 +142,7 @@ jobs:
             fi
           done < projects-config.txt
           
-          echo "Truly new AVMs to be added:"
+          echo "New AVMs to be added:"
           for avm in "${!new_avms[@]}"; do
             echo "$avm"
             echo "$avm/azurerm" >> avm-config.txt
@@ -159,7 +159,10 @@ jobs:
           echo "List of new AVMs added:"
           for avm in "${!new_avms[@]}"; do
             echo "- $avm"
-          done   
+          done
+      
+          # Ensure the file ends with a newline
+          sed -i -e '$a\' avm-config.txt
 
       - name: Set up matrix
         id: set-matrix
