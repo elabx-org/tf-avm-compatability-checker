@@ -432,18 +432,29 @@ jobs:
     
         - name: Calculate Project Compatibility
           run: |
-            # Ensure we're in the correct directory
-            cd $GITHUB_WORKSPACE
-    
-            # Create the project summary file with proper permissions
-            touch project_summary.md
-            chmod 644 project_summary.md
-    
+            set -x  # Enable debugging
+            
+            # Check current directory and permissions
+            pwd
+            ls -la
+            
+            # Ensure we can write to the current directory
+            touch test_file.txt && rm test_file.txt
+            
+            # Try to create the project_summary.md file
             echo "# Project Compatibility with AzureRM" > project_summary.md
+            
+            # Check if the file was created
+            ls -la project_summary.md
+            
             echo "" >> project_summary.md
             echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
             echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
         
+            # Debug: Check contents of project_avm_mappings.txt
+            echo "Contents of project_avm_mappings.txt:"
+            cat project_avm_mappings.txt
+            
             while IFS= read -r line || [ -n "$line" ]; do
               if [[ $line =~ ^\[(.*)\]$ ]]; then
                 current_project="${BASH_REMATCH[1]}"
@@ -489,6 +500,10 @@ jobs:
               fi
             done < project_avm_mappings.txt
         
+            # Debug: Check final contents of project_summary.md
+            echo "Final contents of project_summary.md:"
+            cat project_summary.md
+            
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
           shell: bash
     
