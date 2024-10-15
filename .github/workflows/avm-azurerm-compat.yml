@@ -629,7 +629,7 @@ jobs:
           echo "Issue management process completed."
 
   generate-dashboard:
-    needs: [summarise-results, project-compatibility]
+    needs: [summarise-results]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -645,7 +645,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: project-compatibility-summary
-        if: ${{ github.event.inputs.check_projects == 'true' }}          
+        if: ${{ github.event.inputs.check_projects == 'true' }}
+        continue-on-error: true          
 
       - name: Check File Permissions
         run: |
