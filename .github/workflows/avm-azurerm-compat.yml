@@ -371,19 +371,38 @@ jobs:
               repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
               readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
               echo "Fetching README from: $readme_url"
-              readme_content=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$readme_url" | jq -r '.content' | base64 --decode)
+              
+              # Fetch README content and save the response
+              readme_response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$readme_url")
+              echo "GitHub API Response:"
+              echo "$readme_response" | jq '.'
+              
+              # Check if the API request was successful
+              if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
+                echo "Error: README not found for $repo_url"
+                continue
+              fi
+              
+              readme_content=$(echo "$readme_response" | jq -r '.content' | base64 --decode)
+              
+              echo "README content:"
+              echo "$readme_content"
               
               echo "Extracting modules from README:"
               modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
               echo "$modules_section"
               
-              echo "$modules_section" | grep 'Azure/avm-' | 
-              while IFS='|' read -r _ _ source _; do
-                if [[ $source =~ Azure/avm- ]]; then
-                  echo "Found AVM: $source"
-                  echo "$source" | xargs >> project_avm_mappings.txt
-                fi
-              done
+              if [ -z "$modules_section" ]; then
+                echo "Warning: No '## Modules' section found in README"
+              else
+                echo "$modules_section" | grep 'Azure/avm-' | 
+                while IFS='|' read -r _ _ source _; do
+                  if [[ $source =~ Azure/avm- ]]; then
+                    echo "Found AVM: $source"
+                    echo "$source" | xargs >> project_avm_mappings.txt
+                  fi
+                done
+              fi
             fi
           done < projects-config.txt
           
