@@ -1,5 +1,5 @@
 [ProjectA]
 https://github.com/elabx-org/test-repo-4
 
-[ProjectB]
-https://github.com/elabx-org/test-repo-2
+[Project B]
+https://github.com/elabx-org/test-repo-4
