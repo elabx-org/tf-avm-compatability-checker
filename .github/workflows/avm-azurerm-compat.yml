@@ -365,15 +365,22 @@ jobs:
             if [[ $line =~ ^\[(.*)\]$ ]]; then
               project="${BASH_REMATCH[1]}"
               echo -e "\n[$project]" >> project_avm_mappings.txt
+              echo "Processing project: $project"
             elif [[ $line =~ ^https://github.com/ ]]; then
               repo_url=$line
               repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
               readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
+              echo "Fetching README from: $readme_url"
               readme_content=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$readme_url" | jq -r '.content' | base64 --decode)
               
-              echo "$readme_content" | sed -n '/^## Modules$/,/^#/p' | grep 'Azure/avm-' | 
+              echo "Extracting modules from README:"
+              modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
+              echo "$modules_section"
+              
+              echo "$modules_section" | grep 'Azure/avm-' | 
               while IFS='|' read -r _ _ source _; do
                 if [[ $source =~ Azure/avm- ]]; then
+                  echo "Found AVM: $source"
                   echo "$source" | xargs >> project_avm_mappings.txt
                 fi
               done
