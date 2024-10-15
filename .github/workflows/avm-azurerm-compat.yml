@@ -92,12 +92,12 @@ jobs:
                   source=$(echo "$source" | xargs)
                   if [[ $source == Azure/avm-* ]]; then
                     source=${source%/azurerm}
-                    if [[ ! ${existing_avms["$source"]} && ! ${new_avms["$source"]} ]]; then
+                    if [[ ! ${existing_avms["$source"]} ]]; then
                       new_avms["$source"]="latest"
                       echo "Found new AVM: $source"
                     fi
                   fi
-                done < <(awk '/^## Modules$/,/^#/' "$temp_dir/README.md" | grep '|')
+                done < <(awk '/^## Modules$/,/^#/' "$temp_dir/README.md" | grep '|' | tail -n +3)
               else
                 echo "README.md not found in the repository."
               fi
@@ -110,6 +110,11 @@ jobs:
           # Update avm-config.txt with new AVMs
           for avm in "${!new_avms[@]}"; do
             echo "$avm ${new_avms[$avm]}" >> avm-config.txt
+          done
+          
+          echo "Newly added AVMs:"
+          for avm in "${!new_avms[@]}"; do
+            echo "$avm ${new_avms[$avm]}"
           done
           
           echo "Updated avm-config.txt:"
