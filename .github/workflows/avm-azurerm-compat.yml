@@ -63,7 +63,7 @@ jobs:
           echo "Processing projects-config.txt and extracting AVMs..."
           
           # Initialize an array to store all AVMs
-          ddeclare -A existing_avms
+          declare -A existing_avms
           declare -A new_avms
 
           # Read existing AVMs from avm-config.txt
