@@ -25,20 +25,17 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Tue Oct 15 17:58:51 BST 2024
+🕒 Last updated: Tue Oct 15 18:04:11 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11350786500)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11350862260)
 
 ## Project-Specific Compatibility
 
 | Project | Compatible AVMs | Total AVMs | Compatibility % |
 |---------|-----------------|------------|-----------------|
-| ProjectA | 0 | 2 | 0% |
-| ProjectB | 0 | 2 | 0% |
-| ProjectC | 1 | 2 | 50% |
-| Project D | 3 | 3 | 100% |
+| ProjectA | 1 | 1 | 100% |
 
 ## Details
 
@@ -46,25 +43,5 @@
 
 | AVM | AVM Source | Module Version | Compatibility |
 |-----|------------|----------------|---------------|
-| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 0.2.7 | incompatible |
-| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Azure/avm-res-compute-virtualmachine/azurerm | 0.15.1 | incompatible |
-### ProjectB
-
-| AVM | AVM Source | Module Version | Compatibility |
-|-----|------------|----------------|---------------|
-| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 0.2.7 | incompatible |
-| [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | Azure/caf-enterprise-scale/azurerm | 6.0.0 | incompatible |
-### ProjectC
-
-| AVM | AVM Source | Module Version | Compatibility |
-|-----|------------|----------------|---------------|
-| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | Azure/avm-res-compute-virtualmachine/azurerm | 0.15.1 | incompatible |
-| [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | Azure/avm-res-keyvault-vault/azurerm | 0.9.1 | compatible |
-### Project D
-
-| AVM | AVM Source | Module Version | Compatibility |
-|-----|------------|----------------|---------------|
-| [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | Azure/avm-res-keyvault-vault/azurerm | 0.9.1 | compatible |
-| [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | Azure/avm-res-network-azurefirewall/azurerm | 0.3.0 | compatible |
-| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.1/submodules/rule_collection_groups) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups | 0.3.1 | compatible |
+| AVM Name ---------- [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.1/submodules/rule_collection_groups) [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | AVM Source ------------ Azure/avm-ptn-vnetgateway/azurerm Azure/caf-enterprise-scale/azurerm Azure/avm-res-compute-virtualmachine/azurerm Azure/avm-res-keyvault-vault/azurerm Azure/avm-res-network-azurefirewall/azurerm Azure/avm-res-network-bastionhost/azurerm Azure/avm-res-network-ddosprotectionplan/azurerm Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups Azure/avm-res-network-firewallpolicy/azurerm Azure/avm-res-network-networksecuritygroup/azurerm Azure/avm-res-network-privatednszone/azurerm Azure/avm-res-network-publicipaddress/azurerm Azure/avm-res-network-routetable/azurerm Azure/avm-res-storage-storageaccount/azurerm | Module Version ---------------- 0.6.0 6.0.0 0.15.1 0.9.1 0.3.0 0.3.0 0.2.0 0.3.1 0.3.1 0.2.0 0.2.0 0.1.2 0.3.0 0.2.7 | Compatibility --------------- incompatible incompatible incompatible compatible compatible incompatible compatible compatible compatible incompatible incompatible compatible compatible incompatible |
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
