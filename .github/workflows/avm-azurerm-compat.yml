@@ -80,11 +80,8 @@ jobs:
           function process_github_url() {
             local repo_url=$1
             repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
-            echo "Extracted repo name: $repo_name"
             readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
-            echo "Constructed README URL: $readme_url"
             
-            echo "Fetching README from: $readme_url"
             readme_response=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" "$readme_url")
             
             if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
@@ -94,35 +91,19 @@ jobs:
             
             readme_content=$(echo "$readme_response" | jq -r '.content' | base64 --decode)
             
-            echo "Extracting modules from README:"
             modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
-            echo "$modules_section"
             
             if [ -z "$modules_section" ]; then
               echo "Warning: No '## Modules' section found in README"
             else
               echo "$modules_section" | grep 'Azure/avm-' | 
-              while IFS='|' read -r _ _ source version; do
+              while IFS='|' read -r _ _ source _; do
                 if [[ $source =~ Azure/avm- ]]; then
-                  # Extract the base module name
-                  base_module=$(echo "$source" | cut -d'/' -f2)
-                  # Check if it's a submodule
-                  if [[ $source == *"//"* ]]; then
-                    submodule=$(echo "$source" | cut -d'/' -f4-)
-                    avm_name="Azure/$base_module//$submodule"
-                    echo "Found AVM submodule: $avm_name"
-                  else
-                    avm_name="Azure/$base_module"
-                    echo "Found AVM base module: $avm_name"
-                  fi
-                  
+                  avm_name=$(echo "$source" | awk -F'/' '{print $1"/"$2}' | xargs)
                   if [[ -z "${existing_avms[$avm_name]}" ]]; then
-                    echo "AVM $avm_name not in existing_avms"
                     if [[ -z "${new_avms[$avm_name]}" ]]; then
                       new_avms["$avm_name"]=1
                       echo "Found new AVM: $avm_name"
-                    else
-                      echo "AVM $avm_name already in new_avms"
                     fi
                   else
                     echo "AVM already exists in avm-config.txt: $avm_name"
@@ -132,27 +113,10 @@ jobs:
             fi
           }
           
-          echo "Contents of projects-config.txt:"
-          cat projects-config.txt
-          
           while IFS= read -r line || [[ -n "$line" ]]; do
-            echo "Processing line: $line"
-            if [[ $line =~ ^\[(.*)\](.*)$ ]]; then
-              project="${BASH_REMATCH[1]}"
-              remainder="${BASH_REMATCH[2]}"
-              echo "Processing project: $project"
-              
-              if [[ $remainder =~ https://github.com/ ]]; then
-                repo_url=$(echo "$remainder" | xargs)
-                echo "Found GitHub URL on same line: $repo_url"
-                process_github_url "$repo_url"
-              fi
-            elif [[ $line =~ ^https://github.com/ ]]; then
-              repo_url=$(echo "$line" | xargs)
-              echo "Found GitHub URL: $repo_url"
+            if [[ $line =~ ^https://github.com/ || $line =~ ^\[.*\].*https://github.com/ ]]; then
+              repo_url=$(echo "$line" | grep -o 'https://github.com/[^ ]*')
               process_github_url "$repo_url"
-            else
-              echo "Unrecognized line: $line"
             fi
           done < projects-config.txt
           
@@ -162,8 +126,6 @@ jobs:
             if ! grep -q "^$avm/azurerm" avm-config.txt; then
               echo "$avm/azurerm" >> avm-config.txt
               echo "Added $avm/azurerm to avm-config.txt"
-            else
-              echo "$avm/azurerm already exists in avm-config.txt"
             fi
           done
           
@@ -178,20 +140,6 @@ jobs:
           echo "List of new AVMs added:"
           for avm in "${!new_avms[@]}"; do
             echo "- $avm"
-          done
-      
-          # Ensure the file ends with a newline
-          sed -i -e '$a\' avm-config.txt
-      
-          # Debug: Print contents of arrays
-          echo "Debug: Existing AVMs"
-          for avm in "${!existing_avms[@]}"; do
-            echo "$avm"
-          done
-      
-          echo "Debug: New AVMs"
-          for avm in "${!new_avms[@]}"; do
-            echo "$avm"
           done
 
       - name: Set up matrix
