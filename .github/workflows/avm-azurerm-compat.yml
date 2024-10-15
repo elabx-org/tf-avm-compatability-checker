@@ -92,22 +92,24 @@ jobs:
               # Extract AVMs from README.md
               if [ -f "$temp_dir/README.md" ]; then
                 echo "Extracting AVMs from README.md..."
-                echo "Contents of README.md:"
-                cat "$temp_dir/README.md"
-                while IFS='|' read -r _ source _; do
+                echo "Module section of README.md:"
+                awk '/^## Modules$/,/^##/' "$temp_dir/README.md"
+                
+                while IFS='|' read -r _ source version _; do
                   source=$(echo "$source" | xargs)
-                  echo "Parsed source: $source"
+                  version=$(echo "$version" | xargs)
+                  echo "Parsed line: $source | $version"
                   if [[ $source == Azure/avm-* ]]; then
                     source=${source%/azurerm}
                     echo "Processed source: $source"
                     if [[ ! ${existing_avms["$source"]} ]]; then
-                      new_avms["$source"]="latest"
-                      echo "Found new AVM: $source"
+                      new_avms["$source"]="$version"
+                      echo "Found new AVM: $source $version"
                     else
                       echo "AVM already exists: $source"
                     fi
                   fi
-                done < <(awk '/^## Modules$/,/^#/' "$temp_dir/README.md" | grep '|' | tail -n +3)
+                done < <(awk '/^## Modules$/,/^##/' "$temp_dir/README.md" | grep '|' | grep 'Azure/avm-' | sed 's/^|//;s/|$//')
               else
                 echo "README.md not found in the repository."
               fi
