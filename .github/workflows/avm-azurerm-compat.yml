@@ -77,6 +77,11 @@ jobs:
             echo "Existing AVM: $avm"
           done < avm-config.txt
           
+          # Function to extract Source values from README.md
+          extract_sources() {
+            grep '| <a name="module_' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//' | sort | uniq
+          }
+          
           function process_github_url() {
             local repo_url=$1
             repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
@@ -89,33 +94,37 @@ jobs:
               return
             fi
             
-            readme_content=$(echo "$readme_response" | jq -r '.content' | base64 --decode)
+            echo "$readme_response" | jq -r '.content' | base64 --decode > README.md
             
-            modules_section=$(echo "$readme_content" | sed -n '/^## Modules$/,/^#/p')
+            sources=($(extract_sources))
             
-            if [ -z "$modules_section" ]; then
-              echo "Warning: No '## Modules' section found in README"
-            else
-              echo "$modules_section" | grep 'Azure/avm-' | 
-              while IFS='|' read -r _ _ source _; do
-                if [[ $source =~ Azure/avm- ]]; then
-                  avm_name=$(echo "$source" | awk -F'/' '{print $1"/"$2}' | xargs)
-                  if [[ -z "${existing_avms[$avm_name]}" ]]; then
-                    if [[ -z "${new_avms[$avm_name]}" ]]; then
-                      new_avms["$avm_name"]=1
-                      echo "Found new AVM: $avm_name"
-                    fi
-                  else
-                    echo "AVM already exists in avm-config.txt: $avm_name"
+            echo "Extracted Sources:"
+            printf '%s\n' "${sources[@]}"
+            
+            for source in "${sources[@]}"; do
+              if [[ $source =~ Azure/avm- ]]; then
+                avm_name=$(echo "$source" | awk -F'/' '{print $1"/"$2}')
+                if [[ -z "${existing_avms[$avm_name]}" ]]; then
+                  if [[ -z "${new_avms[$avm_name]}" ]]; then
+                    new_avms["$avm_name"]=1
+                    echo "Found new AVM: $avm_name"
                   fi
+                else
+                  echo "AVM already exists in avm-config.txt: $avm_name"
                 fi
-              done
-            fi
+              fi
+            done
+            
+            rm README.md
           }
+          
+          echo "Contents of projects-config.txt:"
+          cat projects-config.txt
           
           while IFS= read -r line || [[ -n "$line" ]]; do
             if [[ $line =~ ^https://github.com/ || $line =~ ^\[.*\].*https://github.com/ ]]; then
               repo_url=$(echo "$line" | grep -o 'https://github.com/[^ ]*')
+              echo "Processing GitHub URL: $repo_url"
               process_github_url "$repo_url"
             fi
           done < projects-config.txt
