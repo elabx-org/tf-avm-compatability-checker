@@ -153,52 +153,59 @@ jobs:
             fi
           done < projects-config.txt
           
-              echo "New AVMs to be added:"
-              true_new_avms=0
-              for avm in "${!new_avms[@]}"; do
-                echo "Checking AVM: $avm"
-                if ! grep -q "^$avm/azurerm" avm-config.txt; then
-                  echo "$avm"
-                  log_debug "Attempting to add $avm/azurerm to avm-config.txt"
-                  if echo "$avm/azurerm" >> avm-config.txt; then
-                    log_debug "Successfully added $avm/azurerm to avm-config.txt"
-                    ((true_new_avms++))
-                  else
-                    log_error "Failed to add $avm/azurerm to avm-config.txt"
-                    log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
-                    log_debug "Current directory: $(pwd)"
-                    log_debug "Contents of current directory: $(ls -la)"
-                    exit 1
-                  fi
-                else
-                  log_debug "$avm/azurerm already exists in avm-config.txt"
-                  unset new_avms["$avm"]
-                fi
-              done
-
-              log_debug "After adding new AVMs"
-
-              echo "Updated avm-config.txt:"
-              cat avm-config.txt
-
-              log_debug "After cat avm-config.txt"
-
-              echo "Summary of changes:"
-              echo "Total existing AVMs: ${#existing_avms[@]}"
-              echo "Total new AVMs added: $true_new_avms"
-              echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
+          echo "New AVMs to be added:"
+          true_new_avms=0
+          for avm in "${!new_avms[@]}"; do
+            echo "Checking AVM: $avm"
+            if ! grep -q "^$avm/azurerm" avm-config.txt; then
+              echo "$avm"
+              log_debug "Line 100: Before attempting to add $avm/azurerm to avm-config.txt"
+              log_debug "Line 101: Content of avm-config.txt before addition:"
+              log_debug "$(cat avm-config.txt)"
               
-              log_debug "After summary of changes"
+              # This is likely line 102
+              if echo "$avm/azurerm" >> avm-config.txt; then
+                log_debug "Line 103: Successfully added $avm/azurerm to avm-config.txt"
+                ((true_new_avms++))
+              else
+                log_error "Line 105: Failed to add $avm/azurerm to avm-config.txt"
+                log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
+                log_debug "Current directory: $(pwd)"
+                log_debug "Contents of current directory: $(ls -la)"
+                exit 1
+              fi
+              
+              log_debug "Line 111: Content of avm-config.txt after addition:"
+              log_debug "$(cat avm-config.txt)"
+            else
+              log_debug "$avm/azurerm already exists in avm-config.txt"
+              unset new_avms["$avm"]
+            fi
+          done
 
-              echo "List of new AVMs added:"
-              for avm in "${!new_avms[@]}"; do
-                echo "- $avm"
-              done
+          log_debug "After adding new AVMs"
 
-              log_debug "After listing new AVMs"
+          echo "Updated avm-config.txt:"
+          cat avm-config.txt
 
-              echo "Script completed successfully."
-            shell: bash
+          log_debug "After cat avm-config.txt"
+
+          echo "Summary of changes:"
+          echo "Total existing AVMs: ${#existing_avms[@]}"
+          echo "Total new AVMs added: $true_new_avms"
+          echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
+          
+          log_debug "After summary of changes"
+
+          echo "List of new AVMs added:"
+          for avm in "${!new_avms[@]}"; do
+            echo "- $avm"
+          done
+
+          log_debug "After listing new AVMs"
+
+          echo "Script completed successfully."
+        shell: bash
 
       - name: Set up matrix
         id: set-matrix
