@@ -161,9 +161,10 @@ jobs:
               echo "$avm"
               log_debug "Line 100: Before attempting to add $avm/azurerm to avm-config.txt"
               log_debug "Line 101: Content of avm-config.txt before addition:"
-              log_debug "$(cat avm-config.txt)"
+              cat avm-config.txt | while IFS= read -r line; do
+                log_debug "$line"
+              done
               
-              # This is likely line 102
               if echo "$avm/azurerm" >> avm-config.txt; then
                 log_debug "Line 103: Successfully added $avm/azurerm to avm-config.txt"
                 ((true_new_avms++))
@@ -176,7 +177,13 @@ jobs:
               fi
               
               log_debug "Line 111: Content of avm-config.txt after addition:"
-              log_debug "$(cat avm-config.txt)"
+              if [ -f avm-config.txt ]; then
+                cat avm-config.txt | while IFS= read -r line; do
+                  log_debug "$line"
+                done
+              else
+                log_error "avm-config.txt file not found after addition"
+              fi
             else
               log_debug "$avm/azurerm already exists in avm-config.txt"
               unset new_avms["$avm"]
@@ -186,7 +193,11 @@ jobs:
           log_debug "After adding new AVMs"
 
           echo "Updated avm-config.txt:"
-          cat avm-config.txt
+          if [ -f avm-config.txt ]; then
+            cat avm-config.txt
+          else
+            log_error "avm-config.txt file not found"
+          fi
 
           log_debug "After cat avm-config.txt"
 
