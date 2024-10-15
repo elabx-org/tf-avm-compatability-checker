@@ -355,6 +355,81 @@ jobs:
           with:
             name: compatibility-summary
 
+        - name: Set up Python
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.x'
+    
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip
+            pip install PyGithub
+    
+        - name: Fetch and process project AVM modules
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            import os
+            import re
+            from github import Github
+    
+            def extract_avm_modules(readme_content):
+                modules_section = re.search(r'## Modules\n\n(.*?)\n\n', readme_content, re.DOTALL)
+                if not modules_section:
+                    return []
+                
+                modules_table = modules_section.group(1)
+                avm_modules = []
+                for line in modules_table.split('\n'):
+                    if 'Azure/avm-' in line:
+                        parts = line.split('|')
+                        if len(parts) >= 4:
+                            avm_modules.append(parts[3].strip())
+                return avm_modules
+    
+            g = Github(os.environ['GITHUB_TOKEN'])
+            projects = {}
+            all_avm_modules = set()
+    
+            with open('projects-config.txt', 'r') as f:
+                current_project = None
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('[') and line.endswith(']'):
+                        current_project = line[1:-1]
+                        projects[current_project] = []
+                    elif line.startswith('https://github.com/'):
+                        repo_name = '/'.join(line.split('/')[-2:])
+                        repo = g.get_repo(repo_name)
+                        try:
+                            readme = repo.get_contents('README.md')
+                            readme_content = readme.decoded_content.decode('utf-8')
+                            avm_modules = extract_avm_modules(readme_content)
+                            projects[current_project].extend(avm_modules)
+                            all_avm_modules.update(avm_modules)
+                        except Exception as e:
+                            print(f"Error processing {repo_name}: {str(e)}")
+    
+            # Update avm-config.txt with new modules
+            with open('avm-config.txt', 'r+') as f:
+                existing_modules = set(f.read().splitlines())
+                new_modules = all_avm_modules - existing_modules
+                if new_modules:
+                    f.seek(0, 2)  # Go to the end of the file
+                    for module in new_modules:
+                        f.write(f"{module}\n")
+    
+            # Write project AVM mappings to a file
+            with open('project_avm_mappings.txt', 'w') as f:
+                for project, modules in projects.items():
+                    f.write(f"[{project}]\n")
+                    for module in modules:
+                        f.write(f"{module}\n")
+                    f.write("\n")
+    
+            print("Project AVM mappings have been updated.")
+          shell: python
+    
         - name: Calculate Project Compatibility
           run: |
             echo "# Project Compatibility with AzureRM" > project_summary.md
@@ -362,35 +437,26 @@ jobs:
             echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
             echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
         
-            current_project=""
-            compatible_count=0
-            total_count=0
-        
             while IFS= read -r line || [ -n "$line" ]; do
               if [[ $line =~ ^\[(.*)\]$ ]]; then
-                # New project found
-                if [ -n "$current_project" ]; then
-                  # Output previous project results
-                  compatibility_percentage=$((compatible_count * 100 / total_count))
-                  echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
-                fi
                 current_project="${BASH_REMATCH[1]}"
                 compatible_count=0
                 total_count=0
               elif [ -n "$line" ]; then
-                # AVM line
                 total_count=$((total_count + 1))
                 if grep -q "$line.*| compatible |" summary.md; then
                   compatible_count=$((compatible_count + 1))
                 fi
+              else
+                if [ -n "$current_project" ] && [ $total_count -gt 0 ]; then
+                  compatibility_percentage=$((compatible_count * 100 / total_count))
+                  echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+                fi
+                current_project=""
+                compatible_count=0
+                total_count=0
               fi
-            done < projects-config.txt
-        
-            # Output last project results
-            if [ -n "$current_project" ]; then
-              compatibility_percentage=$((compatible_count * 100 / total_count))
-              echo "| $current_project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
-            fi
+            done < project_avm_mappings.txt
         
             echo "" >> project_summary.md
             echo "## Details" >> project_summary.md
@@ -402,25 +468,23 @@ jobs:
                 current_project="${BASH_REMATCH[1]}"
                 echo "### $current_project" >> project_summary.md
                 echo "" >> project_summary.md
-                echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
-                echo "|-----|------------|----------------|---------------|" >> project_summary.md
+                echo "| AVM | Compatibility |" >> project_summary.md
+                echo "|-----|---------------|" >> project_summary.md
               elif [ -n "$line" ]; then
                 summary_line=$(grep "$line" summary.md)
                 avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
-                module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
                 compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                echo "| $avm | $compatibility |" >> project_summary.md
               fi
-            done < projects-config.txt
+            done < project_avm_mappings.txt
         
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
-
+    
         - name: Upload Project Summary
           uses: actions/upload-artifact@v4
           with:
             name: project-compatibility-summary
-            path: project_summary.md      
+            path: project_summary.md
 
   create-issues:
     needs: summarise-results
