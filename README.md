@@ -26,17 +26,17 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Tue Oct 15 23:08:20 BST 2024
+🕒 Last updated: Tue Oct 15 23:17:38 BST 2024
 
 🔄 Next scheduled run: 02:00 AM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11355113532)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11355218556)
 
 ## Project-Specific Compatibility
 
 | Project | Compatible AVMs | Total AVMs | Compatibility % |
 |---------|-----------------|------------|-----------------|
-| ProjectA | 1 | 1 | 100% |
+| ProjectA | 4 | 10 | 40% |
 
 ## Details
 
@@ -44,5 +44,15 @@
 
 | AVM | AVM Source | Module Version | Compatibility |
 |-----|------------|----------------|---------------|
-| AVM Name ---------- [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) [network-ddosprotectionplan](https://registry.terraform.io/modules/Azure/avm-res-network-ddosprotectionplan/azurerm) [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.1/submodules/rule_collection_groups) [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) [sql-managedinstance](https://registry.terraform.io/modules/Azure/avm-res-sql-managedinstance/azurerm) [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | AVM Source ------------ Azure/avm-ptn-vnetgateway/azurerm Azure/caf-enterprise-scale/azurerm Azure/avm-res-compute-virtualmachine/azurerm Azure/avm-res-keyvault-vault/azurerm Azure/avm-res-network-azurefirewall/azurerm Azure/avm-res-network-bastionhost/azurerm Azure/avm-res-network-ddosprotectionplan/azurerm Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups Azure/avm-res-network-firewallpolicy/azurerm Azure/avm-res-network-networksecuritygroup/azurerm Azure/avm-res-network-privatednszone/azurerm Azure/avm-res-network-publicipaddress/azurerm Azure/avm-res-network-routetable/azurerm Azure/avm-res-sql-managedinstance/azurerm Azure/avm-res-storage-storageaccount/azurerm | Module Version ---------------- 0.6.0 6.0.0 0.15.1 0.9.1 0.3.0 0.3.0 0.2.0 0.3.1 0.3.1 0.2.0 0.2.0 0.1.2 0.3.0 0.1.0 0.2.7 | Compatibility --------------- incompatible incompatible incompatible compatible compatible incompatible compatible compatible compatible incompatible incompatible compatible compatible incompatible incompatible |
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
+| [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | Azure/avm-res-network-azurefirewall/azurerm | 0.3.0 | compatible |
+| [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | Azure/avm-res-network-bastionhost/azurerm | 0.3.0 | incompatible |
+| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm/0.3.1/submodules/rule_collection_groups) [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups Azure/avm-res-network-firewallpolicy/azurerm | 0.3.1 0.3.1 | compatible compatible |
+| [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) | Azure/avm-res-network-networksecuritygroup/azurerm | 0.2.0 | incompatible |
+| [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | Azure/avm-res-network-privatednszone/azurerm | 0.2.0 | incompatible |
+| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | Azure/avm-res-network-publicipaddress/azurerm | 0.1.2 | compatible |
+| [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) | Azure/avm-res-network-routetable/azurerm | 0.3.0 | compatible |
+| [sql-managedinstance](https://registry.terraform.io/modules/Azure/avm-res-sql-managedinstance/azurerm) | Azure/avm-res-sql-managedinstance/azurerm | 0.1.0 | incompatible |
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 0.2.7 | incompatible |
+
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
