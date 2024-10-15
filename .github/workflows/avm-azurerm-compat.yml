@@ -57,6 +57,66 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Process projects and extract AVMs
+        id: process-projects
+        run: |
+          echo "Processing projects-config.txt and extracting AVMs..."
+          
+          # Initialize an array to store all AVMs
+          declare -A all_avms
+          
+          while IFS= read -r line || [ -n "$line" ]; do
+            if [[ $line =~ ^\[(.*)\]$ ]]; then
+              # Project name
+              project_name="${BASH_REMATCH[1]}"
+              echo "Processing project: $project_name"
+            elif [[ $line =~ ^https?:// ]]; then
+              # Repository URL
+              repo_url="$line"
+              echo "Repository URL: $repo_url"
+              
+              # Clone the repository
+              temp_dir=$(mktemp -d)
+              git clone "$repo_url" "$temp_dir"
+              
+              # Extract AVMs from README.md
+              if [ -f "$temp_dir/README.md" ]; then
+                echo "Extracting AVMs from README.md..."
+                avms=$(awk '/^## Modules$/,/^#/' "$temp_dir/README.md" | grep 'Azure/' | awk -F'|' '{print $2}' | awk '{print $1}' | sort -u)
+                
+                for avm in $avms; do
+                  if [[ $avm == Azure/* ]]; then
+                    all_avms["$avm"]=1
+                    echo "Found AVM: $avm"
+                  fi
+                done
+              else
+                echo "README.md not found in the repository."
+              fi
+              
+              # Clean up
+              rm -rf "$temp_dir"
+            fi
+          done < projects-config.txt
+          
+          # Output all unique AVMs
+          echo "All unique AVMs found:"
+          for avm in "${!all_avms[@]}"; do
+            echo "$avm"
+          done
+          
+          # Update avm-config.txt with new AVMs
+          touch avm-config.txt
+          for avm in "${!all_avms[@]}"; do
+            if ! grep -q "^$avm" avm-config.txt; then
+              echo "$avm" >> avm-config.txt
+              echo "Added new AVM to avm-config.txt: $avm"
+            fi
+          done
+          
+          echo "Updated avm-config.txt:"
+          cat avm-config.txt
+
       - name: Set up matrix
         id: set-matrix
         shell: bash
