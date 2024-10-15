@@ -25,31 +25,21 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Tue Oct 15 16:49:49 BST 2024
+🕒 Last updated: Tue Oct 15 17:03:48 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11349682346)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11349915412)
 
 ## Project-Specific Compatibility
 
 | Project | Compatible AVMs | Total AVMs | Compatibility % |
 |---------|-----------------|------------|-----------------|
-| ProjectA | 4 | 9 | 44% |
 
 ## Details
 
 ### ProjectA
 
-| AVM | Version | Compatibility |
-|-----|---------|---------------|
-| avm-ptn-vnetgateway |  0.5.1  | Not found in summary |
-| avm-res-network-azurefirewall |  0.1.4  | Not found in summary |
-| avm-res-network-bastionhost |  0.2.0  | Not found in summary |
-| avm-res-network-firewallpolicy |  0.2.1  | Not found in summary |
-| avm-res-network-networksecuritygroup |  0.2.0  | Not found in summary |
-| avm-res-network-privatednszone |  0.1.2  | Not found in summary |
-| avm-res-network-publicipaddress |  0.1.2  | Not found in summary |
-| avm-res-network-routetable |  0.2.0  | Not found in summary |
-| avm-res-storage-storageaccount |  0.2.7  | Not found in summary |
+| AVM | Compatibility |
+|-----|---------------|
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
