@@ -221,43 +221,26 @@ jobs:
         shell: bash
         run: |
           set -e
-
+          echo "Reading AVM sources from config file"
+          if [ ! -f "avm-config.txt" ]; then
+            echo "Error: avm-config.txt not found" >&2
+            exit 1
+          fi
+          
           get_short_name() {
             echo "$1" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///'
           }
-
-          # Check if AVM sources are provided via workflow dispatch
-          if [ -n "${{ github.event.inputs.avm_sources }}" ]; then
-            echo "Using AVM sources from workflow dispatch"
-            IFS=',' read -ra AVM_SOURCES <<< "${{ github.event.inputs.avm_sources }}"
-          else
-            echo "Reading AVM sources from config file"
-            if [ ! -f "avm-config.txt" ]; then
-              echo "Error: avm-config.txt not found" >&2
-              exit 1
-            fi
-            mapfile -t AVM_SOURCES < avm-config.txt
-          fi
-
-          # Use input values or default values with clear precedence
-          AZURERM_VERSION="${{ github.event.inputs.azurerm_versions }}"
-          if [ -z "$AZURERM_VERSION" ]; then
-            AZURERM_VERSION="${{ github.event.inputs.azurerm_versions != '' && github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
-          fi
-
-          TF_VERSION="${{ github.event.inputs.tf_versions }}"
-          if [ -z "$TF_VERSION" ]; then
-            TF_VERSION="${{ github.event.inputs.tf_versions != '' && github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
-          fi
-
+      
+          AZURERM_VERSION="${{ github.event.inputs.azurerm_versions != '' && github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
+          TF_VERSION="${{ github.event.inputs.tf_versions != '' && github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
+      
           echo "Using AzureRM version: $AZURERM_VERSION"
           echo "Using Terraform version: $TF_VERSION"
-
-          # Process AVM sources
+      
           MATRIX=()
-          for source in "${AVM_SOURCES[@]}"; do
-            # Split the source into AVM source and version (if provided)
-            IFS=' ' read -r avm_source avm_version <<< "$source"
+          while IFS= read -r line; do
+            # Split the line into AVM source and version (if provided)
+            read -r avm_source avm_version <<< "$line"
             short_name=$(get_short_name "$avm_source")
             
             # If version is not specified, set it to "latest"
@@ -266,17 +249,17 @@ jobs:
             fi
             
             MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"$AZURERM_VERSION\",\"tf_version\":\"$TF_VERSION\"}")
-          done
-
+          done < avm-config.txt
+      
           # Join the matrix entries into a JSON array
           MATRIX_JSON="[$(IFS=,; echo "${MATRIX[*]}")]"
-
+      
           # Create the final matrix JSON
           FINAL_MATRIX="{\"include\":$MATRIX_JSON}"
-
+      
           # Set the matrix output
           echo "matrix=$FINAL_MATRIX" >> $GITHUB_OUTPUT
-
+      
           # Debug output
           echo "Matrix: $FINAL_MATRIX"
 
