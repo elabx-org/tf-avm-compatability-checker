@@ -346,7 +346,6 @@ jobs:
       needs: [summarise-results, determine-workflow]
       if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
       runs-on: ubuntu-latest
-      if: ${{ github.event.inputs.check_projects == 'true' }}
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
