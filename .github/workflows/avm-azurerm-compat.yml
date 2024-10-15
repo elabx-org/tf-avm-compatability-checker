@@ -227,6 +227,9 @@ jobs:
             exit 1
           fi
           
+          echo "Contents of avm-config.txt:"
+          cat avm-config.txt
+          
           get_short_name() {
             echo "$1" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///'
           }
@@ -238,7 +241,10 @@ jobs:
           echo "Using Terraform version: $TF_VERSION"
       
           MATRIX=()
-          while IFS= read -r line; do
+          while IFS= read -r line || [ -n "$line" ]; do
+            # Remove any trailing whitespace
+            line=$(echo "$line" | sed -e 's/[[:space:]]*$//')
+            
             # Split the line into AVM source and version (if provided)
             read -r avm_source avm_version <<< "$line"
             short_name=$(get_short_name "$avm_source")
@@ -247,6 +253,8 @@ jobs:
             if [ -z "$avm_version" ]; then
               avm_version="latest"
             fi
+            
+            echo "Processing: $avm_source (version: $avm_version)"
             
             MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"$AZURERM_VERSION\",\"tf_version\":\"$TF_VERSION\"}")
           done < avm-config.txt
