@@ -72,6 +72,7 @@ jobs:
           
           # Read existing AVMs from avm-config.txt
           while IFS=' ' read -r avm version; do
+            avm=$(echo "$avm" | sed 's|/azurerm$||')
             existing_avms["$avm"]=1
             echo "Existing AVM: $avm"
           done < avm-config.txt
@@ -104,13 +105,15 @@ jobs:
               while IFS='|' read -r _ _ source _; do
                 source=$(echo "$source" | xargs)
                 if [[ $source =~ Azure/avm- ]]; then
-                  # Extract the base module name without version
+                  # Extract the base module name without version and /azurerm
                   avm_name=$(echo "$source" | sed 's|/azurerm$||')
                   if [[ ! ${existing_avms["$avm_name"]} ]]; then
-                    new_avms["$avm_name"]=1
-                    echo "Found new AVM: $avm_name"
+                    if [[ ! ${new_avms["$avm_name"]} ]]; then
+                      new_avms["$avm_name"]=1
+                      echo "Found new AVM: $avm_name"
+                    fi
                   else
-                    echo "AVM already exists: $avm_name"
+                    echo "AVM already exists in avm-config.txt: $avm_name"
                   fi
                 fi
               done
@@ -141,10 +144,10 @@ jobs:
             fi
           done < projects-config.txt
           
-          echo "Newly added AVMs:"
+          echo "Truly new AVMs to be added:"
           for avm in "${!new_avms[@]}"; do
             echo "$avm"
-            echo "$avm" >> avm-config.txt
+            echo "$avm/azurerm" >> avm-config.txt
           done
           
           echo "Updated avm-config.txt:"
