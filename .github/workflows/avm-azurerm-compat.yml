@@ -460,7 +460,8 @@ jobs:
               total_count=0
             elif [[ $module =~ ^avm- ]]; then
               total_count=$((total_count + 1))
-              if grep -q "$module.*| compatible" summary.md; then
+              base_module=$(echo "$module" | cut -d'/' -f1)
+              if grep -q "$base_module.*| compatible" summary.md; then
                 compatible_count=$((compatible_count + 1))
               fi
             fi
@@ -485,7 +486,13 @@ jobs:
               echo "| AVM | Version | Compatibility |" >> project_summary.md
               echo "|-----|---------|---------------|" >> project_summary.md
             elif [[ $module =~ ^avm- ]]; then
-              summary_line=$(grep "$module" summary.md || echo "")
+              base_module=$(echo "$module" | cut -d'/' -f1)
+              if [[ $module == *"//"* ]]; then
+                submodule=$(echo "$module" | cut -d'/' -f2-)
+                summary_line=$(grep "$base_module.*$submodule" summary.md || echo "")
+              else
+                summary_line=$(grep "$base_module" summary.md | grep -v '//' || echo "")
+              fi
               if [ -n "$summary_line" ]; then
                 avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
                 compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
