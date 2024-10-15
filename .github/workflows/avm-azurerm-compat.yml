@@ -449,6 +449,16 @@ jobs:
           compatible_count=0
           total_count=0
           
+          # First, create a mapping of AVM sources to their config names
+          declare -A avm_map
+          while IFS= read -r line; do
+            if [[ $line =~ Azure/avm- ]]; then
+              source=$(echo "$line" | cut -d' ' -f1)
+              name=$(echo "$line" | cut -d' ' -f2-)
+              avm_map["$source"]="$name"
+            fi
+          done < avm-config.txt
+          
           while IFS='|' read -r module version || [ -n "$module" ]; do
             if [[ $module == \[*\] ]]; then
               if [ -n "$current_project" ] && [ $total_count -gt 0 ]; then
@@ -458,10 +468,10 @@ jobs:
               current_project="${module//[\[\]]/}"
               compatible_count=0
               total_count=0
-            elif [[ $module =~ ^avm- ]]; then
+            elif [[ $module =~ ^Azure/avm- ]]; then
               total_count=$((total_count + 1))
-              base_module=$(echo "$module" | cut -d'/' -f1)
-              if grep -q "$base_module.*| compatible" summary.md; then
+              avm_name="${avm_map[$module]}"
+              if [ -n "$avm_name" ] && grep -q "$avm_name.*| compatible" summary.md; then
                 compatible_count=$((compatible_count + 1))
               fi
             fi
@@ -483,22 +493,21 @@ jobs:
               current_project="${module//[\[\]]/}"
               echo "### $current_project" >> project_summary.md
               echo "" >> project_summary.md
-              echo "| AVM | Version | Compatibility |" >> project_summary.md
-              echo "|-----|---------|---------------|" >> project_summary.md
-            elif [[ $module =~ ^avm- ]]; then
-              base_module=$(echo "$module" | cut -d'/' -f1)
-              if [[ $module == *"//"* ]]; then
-                submodule=$(echo "$module" | cut -d'/' -f2-)
-                summary_line=$(grep "$base_module.*$submodule" summary.md || echo "")
+              echo "| AVM | Compatibility |" >> project_summary.md
+              echo "|-----|---------------|" >> project_summary.md
+            elif [[ $module =~ ^Azure/avm- ]]; then
+              avm_name="${avm_map[$module]}"
+              if [ -n "$avm_name" ]; then
+                summary_line=$(grep "$avm_name" summary.md || echo "")
+                if [ -n "$summary_line" ]; then
+                  avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                  compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                  echo "| $avm | $compatibility |" >> project_summary.md
+                else
+                  echo "| $avm_name | Not found in summary |" >> project_summary.md
+                fi
               else
-                summary_line=$(grep "$base_module" summary.md | grep -v '//' || echo "")
-              fi
-              if [ -n "$summary_line" ]; then
-                avm=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm | $version | $compatibility |" >> project_summary.md
-              else
-                echo "| $module | $version | Not found in summary |" >> project_summary.md
+                echo "| $module | Not found in avm-config |" >> project_summary.md
               fi
             fi
           done < project_avm_mappings.txt
