@@ -92,13 +92,15 @@ jobs:
               # Extract AVMs from README.md
               if [ -f "$temp_dir/README.md" ]; then
                 echo "Extracting AVMs from README.md..."
-                echo "Module section of README.md:"
-                awk '/^## Modules$/,/^##/' "$temp_dir/README.md"
+                echo "Full contents of README.md:"
+                cat "$temp_dir/README.md"
                 
-                while IFS='|' read -r _ source version _; do
+                echo "Extracting module information:"
+                sed -n '/^## Modules$/,/^##/p' "$temp_dir/README.md" | grep '|' | sed 's/^|//;s/|$//' | while IFS='|' read -r name source version; do
+                  name=$(echo "$name" | xargs)
                   source=$(echo "$source" | xargs)
                   version=$(echo "$version" | xargs)
-                  echo "Parsed line: $source | $version"
+                  echo "Parsed line: Name: $name | Source: $source | Version: $version"
                   if [[ $source == Azure/avm-* ]]; then
                     source=${source%/azurerm}
                     echo "Processed source: $source"
@@ -109,7 +111,7 @@ jobs:
                       echo "AVM already exists: $source"
                     fi
                   fi
-                done < <(awk '/^## Modules$/,/^##/' "$temp_dir/README.md" | grep '|' | grep 'Azure/avm-' | sed 's/^|//;s/|$//')
+                done
               else
                 echo "README.md not found in the repository."
               fi
@@ -126,7 +128,7 @@ jobs:
           done
           
           echo "Updated avm-config.txt:"
-          cat avm-config.txt
+          cat avm-config.txt      
 
       - name: Set up matrix
         id: set-matrix
