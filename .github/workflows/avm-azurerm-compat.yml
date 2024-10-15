@@ -105,12 +105,15 @@ jobs:
               while IFS='|' read -r _ _ source _; do
                 source=$(echo "$source" | xargs)
                 if [[ $source =~ Azure/avm- ]]; then
-                  # Extract the base module name without version and /azurerm
                   avm_name=$(echo "$source" | sed 's|/azurerm$||')
+                  echo "Checking AVM: $avm_name"
                   if [[ -z ${existing_avms["$avm_name"]} ]]; then
+                    echo "AVM $avm_name not in existing_avms"
                     if [[ -z ${new_avms["$avm_name"]} ]]; then
                       new_avms["$avm_name"]=1
                       echo "Found new AVM: $avm_name"
+                    else
+                      echo "AVM $avm_name already in new_avms"
                     fi
                   else
                     echo "AVM already exists in avm-config.txt: $avm_name"
@@ -165,6 +168,17 @@ jobs:
       
           # Ensure the file ends with a newline
           sed -i -e '$a\' avm-config.txt
+      
+          # Debug: Print contents of arrays
+          echo "Debug: Existing AVMs"
+          for avm in "${!existing_avms[@]}"; do
+            echo "$avm"
+          done
+      
+          echo "Debug: New AVMs"
+          for avm in "${!new_avms[@]}"; do
+            echo "$avm"
+          done
 
       - name: Set up matrix
         id: set-matrix
