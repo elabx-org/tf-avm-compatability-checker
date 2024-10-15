@@ -108,10 +108,8 @@ jobs:
                   # Extract the base module name without version and /azurerm
                   avm_name=$(echo "$source" | sed 's|/azurerm$||')
                   if [[ ! ${existing_avms["$avm_name"]} ]]; then
-                    if [[ ! ${new_avms["$avm_name"]} ]]; then
-                      new_avms["$avm_name"]=1
-                      echo "Found new AVM: $avm_name"
-                    fi
+                    new_avms["$avm_name"]=1
+                    echo "Found new AVM: $avm_name"
                   else
                     echo "AVM already exists in avm-config.txt: $avm_name"
                   fi
@@ -152,11 +150,16 @@ jobs:
           
           echo "Updated avm-config.txt:"
           cat avm-config.txt
-          echo
+      
           echo "Summary of changes:"
           echo "Total existing AVMs: ${#existing_avms[@]}"
           echo "Total new AVMs added: ${#new_avms[@]}"
-          echo "Final total AVMs: $((${#existing_avms[@]} + ${#new_avms[@]}))"      
+          echo "Final total AVMs: $((${#existing_avms[@]} + ${#new_avms[@]}))"
+      
+          echo "List of new AVMs added:"
+          for avm in "${!new_avms[@]}"; do
+            echo "- $avm"
+          done   
 
       - name: Set up matrix
         id: set-matrix
