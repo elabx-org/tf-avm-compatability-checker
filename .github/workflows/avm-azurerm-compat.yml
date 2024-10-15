@@ -49,7 +49,7 @@ jobs:
     steps:
       - run: echo "Determining workflow"  
 
-      prepare-matrix:
+  prepare-matrix:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
