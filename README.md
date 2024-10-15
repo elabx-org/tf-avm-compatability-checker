@@ -26,17 +26,18 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Tue Oct 15 23:17:38 BST 2024
+🕒 Last updated: Wed Oct 16 00:12:29 BST 2024
 
 🔄 Next scheduled run: 02:00 AM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11355218556)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11355785534)
 
 ## Project-Specific Compatibility
 
 | Project | Compatible AVMs | Total AVMs | Compatibility % |
 |---------|-----------------|------------|-----------------|
 | ProjectA | 4 | 10 | 40% |
+| Project B | 0 | 0 | 0% |
 
 ## Details
 
@@ -54,5 +55,10 @@
 | [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) | Azure/avm-res-network-routetable/azurerm | 0.3.0 | compatible |
 | [sql-managedinstance](https://registry.terraform.io/modules/Azure/avm-res-sql-managedinstance/azurerm) | Azure/avm-res-sql-managedinstance/azurerm | 0.1.0 | incompatible |
 | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | Azure/avm-res-storage-storageaccount/azurerm | 0.2.7 | incompatible |
+
+### Project B
+
+| AVM | AVM Source | Module Version | Compatibility |
+|-----|------------|----------------|---------------|
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
