@@ -62,52 +62,54 @@ jobs:
         run: |
           echo "Processing projects-config.txt and extracting AVMs..."
           
-          # Initialize an array to store all AVMs
+          # Initialize arrays to store AVMs
           declare -A existing_avms
           declare -A new_avms
-
+          
           # Read existing AVMs from avm-config.txt
           while IFS=' ' read -r avm version; do
             existing_avms["$avm"]="$version"
           done < avm-config.txt
-
-          while read -r project_url; do
-            clone_repo "$project_url"
-            if [ -f "README.md" ]; then
-              while IFS='|' read -r _ source _; do
-                source=$(echo "$source" | xargs)
-                if [[ $source == Azure/avm-* ]]; then
-                  source=${source%/azurerm}
-                  if [[ ! ${existing_avms["$source"]} && ! ${new_avms["$source"]} ]]; then
-                    new_avms["$source"]="latest"
-                    echo "Found new AVM: $source"
+          
+          while IFS= read -r line || [ -n "$line" ]; do
+            if [[ $line =~ ^\[(.*)\]$ ]]; then
+              # Project name
+              project_name="${BASH_REMATCH[1]}"
+              echo "Processing project: $project_name"
+            elif [[ $line =~ ^https?:// ]]; then
+              # Repository URL
+              repo_url="$line"
+              echo "Repository URL: $repo_url"
+              
+              # Clone the repository
+              temp_dir=$(mktemp -d)
+              git clone "$repo_url" "$temp_dir"
+              
+              # Extract AVMs from README.md
+              if [ -f "$temp_dir/README.md" ]; then
+                echo "Extracting AVMs from README.md..."
+                while IFS='|' read -r _ source _; do
+                  source=$(echo "$source" | xargs)
+                  if [[ $source == Azure/avm-* ]]; then
+                    source=${source%/azurerm}
+                    if [[ ! ${existing_avms["$source"]} && ! ${new_avms["$source"]} ]]; then
+                      new_avms["$source"]="latest"
+                      echo "Found new AVM: $source"
+                    fi
                   fi
-                fi
-              done < <(awk '/^## Modules$/,/^#/' README.md | grep '|')
+                done < <(awk '/^## Modules$/,/^#/' "$temp_dir/README.md" | grep '|')
+              else
+                echo "README.md not found in the repository."
+              fi
+              
+              # Clean up
+              rm -rf "$temp_dir"
             fi
           done < projects-config.txt
-
+          
           # Update avm-config.txt with new AVMs
           for avm in "${!new_avms[@]}"; do
             echo "$avm ${new_avms[$avm]}" >> avm-config.txt
-          done
-
-          echo "Updated avm-config.txt:"
-          cat avm-config.txt
-          
-          # Output all unique AVMs
-          echo "All unique AVMs found:"
-          for avm in "${!all_avms[@]}"; do
-            echo "$avm"
-          done
-          
-          # Update avm-config.txt with new AVMs
-          touch avm-config.txt
-          for avm in "${!all_avms[@]}"; do
-            if ! grep -q "^$avm" avm-config.txt; then
-              echo "$avm" >> avm-config.txt
-              echo "Added new AVM to avm-config.txt: $avm"
-            fi
           done
           
           echo "Updated avm-config.txt:"
