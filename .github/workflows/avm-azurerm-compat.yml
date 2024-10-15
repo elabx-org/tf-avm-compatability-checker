@@ -76,7 +76,7 @@ jobs:
             avm=$(echo "$line" | awk '{print $1}' | sed 's|/azurerm$||')
             existing_avms["$avm"]=1
             echo "Existing AVM: $avm"
-          done < avm-config.txt
+          done < <(grep -v '^$' avm-config.txt)  # Use process substitution to ignore empty lines
           
           # Debug: Print contents of existing_avms
           echo "Debug: Contents of existing_avms array"
