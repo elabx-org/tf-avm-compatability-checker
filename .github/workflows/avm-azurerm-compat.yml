@@ -616,12 +616,25 @@ jobs:
               echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
               echo "|-----|------------|----------------|---------------|" >> project_summary.md
               for avm in $avms; do
-                summary_line=$(grep "$avm" summary.md)
-                avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
-                module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
-                compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                if [[ "$avm" == *"//"* ]]; then
+                  # This is a submodule
+                  base_avm=$(echo "$avm" | cut -d'/' -f1-3)
+                  submodule=$(echo "$avm" | sed 's/.*\/\///')
+                  summary_line=$(grep "$avm" summary.md)
+                  avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                  avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                  module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                  compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                  echo "| [$avm_short_name](https://registry.terraform.io/modules/$base_avm/$module_version/submodules/$submodule) | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                else
+                  # This is a base module
+                  summary_line=$(grep "$avm" summary.md)
+                  avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                  avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                  module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                  compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                  echo "| [$avm_short_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                fi
               done
               echo "" >> project_summary.md
             done
