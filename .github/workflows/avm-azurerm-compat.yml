@@ -641,6 +641,7 @@ jobs:
                     avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
                     avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
                     compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
                     
                     # Convert compatibility to emoji
                     if [ "$compatibility" = "compatible" ]; then
@@ -649,7 +650,16 @@ jobs:
                       compatibility="❌"
                     fi
                     
-                    echo "| [$avm_name](https://registry.terraform.io/modules/$avm) | $avm_source | $compatibility |" >> project_summary.md
+                    # Generate the correct registry URL
+                    if [[ "$avm_source" == *"//"* ]]; then
+                      base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
+                      submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
+                      registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
+                    else
+                      registry_url="https://registry.terraform.io/modules/$avm_source"
+                    fi
+                    
+                    echo "| [$avm_name]($registry_url) | $avm_source | $compatibility |" >> project_summary.md
                   else
                     echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
                   fi
