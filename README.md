@@ -6,8 +6,8 @@
 | AVM Name | AzureRM | Terraform | Module | Compatible |
 |----------|:-------:|:---------:|:------:|:----------:|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | 4.3.0 | 1.9.7 | 0.6.0 | ❌ |
-| [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | 6.0.0 | ❌ |
-| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | 4.3.0 | 1.9.7 | 0.15.1 | ❌ |
+| [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | 6.1.0 | ❌ |
+| [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | 4.3.0 | 1.9.7 | 0.16.0 | ❌ |
 | [keyvault-vault](https://registry.terraform.io/modules/Azure/avm-res-keyvault-vault/azurerm) | 4.3.0 | 1.9.7 | 0.9.1 | ✅ |
 | [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 | ✅ |
 | [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 | ❌ |
@@ -25,9 +25,9 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Wed Oct 16 08:08:38 BST 2024
+🕒 Last updated: Wed Oct 16 10:38:19 BST 2024
 
 🔄 Next scheduled run: 02:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11360638589)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11362995974)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
