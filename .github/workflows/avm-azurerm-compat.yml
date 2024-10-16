@@ -164,45 +164,17 @@ jobs:
             echo "ESSENTIAL::  $avm"
             if ! grep -q "^$avm$" avm-config.txt; then
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
-              {
-                echo "DEBUG: Content of avm-config.txt before addition:"
-                cat avm-config.txt
-                
-                echo "DEBUG: Appending new AVM"
-                echo "$avm" >> avm-config.txt
-                
-                echo "DEBUG: Content of avm-config.txt after addition:"
-                cat avm-config.txt
-              } 2>&1 | sed 's/^/DEBUG: /'
-              
-              if grep -q "^$avm$" avm-config.txt; then
-                ((true_new_avms++))
-                echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
-                existing_avms["$avm"]=1
-              else
+              echo "$avm" >> avm-config.txt || {
                 echo "ERROR: Failed to add $avm to avm-config.txt"
-              fi
+                continue
+              }
+              ((true_new_avms++))
+              echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
+              existing_avms["$avm"]=1
             else
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
-
-          # Ensure the file ends with a newline
-          sed -i -e '$a\' avm-config.txt
-
-          echo "DEBUG: Final content of avm-config.txt:"
-          cat avm-config.txt
-
-          echo "ESSENTIAL::Summary of changes:"
-          echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
-          echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
-
-          # Clean up avm-config.txt (remove any duplicate entries)
-          sort -u avm-config.txt -o avm-config.txt
-
-          echo "ESSENTIAL::Updated contents of avm-config.txt:"
-          cat avm-config.txt
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
