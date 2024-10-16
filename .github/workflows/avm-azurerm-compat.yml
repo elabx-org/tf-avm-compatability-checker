@@ -166,13 +166,19 @@ jobs:
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
               {
                 echo "DEBUG: Content of avm-config.txt before addition:"
-                cat avm-config.txt
+                while IFS= read -r line; do
+                  echo "DEBUG: $line"
+                done < avm-config.txt
+                
                 echo "DEBUG: Appending new AVM"
                 echo "" >> avm-config.txt || echo "DEBUG: Failed to add newline"
                 echo "$avm" >> avm-config.txt || echo "DEBUG: Failed to add AVM"
+                
                 echo "DEBUG: Content of avm-config.txt after addition:"
-                cat avm-config.txt
-              } 2>&1 | sed 's/^/DEBUG: /'
+                while IFS= read -r line; do
+                  echo "DEBUG: $line"
+                done < avm-config.txt
+              } 2>&1 || echo "ERROR: Failed to process avm-config.txt"
               
               if [ ${PIPESTATUS[0]} -eq 0 ]; then
                 ((true_new_avms++))
@@ -188,18 +194,6 @@ jobs:
               else
                 echo "DEBUG: AVM not found in avm-config.txt"
               fi
-              
-              # Add this block to catch and report any errors without stopping the script
-              {
-                # Add the command that was previously on or around line 115 here
-                # For example:
-                # some_command || echo "DEBUG: some_command failed but continuing"
-                
-                # If you're not sure what command was causing the issue, you can add a placeholder:
-                : # This is a no-op command
-              } || {
-                echo "ERROR: An error occurred after adding AVM, but continuing execution"
-              }
 
               echo "DEBUG: Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
               echo "DEBUG: Current directory: $(pwd)"
@@ -213,7 +207,9 @@ jobs:
           sed -i -e '$a\' avm-config.txt || echo "DEBUG: Failed to add final newline"
 
           echo "DEBUG: Final content of avm-config.txt:"
-          cat avm-config.txt
+          while IFS= read -r line; do
+            echo "DEBUG: $line"
+          done < avm-config.txt
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
