@@ -511,34 +511,13 @@ jobs:
           echo "Debug: Contents of sorted_results.csv:"
           cat sorted_results.csv
           
-          # Create associative arrays to store base module and submodule information
-          declare -A base_modules
-          declare -A submodules
-          
           while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
             echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
 
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
 
-            # Determine if it's a base module or submodule
-            if [[ "$avm_source" == *"//"* ]]; then
-              # It's a submodule
-              base_source=$(echo "$avm_source" | cut -d'/' -f1-3)
-              submodule_path=$(echo "$avm_source" | sed 's/.*\/\///')
-              submodules["$avm_source"]="$avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-            else
-              # It's a base module
-              base_modules["$avm_source"]="$avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-            fi
-          done < sorted_results.csv
-
-          # Function to create a Markdown link for the AVM name
-          create_avm_link() {
-            local avm_short_name=$1
-            local avm_source=$2
-            local module_version=$3
-            
+            # Create the registry URL
             if [[ "$avm_source" == *"//"* ]]; then
               base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
               submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
@@ -546,23 +525,15 @@ jobs:
             else
               registry_url="https://registry.terraform.io/modules/$avm_source"
             fi
-            
-            echo "[$avm_short_name]($registry_url)"
-          }
 
-          # Output base modules first
-          for avm_source in "${!base_modules[@]}"; do
-            IFS='|' read -r avm_short_name _ azurerm_version tf_version compatibility reason module_version azurerm_constraints <<< "${base_modules[$avm_source]}"
-            avm_name_link=$(create_avm_link "$avm_short_name" "$avm_source" "$module_version")
-            echo "| $avm_name_link | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
-          done
+            # Create a Markdown link for the AVM name
+            avm_name_link="[$avm_short_name]($registry_url)"
 
-          # Output submodules
-          for avm_source in "${!submodules[@]}"; do
-            IFS='|' read -r avm_short_name _ azurerm_version tf_version compatibility reason module_version azurerm_constraints <<< "${submodules[$avm_source]}"
-            avm_name_link=$(create_avm_link "$avm_short_name" "$avm_source" "$module_version")
+            echo "Debug: After processing: $avm_name_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
+
+            # Output the processed line into the summary
             echo "| $avm_name_link | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
-          done
+          done < sorted_results.csv
 
           echo "Debug: Final contents of summary.md:"
           cat summary.md
@@ -645,12 +616,19 @@ jobs:
               echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
               echo "|-----|------------|----------------|---------------|" >> project_summary.md
               for avm in $avms; do
-                summary_line=$(grep "$avm" summary.md)
-                avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
-                module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
-                compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                # Match both the exact AVM and any submodules
+                summary_lines=$(grep -E "^[^|]+\| $avm(/[^|]+)? \|" summary.md || true)
+                if [ -n "$summary_lines" ]; then
+                  while IFS='|' read -r _ avm_short_name avm_source _ _ compatibility _ module_version _; do
+                    avm_short_name=$(echo "$avm_short_name" | xargs)
+                    avm_source=$(echo "$avm_source" | xargs)
+                    module_version=$(echo "$module_version" | xargs)
+                    compatibility=$(echo "$compatibility" | xargs)
+                    echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                  done <<< "$summary_lines"
+                else
+                  echo "| $avm | Not found in summary | N/A | N/A |" >> project_summary.md
+                fi
               done
               echo "" >> project_summary.md
             done
