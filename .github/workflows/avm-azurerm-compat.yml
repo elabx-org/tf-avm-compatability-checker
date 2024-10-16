@@ -574,41 +574,47 @@ jobs:
             echo "" >> project_summary.md
             echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
             echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
-        
+
             # Read project-AVM associations
             project_avms=$(cat project_avm_associations.json)
-        
+
+            # Function to extract short name from AVM
+            get_short_name() {
+              echo "$1" | sed -E 's/.*\/(avm-[^/]+).*/\1/'
+            }
+
             # Function to calculate compatibility for a project
             calculate_compatibility() {
               local project=$1
               local avms=$2
               local compatible_count=0
               local total_count=0
-        
+
               for avm in $avms; do
                 total_count=$((total_count + 1))
-                if grep -q "$avm.*| compatible |" summary.md; then
+                avm_short_name=$(get_short_name "$avm")
+                if grep -q "$avm_short_name.*| compatible |" summary.md; then
                   compatible_count=$((compatible_count + 1))
                 fi
               done
-        
+
               local compatibility_percentage=0
               if [ $total_count -ne 0 ]; then
                 compatibility_percentage=$((compatible_count * 100 / total_count))
               fi
-        
+
               echo "| $project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
             }
-        
+
             # Process each project
             echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
               calculate_compatibility "$project" "$avms"
             done
-        
+
             echo "" >> project_summary.md
             echo "## Details" >> project_summary.md
             echo "" >> project_summary.md
-        
+
             # Process each project for detailed view
             echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
               echo "### $project" >> project_summary.md
@@ -616,27 +622,25 @@ jobs:
               echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
               echo "|-----|------------|----------------|---------------|" >> project_summary.md
               for avm in $avms; do
-                # Extract the short name from the AVM
-                avm_short_name=$(echo "$avm" | sed -E 's/.*\/(avm-[^/]+).*/\1/')
+                avm_short_name=$(get_short_name "$avm")
                 
                 # Match both the exact AVM and any submodules, using the short name
-                summary_lines=$(grep -E "^\| \[?${avm_short_name}([^|]+)?\]? \|" summary.md || true)
+                summary_line=$(grep -E "^\| \[?${avm_short_name}([^|]+)?\]? \|" summary.md | head -n 1)
                 
-                if [ -n "$summary_lines" ]; then
-                  while IFS='|' read -r _ avm_name avm_source _ _ compatibility _ module_version _; do
-                    avm_name=$(echo "$avm_name" | xargs)
-                    avm_source=$(echo "$avm_source" | xargs)
-                    module_version=$(echo "$module_version" | xargs)
-                    compatibility=$(echo "$compatibility" | xargs)
-                    echo "| $avm_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
-                  done <<< "$summary_lines"
+                if [ -n "$summary_line" ]; then
+                  IFS='|' read -r _ avm_name avm_source _ _ compatibility _ module_version _ <<< "$summary_line"
+                  avm_name=$(echo "$avm_name" | xargs)
+                  avm_source=$(echo "$avm_source" | xargs)
+                  module_version=$(echo "$module_version" | xargs)
+                  compatibility=$(echo "$compatibility" | xargs)
+                  echo "| $avm_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
                 else
-                  echo "| $avm | Not found in summary | N/A | N/A |" >> project_summary.md
+                  echo "| $avm_short_name | Not found in summary | N/A | N/A |" >> project_summary.md
                 fi
               done
               echo "" >> project_summary.md
             done
-        
+
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
 
         - name: Upload Project Summary
