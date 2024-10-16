@@ -57,6 +57,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      
       - name: Process projects and extract AVMs
         env:
           GH_PAT: ${{ secrets.GH_PAT_REPO_MANAGE }}
@@ -64,17 +65,13 @@ jobs:
           set +e
           set -o pipefail
 
-          log_error() {
-            echo "ERROR: $1" >&2
-          }
-
           log_debug() {
             if [[ "$1" == ESSENTIAL::* ]]; then
               echo "DEBUG: ${1#ESSENTIAL::}"
             fi
           }
 
-          trap 'log_error "Script failed on line $LINENO"' ERR
+          trap 'echo "ERROR: Script failed on line $LINENO" >&2' ERR
 
           echo "ESSENTIAL::Processing projects-config.txt and extracting AVMs..."
           
@@ -107,10 +104,10 @@ jobs:
             readme_response=$(curl -sS -H "Authorization: token $GH_PAT" "$readme_url")
             
             if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
-              log_error "README not found for $repo_url"
+              echo "ERROR: README not found for $repo_url" >&2
               echo "PRIVATE_REPO" > README.md
             elif [[ $(echo "$readme_response" | jq -r '.message') == "Bad credentials" ]]; then
-              log_error "Unable to access $repo_url. It might be a private repository or the PAT doesn't have sufficient permissions."
+              echo "ERROR: Unable to access $repo_url. It might be a private repository or the PAT doesn't have sufficient permissions." >&2
               echo "PRIVATE_REPO" > README.md
             else
               echo "$readme_response" | jq -r '.content' | base64 --decode > README.md
@@ -165,7 +162,7 @@ jobs:
             if ! grep -q "^$avm$" avm-config.txt; then
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
               echo "$avm" >> avm-config.txt || {
-                echo "ERROR: Failed to add $avm to avm-config.txt"
+                echo "ERROR: Failed to add $avm to avm-config.txt" >&2
                 continue
               }
               ((true_new_avms++))
@@ -178,9 +175,9 @@ jobs:
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
-          sed -i 's/[[:space:]]*$//' avm-config.txt || echo "ERROR: Failed to remove trailing whitespace"
-          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt || echo "ERROR: Failed to correct duplicate Azure/ prefixes"
-          sed -i 's/\([^[:space:]]\)Azure/\1\nAzure/g' avm-config.txt || echo "ERROR: Failed to separate AVMs onto new lines"
+          sed -i 's/[[:space:]]*$//' avm-config.txt || echo "ERROR: Failed to remove trailing whitespace" >&2
+          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt || echo "ERROR: Failed to correct duplicate Azure/ prefixes" >&2
+          sed -i 's/\([^[:space:]]\)Azure/\1\nAzure/g' avm-config.txt || echo "ERROR: Failed to separate AVMs onto new lines" >&2
 
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
