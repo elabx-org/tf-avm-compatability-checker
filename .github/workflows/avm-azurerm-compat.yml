@@ -164,14 +164,13 @@ jobs:
             echo "ESSENTIAL::  $avm"
             if ! grep -q "^$avm$" avm-config.txt; then
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
-              echo "$avm" >> avm-config.txt
-              if [ $? -eq 0 ]; then
-                ((true_new_avms++))
-                echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
-                existing_avms["$avm"]=1
-              else
+              echo "$avm" >> avm-config.txt || {
                 echo "ERROR: Failed to add $avm to avm-config.txt"
-              fi
+                continue
+              }
+              ((true_new_avms++))
+              echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
+              existing_avms["$avm"]=1
             else
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
@@ -179,8 +178,9 @@ jobs:
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
-          sed -i 's/[[:space:]]*$//' avm-config.txt
-          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
+          sed -i 's/[[:space:]]*$//' avm-config.txt || echo "ERROR: Failed to remove trailing whitespace"
+          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt || echo "ERROR: Failed to correct duplicate Azure/ prefixes"
+          sed -i 's/\([^[:space:]]\)Azure/\1\nAzure/g' avm-config.txt || echo "ERROR: Failed to separate AVMs onto new lines"
 
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
@@ -200,6 +200,12 @@ jobs:
           for avm in "${!new_avms[@]}"; do
             echo "  $avm"
           done
+
+          # Verify the contents of avm-config.txt
+          echo "ESSENTIAL::Verifying avm-config.txt contents:"
+          while IFS= read -r line; do
+            echo "  $line"
+          done < avm-config.txt
 
           echo "{" > project_avm_associations.json
           for project in "${!project_avms[@]}"; do
