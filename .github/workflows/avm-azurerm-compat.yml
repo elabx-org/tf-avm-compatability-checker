@@ -615,42 +615,14 @@ jobs:
               echo "" >> project_summary.md
               echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
               echo "|-----|------------|----------------|---------------|" >> project_summary.md
-              
-              # Read the summary file, skipping the header lines
-              tail -n +4 summary.md | while IFS= read -r line; do
-                # Skip lines that contain only dashes
-                if [[ "$line" =~ ^[-|[:space:]]+$ ]]; then
-                  continue
-                fi
-                
-                # Remove leading and trailing | and spaces
-                line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
-                
-                # Split the line into fields
-                IFS='|' read -ra fields <<< "$line"
-                
-                # Check if we have the expected number of fields
-                if [ ${#fields[@]} -ne 8 ]; then
-                  echo "Skipping invalid line: $line"
-                  continue
-                fi
-                
-                # Extract AVM name without the link
-                avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
-                avm_source=$(echo "${fields[1]}" | xargs)
-                azurerm_version=$(echo "${fields[2]}" | xargs)
-                tf_version=$(echo "${fields[3]}" | xargs)
-                compatibility=$(echo "${fields[4]}" | xargs)
-                reason=$(echo "${fields[5]}" | xargs)
-                module_version=$(echo "${fields[6]}" | xargs)
-                azurerm_constraints=$(echo "${fields[7]}" | xargs)
-                
-                # Check if this AVM is in the project's AVM list
-                if echo "$avms" | grep -q "$avm_source"; then
-                  echo "| ${fields[0]} | $avm_source | $module_version | $compatibility |" >> project_summary.md
-                fi
+              for avm in $avms; do
+                summary_line=$(grep "$avm" summary.md)
+                avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
               done
-              
               echo "" >> project_summary.md
             done
         
@@ -660,7 +632,7 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: project-compatibility-summary
-            path: project_summary.md   
+            path: project_summary.md      
 
   create-issues:
     needs: summarise-results
