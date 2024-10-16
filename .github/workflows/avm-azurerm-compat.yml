@@ -182,17 +182,13 @@ jobs:
               else
                 echo "ERROR: Failed to add $avm to avm-config.txt"
               fi
-              
-              echo "DEBUG: Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
-              echo "DEBUG: Current directory: $(pwd)"
-              echo "DEBUG: Contents of current directory: $(ls -la)"
             else
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
 
-          # After adding all new AVMs, ensure the file ends with a newline
-          sed -i -e '$a\' avm-config.txt || echo "DEBUG: Failed to add final newline"
+          # Ensure the file ends with a newline
+          sed -i -e '$a\' avm-config.txt
 
           echo "DEBUG: Final content of avm-config.txt:"
           cat avm-config.txt
@@ -201,6 +197,12 @@ jobs:
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
           echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
+
+          # Clean up avm-config.txt (remove any duplicate entries)
+          sort -u avm-config.txt -o avm-config.txt
+
+          echo "ESSENTIAL::Updated contents of avm-config.txt:"
+          cat avm-config.txt
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
