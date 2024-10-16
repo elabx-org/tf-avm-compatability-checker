@@ -26,48 +26,48 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Wed Oct 16 14:14:07 BST 2024
+🕒 Last updated: Wed Oct 16 14:34:23 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366407235)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366769462)
 
 ## Project-Specific Compatibility
 
 | Project | Compatible AVMs | Total AVMs | Compatibility % |
 |---------|-----------------|------------|-----------------|
-| ProjectA | 4 | 10 | 40% |
-| Project B | 4 | 9 | 44% |
+| ProjectA | 0 | 10 | 0% |
+| Project B | 0 | 9 | 0% |
 
 ## Details
 
 ### ProjectA
 
-| AVM | AVM Source | Module Version | Compatibility |
-|-----|------------|----------------|---------------|
-| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
-| avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
-| avm-res-network-bastionhost | Not found in summary | N/A | N/A |
-| avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
-| avm-res-network-networksecuritygroup | Not found in summary | N/A | N/A |
-| avm-res-network-privatednszone | Not found in summary | N/A | N/A |
-| avm-res-network-publicipaddress | Not found in summary | N/A | N/A |
-| avm-res-network-routetable | Not found in summary | N/A | N/A |
-| avm-res-sql-managedinstance | Not found in summary | N/A | N/A |
-| avm-res-storage-storageaccount | Not found in summary | N/A | N/A |
+| AVM | AzureRM | Terraform | Module | Compatible |
+|-----|:-------:|:---------:|:------:|:----------:|
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 4.3.0 | 1.9.7 | incompatible | Version constraint mismatch | 0.6.0 | ~> 4.0.0, 4.3.0 |
+| avm-res-network-azurefirewall | N/A | N/A | N/A | N/A |
+| avm-res-network-bastionhost | N/A | N/A | N/A | N/A |
+| avm-res-network-firewallpolicy | N/A | N/A | N/A | N/A |
+| avm-res-network-networksecuritygroup | N/A | N/A | N/A | N/A |
+| avm-res-network-privatednszone | N/A | N/A | N/A | N/A |
+| avm-res-network-publicipaddress | N/A | N/A | N/A | N/A |
+| avm-res-network-routetable | N/A | N/A | N/A | N/A |
+| avm-res-sql-managedinstance | N/A | N/A | N/A | N/A |
+| avm-res-storage-storageaccount | N/A | N/A | N/A | N/A |
 
 ### Project B
 
-| AVM | AVM Source | Module Version | Compatibility |
-|-----|------------|----------------|---------------|
-| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
-| avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
-| avm-res-network-bastionhost | Not found in summary | N/A | N/A |
-| avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
-| avm-res-network-networksecuritygroup | Not found in summary | N/A | N/A |
-| avm-res-network-privatednszone | Not found in summary | N/A | N/A |
-| avm-res-network-publicipaddress | Not found in summary | N/A | N/A |
-| avm-res-network-routetable | Not found in summary | N/A | N/A |
-| avm-res-storage-storageaccount | Not found in summary | N/A | N/A |
+| AVM | AzureRM | Terraform | Module | Compatible |
+|-----|:-------:|:---------:|:------:|:----------:|
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 4.3.0 | 1.9.7 | incompatible | Version constraint mismatch | 0.6.0 | ~> 4.0.0, 4.3.0 |
+| avm-res-network-azurefirewall | N/A | N/A | N/A | N/A |
+| avm-res-network-bastionhost | N/A | N/A | N/A | N/A |
+| avm-res-network-firewallpolicy | N/A | N/A | N/A | N/A |
+| avm-res-network-networksecuritygroup | N/A | N/A | N/A | N/A |
+| avm-res-network-privatednszone | N/A | N/A | N/A | N/A |
+| avm-res-network-publicipaddress | N/A | N/A | N/A | N/A |
+| avm-res-network-routetable | N/A | N/A | N/A | N/A |
+| avm-res-storage-storageaccount | N/A | N/A | N/A | N/A |
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
