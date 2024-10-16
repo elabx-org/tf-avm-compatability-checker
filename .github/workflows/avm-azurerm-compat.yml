@@ -593,7 +593,7 @@ jobs:
               for avm in $avms; do
                 total_count=$((total_count + 1))
                 avm_short_name=$(get_short_name "$avm")
-                if grep -q "$avm_short_name.*| compatible |" summary.md; then
+                if grep -q "$avm_short_name.*| ✅ |" summary.md; then
                   compatible_count=$((compatible_count + 1))
                 fi
               done
@@ -619,8 +619,8 @@ jobs:
             echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
               echo "### $project" >> project_summary.md
               echo "" >> project_summary.md
-              echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
-              echo "|-----|------------|----------------|---------------|" >> project_summary.md
+              echo "| AVM | AzureRM | Terraform | Module | Compatible |" >> project_summary.md
+              echo "|-----|:-------:|:---------:|:------:|:----------:|" >> project_summary.md
               for avm in $avms; do
                 avm_short_name=$(get_short_name "$avm")
                 
@@ -628,14 +628,9 @@ jobs:
                 summary_line=$(grep -E "^\| \[?${avm_short_name}([^|]+)?\]? \|" summary.md | head -n 1)
                 
                 if [ -n "$summary_line" ]; then
-                  IFS='|' read -r _ avm_name avm_source _ _ compatibility _ module_version _ <<< "$summary_line"
-                  avm_name=$(echo "$avm_name" | xargs)
-                  avm_source=$(echo "$avm_source" | xargs)
-                  module_version=$(echo "$module_version" | xargs)
-                  compatibility=$(echo "$compatibility" | xargs)
-                  echo "| $avm_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                  echo "$summary_line" >> project_summary.md
                 else
-                  echo "| $avm_short_name | Not found in summary | N/A | N/A |" >> project_summary.md
+                  echo "| $avm_short_name | N/A | N/A | N/A | N/A |" >> project_summary.md
                 fi
               done
               echo "" >> project_summary.md
