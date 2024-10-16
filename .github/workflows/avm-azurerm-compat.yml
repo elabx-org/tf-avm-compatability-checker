@@ -59,7 +59,7 @@ jobs:
 
       - name: Process projects and extract AVMs
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
           set +e  # Disable exit on error
           set -o pipefail  # Consider pipeline failures
@@ -109,7 +109,7 @@ jobs:
             readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
             
             log_debug "Fetching README from: $readme_url"
-            readme_response=$(curl -sS -H "Authorization: token $GITHUB_TOKEN" "$readme_url")
+            readme_response=$(curl -sS -H "Authorization: token $GH_PAT_REPO_MANAGE" "$readme_url")
             
             if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
               log_error "README not found for $repo_url"
@@ -652,7 +652,7 @@ jobs:
 
       - name: Manage issues for AVMs
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
           echo "Starting issue management process..."
           
