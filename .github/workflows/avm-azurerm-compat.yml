@@ -177,10 +177,34 @@ jobs:
           done
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
-          # Remove any trailing whitespace and ensure each AVM is on its own line
-          sed -i 's/[[:space:]]*$//' avm-config.txt || echo "ERROR: Failed to remove trailing whitespace"
-          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt || echo "ERROR: Failed to correct duplicate Azure/ prefixes"
-          sed -i 's/\([^[:space:]]\)Azure/\1\nAzure/g' avm-config.txt || echo "ERROR: Failed to separate AVMs onto new lines"
+
+          # Function to run sed command and check for errors
+          run_sed_command() {
+              local command="$1"
+              local description="$2"
+              if ! sed -i "$command" avm-config.txt; then
+                  echo "ERROR: Failed to $description in avm-config.txt"
+                  echo "DEBUG: sed command was: $command"
+                  echo "DEBUG: sed version: $(sed --version | head -n 1)"
+                  echo "DEBUG: Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
+                  echo "DEBUG: First 5 lines of avm-config.txt:"
+                  head -n 5 avm-config.txt
+                  return 1
+              fi
+              return 0
+          }
+
+          # Remove trailing whitespace
+          run_sed_command 's/[[:space:]]*$//' "remove trailing whitespace" || true
+
+          # Correct duplicate Azure/ prefixes
+          run_sed_command 's/Azure\/Azure\//Azure\//' "correct duplicate Azure/ prefixes" || true
+
+          # Separate AVMs onto new lines
+          run_sed_command 's/\([^[:space:]]\)Azure/\1\nAzure/g' "separate AVMs onto new lines" || true
+
+          echo "ESSENTIAL::Cleanup completed. Current state of avm-config.txt:"
+          cat avm-config.txt
 
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
@@ -190,20 +214,22 @@ jobs:
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
 
-          # Add this section to capture any potential errors during file cleanup
-          echo "ESSENTIAL::Cleaning up avm-config.txt"
-          if ! sed -i 's/[[:space:]]*$//' avm-config.txt; then
-            echo "ERROR: Failed to remove trailing whitespace from avm-config.txt"
-            echo "DEBUG: sed version: $(sed --version | head -n 1)"
-          fi
+          # Debug information
+          echo "ESSENTIAL::Debug: List of all AVMs in existing_avms:"
+          for avm in "${!existing_avms[@]}"; do
+            echo "  $avm"
+          done
 
-          if ! sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt; then
-            echo "ERROR: Failed to correct duplicate Azure/ prefixes in avm-config.txt"
-          fi
+          echo "ESSENTIAL::Debug: List of all AVMs in new_avms:"
+          for avm in "${!new_avms[@]}"; do
+            echo "  $avm"
+          done
 
-          if ! sed -i 's/\([^[:space:]]\)Azure/\1\nAzure/g' avm-config.txt; then
-            echo "ERROR: Failed to separate AVMs onto new lines in avm-config.txt"
-          fi
+          # Verify the contents of avm-config.txt
+          echo "ESSENTIAL::Verifying avm-config.txt contents:"
+          while IFS= read -r line; do
+            echo "  $line"
+          done < avm-config.txt
 
           echo "{" > project_avm_associations.json
           for project in "${!project_avms[@]}"; do
