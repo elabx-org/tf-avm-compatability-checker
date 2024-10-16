@@ -621,8 +621,13 @@ jobs:
                 echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
                 echo "|----------|------------|---------------|" >> project_summary.md
                 for avm in $avms; do
-                  # Match based on AVM source
-                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
+                  # First, try to match the exact AVM source
+                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm(/azurerm)? \|" summary.md | head -n 1)
+                  
+                  # If no exact match, then look for submodules
+                  if [ -z "$summary_line" ]; then
+                    summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
+                  fi
                   
                   if [ -n "$summary_line" ]; then
                     # Extract required fields from summary line
