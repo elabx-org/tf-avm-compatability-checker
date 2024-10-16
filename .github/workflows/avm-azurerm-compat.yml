@@ -61,19 +61,18 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
-          set +e  # Disable exit on error
-          set -o pipefail  # Consider pipeline failures
-
+          set -e
+          
           function log_error() {
             echo "ERROR: $1" >&2
           }
-
+          
           function log_debug() {
             echo "DEBUG: $1"
           }
-
+          
           trap 'log_error "Script failed on line $LINENO"' ERR
-
+          
           echo "Processing projects-config.txt and extracting AVMs..."
           
           # Initialize arrays to store AVMs
@@ -81,21 +80,11 @@ jobs:
           declare -A new_avms
           declare -A project_avms
           
-          echo "Current contents of avm-config.txt:"
-          cat avm-config.txt
-          
           # Read existing AVMs from avm-config.txt
           while IFS= read -r line; do
             avm=$(echo "$line" | awk '{print $1}' | sed 's|/azurerm$||')
             existing_avms["$avm"]=1
-            echo "Existing AVM: $avm"
-          done < <(grep -v '^$' avm-config.txt)  # Use process substitution to ignore empty lines
-          
-          # Debug: Print contents of existing_avms
-          echo "Debug: Contents of existing_avms array"
-          for key in "${!existing_avms[@]}"; do
-            echo "  $key: ${existing_avms[$key]}"
-          done
+          done < <(grep -v '^$' avm-config.txt)
           
           # Function to extract Source values from README.md
           extract_sources() {
@@ -127,27 +116,27 @@ jobs:
             else
               sources=($(extract_sources))
               
-              log_debug "Extracted Sources:"
-              printf '%s\n' "${sources[@]}"
-              
               for source in "${sources[@]}"; do
                 if [[ $source =~ Azure/avm- ]]; then
-                  avm_name=$(echo "$source" | awk -F'/' '{print $1"/"$2}')
-                  log_debug "Checking AVM $avm_name"
-                  log_debug "existing_avms[$avm_name] = ${existing_avms[$avm_name]}"
-                  if [[ -z "${existing_avms[$avm_name]}" ]]; then
-                    log_debug "$avm_name not found in existing_avms"
-                    if [[ -z "${new_avms[$avm_name]}" ]]; then
-                      new_avms["$avm_name"]=1
-                      echo "Found new AVM: $avm_name"
-                    else
-                      log_debug "AVM $avm_name already in new_avms"
+                  # Extract base AVM name and potential submodule
+                  base_avm=$(echo "$source" | cut -d'/' -f1-3)
+                  submodule=$(echo "$source" | sed -E 's|.*/azurerm(//.+)?$|\1|')
+                  
+                  # Construct full AVM name
+                  full_avm="${base_avm}${submodule}"
+                  
+                  log_debug "Checking AVM $full_avm"
+                  if [[ -z "${existing_avms[$full_avm]}" ]]; then
+                    if [[ -z "${new_avms[$full_avm]}" ]]; then
+                      new_avms["$full_avm"]=1
+                      echo "Found new AVM: $full_avm"
                     fi
-                  else
-                    log_debug "AVM already exists in avm-config.txt: $avm_name"
                   fi
+                  
                   # Add AVM to project_avms
-                  project_avms["$project_name"]+="$avm_name "
+                  if [[ ! " ${project_avms["$project_name"]} " =~ " $full_avm " ]]; then
+                    project_avms["$project_name"]+="$full_avm "
+                  fi
                 fi
               done
             fi
@@ -155,9 +144,7 @@ jobs:
             rm README.md
           }
           
-          echo "Contents of projects-config.txt:"
-          cat projects-config.txt
-          
+          # Process projects-config.txt
           current_project=""
           while IFS= read -r line || [[ -n "$line" ]]; do
             if [[ $line =~ ^\[(.*)\]$ ]]; then
@@ -169,72 +156,7 @@ jobs:
               process_github_url "$repo_url" "$current_project"
             fi
           done < projects-config.txt
-                    
-          echo "New AVMs to be added:"
-          true_new_avms=0
-          for avm in "${!new_avms[@]}"; do
-            echo "Checking AVM: $avm"
-            if ! grep -q "^$avm/azurerm" avm-config.txt; then
-              echo "$avm"
-              log_debug "Line 100: Before attempting to add $avm/azurerm to avm-config.txt"
-              log_debug "Line 101: Content of avm-config.txt before addition:"
-              while IFS= read -r line || [[ -n "$line" ]]; do
-                log_debug "$line"
-              done < avm-config.txt
-              
-              # Ensure the file ends with a newline before adding the new AVM
-              sed -i -e '$a\' avm-config.txt
-              if echo "$avm/azurerm" >> avm-config.txt; then
-                log_debug "Line 103: Successfully added $avm/azurerm to avm-config.txt"
-                ((true_new_avms++))
-              else
-                log_error "Line 105: Failed to add $avm/azurerm to avm-config.txt"
-                log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
-                log_debug "Current directory: $(pwd)"
-                log_debug "Contents of current directory: $(ls -la)"
-              fi
-              
-              log_debug "Line 111: Content of avm-config.txt after addition:"
-              while IFS= read -r line || [[ -n "$line" ]]; do
-                log_debug "$line"
-              done < avm-config.txt
-            else
-              log_debug "$avm/azurerm already exists in avm-config.txt"
-              unset new_avms["$avm"]
-            fi
-          done
-
-          # Ensure the file ends with a newline
-          sed -i -e '$a\' avm-config.txt
-          log_debug "After adding new AVMs"
-
-          echo "Updated avm-config.txt:"
-          cat avm-config.txt || log_error "Failed to read avm-config.txt"
-
-          log_debug "After cat avm-config.txt"
-
-          echo "Summary of changes:"
-          echo "Total existing AVMs: ${#existing_avms[@]}"
-          echo "Total new AVMs added: $true_new_avms"
-          echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
           
-          log_debug "After summary of changes"
-
-          echo "List of new AVMs added:"
-          for avm in "${!new_avms[@]}"; do
-            echo "- $avm"
-          done
-
-          log_debug "After listing new AVMs"
-
-          echo "Script completed successfully."
-
-          # If there were any errors, exit with a non-zero status
-          if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
-            log_error "Failed to add all new AVMs"
-            exit 1
-          fi
-
           # Save project-AVM associations to a JSON file
           echo "{" > project_avm_associations.json
           for project in "${!project_avms[@]}"; do
@@ -254,10 +176,9 @@ jobs:
           # Remove the trailing comma from the last project
           sed -i '$ s/,$//' project_avm_associations.json
           echo "}" >> project_avm_associations.json
-
+          
           echo "Project-AVM associations saved to project_avm_associations.json"
           cat project_avm_associations.json
-        shell: bash
 
       - name: Upload Project-AVM Associations
         uses: actions/upload-artifact@v4
