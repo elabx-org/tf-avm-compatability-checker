@@ -168,6 +168,7 @@ jobs:
                 echo "DEBUG: Content of avm-config.txt before addition:"
                 cat avm-config.txt
                 echo "DEBUG: Appending new AVM"
+                echo "" >> avm-config.txt  # Add a newline before the new AVM
                 echo "$avm" >> avm-config.txt
                 echo "DEBUG: Content of avm-config.txt after addition:"
                 cat avm-config.txt
@@ -186,6 +187,9 @@ jobs:
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
+
+          # After adding all new AVMs, ensure the file ends with a newline
+          sed -i -e '$a\' avm-config.txt
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
