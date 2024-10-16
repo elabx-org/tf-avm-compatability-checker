@@ -40,17 +40,17 @@ permissions:
   pull-requests: write
   actions: read
   issues: write
-
+  
 jobs:
   determine-workflow:
-    runs-on: ubuntu-latest
+    runs-on: unraid
     outputs:
       run-project-compatibility: ${{ github.event.inputs.check_projects == 'true' }}
     steps:
       - run: echo "Determining workflow"  
 
   prepare-matrix:
-    runs-on: ubuntu-latest
+    runs-on: unraid
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -319,7 +319,7 @@ jobs:
 
   check-compatibility:
     needs: prepare-matrix
-    runs-on: ubuntu-latest
+    runs-on: unraid
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
@@ -464,7 +464,7 @@ jobs:
 
   summarise-results:
     needs: check-compatibility
-    runs-on: ubuntu-latest
+    runs-on: unraid
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -541,7 +541,7 @@ jobs:
   project-compatibility:
       needs: [summarise-results, determine-workflow]
       if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
-      runs-on: ubuntu-latest
+      runs-on: unraid
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
@@ -625,7 +625,7 @@ jobs:
   create-issues:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
-    runs-on: ubuntu-latest
+    runs-on: unraid
     permissions:
       issues: write
       contents: read
@@ -838,7 +838,7 @@ jobs:
   generate-dashboard:
     needs: [summarise-results, determine-workflow, project-compatibility]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: unraid
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
