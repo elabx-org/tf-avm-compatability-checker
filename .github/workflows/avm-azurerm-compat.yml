@@ -618,16 +618,28 @@ jobs:
               echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
                 echo "### $project" >> project_summary.md
                 echo "" >> project_summary.md
-                echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> project_summary.md
-                echo "|----------|:-------:|:---------:|:------:|:----------:|" >> project_summary.md
+                echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
+                echo "|----------|------------|---------------|" >> project_summary.md
                 for avm in $avms; do
                   # Match based on AVM source
-                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| .* \| .* \| .* \| [✅❌] \|" summary.md | grep "$avm" | head -n 1)
+                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
                   
                   if [ -n "$summary_line" ]; then
-                    echo "$summary_line" >> project_summary.md
+                    # Extract required fields from summary line
+                    avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
+                    avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                    compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    
+                    # Convert compatibility to emoji
+                    if [ "$compatibility" = "compatible" ]; then
+                      compatibility="✅"
+                    elif [ "$compatibility" = "incompatible" ]; then
+                      compatibility="❌"
+                    fi
+                    
+                    echo "| [$avm_name](https://registry.terraform.io/modules/$avm) | $avm_source | $compatibility |" >> project_summary.md
                   else
-                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | N/A | N/A | N/A | N/A |" >> project_summary.md
+                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
                   fi
                 done
                 echo "" >> project_summary.md
