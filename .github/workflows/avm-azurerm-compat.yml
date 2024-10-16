@@ -103,16 +103,40 @@ jobs:
           }
 
           extract_sources() {
+            echo "DEBUG: Starting source extraction"
+            
+            echo "DEBUG: Checking for original format"
+            original_format=$(grep '| <a name="module_' README.md)
+            if [ -n "$original_format" ]; then
+              echo "DEBUG: Original format found:"
+              echo "$original_format"
+              echo "DEBUG: Extracting from original format"
+              grep '| <a name="module_' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//'
+            else
+              echo "DEBUG: Original format not found"
+            fi
+
+            echo "DEBUG: Checking for new format"
+            new_format=$(grep -E '^\| \[.*\].*\|.*\|.*\|' README.md)
+            if [ -n "$new_format" ]; then
+              echo "DEBUG: New format found:"
+              echo "$new_format"
+              echo "DEBUG: Extracting from new format"
+              grep -E '^\| \[.*\].*\|.*\|.*\|' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//'
+            else
+              echo "DEBUG: New format not found"
+            fi
+
+            echo "DEBUG: Filtering and cleaning results"
             {
-              # Original format
               grep '| <a name="module_' README.md | awk -F'|' '{print $3}'
-              
-              # New format (Project C)
-              grep -E '^\| \[.*\]' README.md | awk -F'|' '{print $3}'
+              grep -E '^\| \[.*\].*\|.*\|.*\|' README.md | awk -F'|' '{print $3}'
             } | sed 's/^ *//;s/ *$//' | # Trim whitespace
               grep -E '^(Azure/|git@github)' | # Filter for Azure and GitHub sources
               sed -E 's/ +[0-9.]+$//' | # Remove version numbers at the end
               sort | uniq
+
+            echo "DEBUG: Extraction complete"
           }
           
           function process_github_url() {
