@@ -574,22 +574,22 @@ jobs:
             echo "" >> project_summary.md
             echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
             echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
-
+            
             # Read project-AVM associations
             project_avms=$(cat project_avm_associations.json)
-
+            
             # Function to extract short name from AVM
             get_short_name() {
               echo "$1" | sed -E 's/.*\/(avm-[^/]+).*/\1/'
             }
-
+            
             # Function to calculate compatibility for a project
             calculate_compatibility() {
               local project=$1
               local avms=$2
               local compatible_count=0
               local total_count=0
-
+            
               for avm in $avms; do
                 total_count=$((total_count + 1))
                 avm_short_name=$(get_short_name "$avm")
@@ -597,30 +597,30 @@ jobs:
                   compatible_count=$((compatible_count + 1))
                 fi
               done
-
+            
               local compatibility_percentage=0
               if [ $total_count -ne 0 ]; then
                 compatibility_percentage=$((compatible_count * 100 / total_count))
               fi
-
+            
               echo "| $project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
             }
-
+            
             # Process each project
             echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
               calculate_compatibility "$project" "$avms"
             done
-
+            
             echo "" >> project_summary.md
             echo "## Details" >> project_summary.md
             echo "" >> project_summary.md
-
+            
             # Process each project for detailed view
             echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
               echo "### $project" >> project_summary.md
               echo "" >> project_summary.md
-              echo "| AVM | AzureRM | Terraform | Module | Compatible |" >> project_summary.md
-              echo "|-----|:-------:|:---------:|:------:|:----------:|" >> project_summary.md
+              echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> project_summary.md
+              echo "|----------|:-------:|:---------:|:------:|:----------:|" >> project_summary.md
               for avm in $avms; do
                 avm_short_name=$(get_short_name "$avm")
                 
@@ -635,9 +635,9 @@ jobs:
               done
               echo "" >> project_summary.md
             done
-
+            
             cat project_summary.md >> $GITHUB_STEP_SUMMARY
-
+    
         - name: Upload Project Summary
           uses: actions/upload-artifact@v4
           with:
