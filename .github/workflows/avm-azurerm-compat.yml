@@ -139,7 +139,7 @@ jobs:
             echo "DEBUG: Extraction complete"
           }
           
-          function process_github_url() {
+          process_github_url() {
             local repo_url=$1
             local project_name=$2
             repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
@@ -168,7 +168,7 @@ jobs:
               printf '%s\n' "${sources[@]}"
               
               for source in "${sources[@]}"; do
-                if [[ $source =~ Azure/avm- ]]; then
+                if [[ $source =~ ^Azure/ ]]; then
                   # Extract full AVM name including potential submodule
                   full_avm_name=$source
                   # Extract base AVM name (without submodule)
@@ -194,6 +194,8 @@ jobs:
                   fi
                 fi
               done
+              
+              log_debug "AVMs for $project_name: ${project_avms["$project_name"]}"
             fi
             
             rm README.md
