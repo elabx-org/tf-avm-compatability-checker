@@ -162,38 +162,44 @@ jobs:
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
             echo "ESSENTIAL::  $avm"
-            if ! grep -q "^$avm" avm-config.txt; then
-              echo "$avm" >> avm-config.txt || { 
-                log_error "Failed to add $avm to avm-config.txt"
-                continue
-              }
-              ((true_new_avms++))
-              echo "ESSENTIAL::  Added $avm to avm-config.txt"
-              existing_avms["$avm"]=1  # Add the new AVM to existing_avms
+            if ! grep -q "^$avm$" avm-config.txt; then
+              echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
+              echo "$avm" >> avm-config.txt
+              if [ $? -eq 0 ]; then
+                ((true_new_avms++))
+                echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
+                existing_avms["$avm"]=1
+              else
+                echo "ERROR: Failed to add $avm to avm-config.txt"
+              fi
             else
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
 
-          # Ensure the file ends with a newline
-          sed -i -e '$a\' avm-config.txt
+          echo "ESSENTIAL::Cleaning up avm-config.txt"
+          # Remove any trailing whitespace and ensure each AVM is on its own line
+          sed -i 's/[[:space:]]*$//' avm-config.txt
+          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
 
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
           echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
 
-          if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
-            log_error "Failed to add all new AVMs"
-            # Don't exit here, let the script continue
-          fi
-
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
 
-          # Ensure avm-config.txt is properly formatted
-          sed -i 's/[[:space:]]*$//' avm-config.txt  # Remove trailing whitespace
-          sed -i '/^$/d' avm-config.txt  # Remove empty lines
+          # Debug information
+          echo "ESSENTIAL::Debug: List of all AVMs in existing_avms:"
+          for avm in "${!existing_avms[@]}"; do
+            echo "  $avm"
+          done
+
+          echo "ESSENTIAL::Debug: List of all AVMs in new_avms:"
+          for avm in "${!new_avms[@]}"; do
+            echo "  $avm"
+          done
 
           echo "{" > project_avm_associations.json
           for project in "${!project_avms[@]}"; do
