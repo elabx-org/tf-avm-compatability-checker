@@ -43,14 +43,14 @@ permissions:
   
 jobs:
   determine-workflow:
-    runs-on: unraid
+    runs-on: ubuntu-latest
     outputs:
       run-project-compatibility: ${{ github.event.inputs.check_projects == 'true' }}
     steps:
       - run: echo "Determining workflow"  
 
   prepare-matrix:
-    runs-on: unraid
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -331,7 +331,7 @@ jobs:
 
   check-compatibility:
     needs: prepare-matrix
-    runs-on: unraid
+    runs-on: ubuntu-latest
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
@@ -476,7 +476,7 @@ jobs:
 
   summarise-results:
     needs: check-compatibility
-    runs-on: unraid
+    runs-on: ubuntu-latest
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -625,7 +625,7 @@ jobs:
                   avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
                   module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
                   compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                  echo "| [$avm_short_name](https://registry.terraform.io/modules/$base_avm/$module_version/submodules/$submodule) | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                  echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
                 else
                   # This is a base module
                   summary_line=$(grep "$avm" summary.md)
@@ -633,7 +633,7 @@ jobs:
                   avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
                   module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
                   compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                  echo "| [$avm_short_name](https://registry.terraform.io/modules/$avm_source) | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                  echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
                 fi
               done
               echo "" >> project_summary.md
@@ -645,12 +645,12 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: project-compatibility-summary
-            path: project_summary.md      
+            path: project_summary.md   
 
   create-issues:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
-    runs-on: unraid
+    runs-on: ubuntu-latest
     permissions:
       issues: write
       contents: read
@@ -863,7 +863,7 @@ jobs:
   generate-dashboard:
     needs: [summarise-results, determine-workflow, project-compatibility]
     if: always()
-    runs-on: unraid
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
