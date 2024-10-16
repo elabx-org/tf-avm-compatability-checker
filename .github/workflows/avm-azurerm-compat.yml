@@ -621,6 +621,21 @@ jobs:
               echo "## Details" >> project_summary.md
               echo "" >> project_summary.md
               
+              # Function to generate correct registry URL
+              generate_registry_url() {
+                local avm=$1
+                local module_version=$2
+                if [[ $avm == *"//"* ]]; then
+                  # This is a submodule
+                  base_module=$(echo $avm | cut -d'/' -f1-3)
+                  submodule_path=$(echo $avm | sed 's|.*/azurerm//|submodules/|')
+                  echo "https://registry.terraform.io/modules/${base_module}/${module_version}/${submodule_path}"
+                else
+                  # This is a base module
+                  echo "https://registry.terraform.io/modules/${avm}"
+                fi
+              }
+              
               # Process each project for detailed view
               echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
                 echo "### $project" >> project_summary.md
@@ -628,19 +643,15 @@ jobs:
                 echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
                 echo "|----------|------------|---------------|" >> project_summary.md
                 for avm in $avms; do
-                  # First, try to match the exact AVM source
-                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm(/azurerm)? \|" summary.md | head -n 1)
-                  
-                  # If no exact match, then look for submodules
-                  if [ -z "$summary_line" ]; then
-                    summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
-                  fi
+                  # Match based on AVM source
+                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
                   
                   if [ -n "$summary_line" ]; then
                     # Extract required fields from summary line
                     avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
                     avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
                     compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
                     
                     # Convert compatibility to emoji
                     if [ "$compatibility" = "compatible" ]; then
@@ -649,8 +660,12 @@ jobs:
                       compatibility="❌"
                     fi
                     
-                    echo "| [$avm_name](https://registry.terraform.io/modules/$avm) | $avm_source | $compatibility |" >> project_summary.md
+                    # Generate correct registry URL
+                    registry_url=$(generate_registry_url "$avm" "$module_version")
+                    
+                    echo "| [$avm_name]($registry_url) | $avm_source | $compatibility |" >> project_summary.md
                   else
+                    # For AVMs not found in summary, use a basic URL format
                     echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
                   fi
                 done
