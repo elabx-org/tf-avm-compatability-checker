@@ -26,11 +26,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Wed Oct 16 13:14:48 BST 2024
+🕒 Last updated: Wed Oct 16 14:06:13 BST 2024
 
-🔄 Next scheduled run: 02:00 PM BST
+🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11365384402)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366259448)
 
 ## Project-Specific Compatibility
 
@@ -45,7 +45,7 @@
 
 | AVM | AVM Source | Module Version | Compatibility |
 |-----|------------|----------------|---------------|
-| Azure/avm-ptn-vnetgateway | Not found in summary | N/A | N/A |
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
 | Azure/avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
 | Azure/avm-res-network-bastionhost | Not found in summary | N/A | N/A |
 | Azure/avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
@@ -60,7 +60,7 @@
 
 | AVM | AVM Source | Module Version | Compatibility |
 |-----|------------|----------------|---------------|
-| Azure/avm-ptn-vnetgateway | Not found in summary | N/A | N/A |
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
 | Azure/avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
 | Azure/avm-res-network-bastionhost | Not found in summary | N/A | N/A |
 | Azure/avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
