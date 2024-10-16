@@ -99,29 +99,20 @@ jobs:
           
           # Function to extract Source values from README.md
           extract_sources() {
+            grep '| <a name="module_' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//' | sort | uniq
+          }
+
+          extract_sources() {
             {
               # Original format
               grep '| <a name="module_' README.md | awk -F'|' '{print $3}'
               
-              # other format
+              # New format (Project C)
               grep -E '^\| \[.*\]' README.md | awk -F'|' '{print $3}'
             } | sed 's/^ *//;s/ *$//' | # Trim whitespace
               grep -E '^(Azure/|git@github)' | # Filter for Azure and GitHub sources
               sed -E 's/ +[0-9.]+$//' | # Remove version numbers at the end
               sort | uniq
-          }
-
-          extract_sources() {
-            # Handle both Project A and Project C formats
-            grep -E '^\| <a name="module_|^\| \[.*\]' README.md | 
-            sed -E 's/.*\| (.*) \|.*/\1/' | 
-            sed -E 's/.*Source = "(.*)".*/\1/' |
-            sed -E 's/\[.*\]\((.*)\)/\1/' |
-            sed -E 's/^([^ ]+) +([^ ]+) *$/\2/' |  # This line keeps only the module source, not the version
-            grep -E '^(Azure/|git@github)' |  # This line filters for Azure and GitHub sources
-            sed 's/^ *//;s/ *$//' | 
-            sort | 
-            uniq
           }
           
           function process_github_url() {
