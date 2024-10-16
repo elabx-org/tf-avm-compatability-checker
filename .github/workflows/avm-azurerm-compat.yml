@@ -64,6 +64,10 @@ jobs:
           set +e
           set -o pipefail
 
+          log_error() {
+            echo "ERROR: $1" >&2
+          }
+
           log_debug() {
             if [[ "$1" == ESSENTIAL::* ]]; then
               echo "DEBUG: ${1#ESSENTIAL::}"
