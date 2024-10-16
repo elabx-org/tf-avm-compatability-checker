@@ -166,21 +166,16 @@ jobs:
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
               {
                 echo "DEBUG: Content of avm-config.txt before addition:"
-                while IFS= read -r line; do
-                  echo "DEBUG: $line"
-                done < avm-config.txt
+                cat avm-config.txt
                 
                 echo "DEBUG: Appending new AVM"
-                echo "" >> avm-config.txt || echo "DEBUG: Failed to add newline"
-                echo "$avm" >> avm-config.txt || echo "DEBUG: Failed to add AVM"
+                echo "$avm" >> avm-config.txt
                 
                 echo "DEBUG: Content of avm-config.txt after addition:"
-                while IFS= read -r line; do
-                  echo "DEBUG: $line"
-                done < avm-config.txt
-              } 2>&1 || echo "ERROR: Failed to process avm-config.txt"
+                cat avm-config.txt
+              } 2>&1 | sed 's/^/DEBUG: /'
               
-              if [ ${PIPESTATUS[0]} -eq 0 ]; then
+              if grep -q "^$avm$" avm-config.txt; then
                 ((true_new_avms++))
                 echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
                 existing_avms["$avm"]=1
@@ -188,13 +183,6 @@ jobs:
                 echo "ERROR: Failed to add $avm to avm-config.txt"
               fi
               
-              echo "DEBUG: Checking if AVM was actually added:"
-              if grep -q "^$avm$" avm-config.txt; then
-                echo "DEBUG: AVM found in avm-config.txt"
-              else
-                echo "DEBUG: AVM not found in avm-config.txt"
-              fi
-
               echo "DEBUG: Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
               echo "DEBUG: Current directory: $(pwd)"
               echo "DEBUG: Contents of current directory: $(ls -la)"
@@ -207,9 +195,12 @@ jobs:
           sed -i -e '$a\' avm-config.txt || echo "DEBUG: Failed to add final newline"
 
           echo "DEBUG: Final content of avm-config.txt:"
-          while IFS= read -r line; do
-            echo "DEBUG: $line"
-          done < avm-config.txt
+          cat avm-config.txt
+
+          echo "ESSENTIAL::Summary of changes:"
+          echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
+          echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
+          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
