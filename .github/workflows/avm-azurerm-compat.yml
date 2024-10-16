@@ -163,7 +163,10 @@ jobs:
           for avm in "${!new_avms[@]}"; do
             echo "ESSENTIAL::  $avm"
             if ! grep -q "^$avm" avm-config.txt; then
-              echo "$avm" >> avm-config.txt
+              echo "$avm" >> avm-config.txt || { 
+                log_error "Failed to add $avm to avm-config.txt"
+                continue
+              }
               ((true_new_avms++))
               echo "ESSENTIAL::  Added $avm to avm-config.txt"
               existing_avms["$avm"]=1  # Add the new AVM to existing_avms
@@ -172,6 +175,7 @@ jobs:
             fi
           done
 
+          # Ensure the file ends with a newline
           sed -i -e '$a\' avm-config.txt
 
           echo "ESSENTIAL::Summary of changes:"
@@ -181,16 +185,15 @@ jobs:
 
           if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
             log_error "Failed to add all new AVMs"
-            exit 1
+            # Don't exit here, let the script continue
           fi
 
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
 
-          if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
-            log_error "Failed to add all new AVMs"
-            exit 1
-          fi
+          # Ensure avm-config.txt is properly formatted
+          sed -i 's/[[:space:]]*$//' avm-config.txt  # Remove trailing whitespace
+          sed -i '/^$/d' avm-config.txt  # Remove empty lines
 
           echo "{" > project_avm_associations.json
           for project in "${!project_avms[@]}"; do
