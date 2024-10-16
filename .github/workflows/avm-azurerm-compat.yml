@@ -621,19 +621,24 @@ jobs:
               echo "## Details" >> project_summary.md
               echo "" >> project_summary.md
               
-              # Function to generate correct registry URL
-              generate_registry_url() {
+              # Function to generate correct registry URL and AVM name
+              generate_registry_url_and_name() {
                 local avm=$1
                 local module_version=$2
+                local avm_name
+                local registry_url
                 if [[ $avm == *"//"* ]]; then
                   # This is a submodule
                   base_module=$(echo $avm | cut -d'/' -f1-3)
-                  submodule_path=$(echo $avm | sed 's|.*/azurerm//|submodules/|')
-                  echo "https://registry.terraform.io/modules/${base_module}/${module_version}/${submodule_path}"
+                  submodule_path=$(echo $avm | sed 's|.*/azurerm//||')
+                  avm_name=$(echo $avm | sed 's|.*/||')
+                  registry_url="https://registry.terraform.io/modules/${base_module}/${module_version}/submodules/${submodule_path}"
                 else
                   # This is a base module
-                  echo "https://registry.terraform.io/modules/${avm}"
+                  avm_name=$(echo $avm | sed 's|.*/||')
+                  registry_url="https://registry.terraform.io/modules/${avm}"
                 fi
+                echo "$avm_name|$registry_url"
               }
               
               # Process each project for detailed view
@@ -648,7 +653,6 @@ jobs:
                   
                   if [ -n "$summary_line" ]; then
                     # Extract required fields from summary line
-                    avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
                     avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
                     compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
                     module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
@@ -660,13 +664,14 @@ jobs:
                       compatibility="❌"
                     fi
                     
-                    # Generate correct registry URL
-                    registry_url=$(generate_registry_url "$avm" "$module_version")
+                    # Generate correct registry URL and AVM name
+                    IFS='|' read -r avm_name registry_url <<< $(generate_registry_url_and_name "$avm" "$module_version")
                     
                     echo "| [$avm_name]($registry_url) | $avm_source | $compatibility |" >> project_summary.md
                   else
-                    # For AVMs not found in summary, use a basic URL format
-                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
+                    # For AVMs not found in summary, use a basic URL format and name
+                    avm_name=$(echo $avm | sed 's|.*/||')
+                    echo "| [$avm_name](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
                   fi
                 done
                 echo "" >> project_summary.md
