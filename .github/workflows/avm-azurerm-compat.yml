@@ -99,7 +99,14 @@ jobs:
           
           # Function to extract Source values from README.md
           extract_sources() {
-            grep '| <a name="module_' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//' | sort | uniq
+            # Handle Project A format
+            grep -E '^\| <a name="module_|^\| \[.*\]' README.md | 
+            sed -E 's/.*\| (.*) \|.*/\1/' | 
+            sed -E 's/.*Source = "(.*)".*/\1/' |
+            sed -E 's/\[.*\]\((.*)\)/\1/' |
+            sed 's/^ *//;s/ *$//' | 
+            sort | 
+            uniq
           }
           
           function process_github_url() {
