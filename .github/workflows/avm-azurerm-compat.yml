@@ -161,12 +161,14 @@ jobs:
           echo "ESSENTIAL::New AVMs to be added:"
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
+            echo "ESSENTIAL::  $avm"
             if ! grep -q "^$avm" avm-config.txt; then
-              echo "ESSENTIAL::  $avm"
               echo "$avm" >> avm-config.txt
               ((true_new_avms++))
+              echo "ESSENTIAL::  Added $avm to avm-config.txt"
+              existing_avms["$avm"]=1  # Add the new AVM to existing_avms
             else
-              unset new_avms["$avm"]
+              echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
 
@@ -175,7 +177,15 @@ jobs:
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
+          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
+
+          if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
+            log_error "Failed to add all new AVMs"
+            exit 1
+          fi
+
+          echo "ESSENTIAL::Updated contents of avm-config.txt:"
+          cat avm-config.txt
 
           if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
             log_error "Failed to add all new AVMs"
