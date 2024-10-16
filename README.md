@@ -26,11 +26,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Wed Oct 16 14:06:13 BST 2024
+🕒 Last updated: Wed Oct 16 14:14:07 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366259448)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366407235)
 
 ## Project-Specific Compatibility
 
@@ -46,28 +46,28 @@
 | AVM | AVM Source | Module Version | Compatibility |
 |-----|------------|----------------|---------------|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
-| Azure/avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-bastionhost | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-networksecuritygroup | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-privatednszone | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-publicipaddress | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-routetable | Not found in summary | N/A | N/A |
-| Azure/avm-res-sql-managedinstance | Not found in summary | N/A | N/A |
-| Azure/avm-res-storage-storageaccount | Not found in summary | N/A | N/A |
+| avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
+| avm-res-network-bastionhost | Not found in summary | N/A | N/A |
+| avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
+| avm-res-network-networksecuritygroup | Not found in summary | N/A | N/A |
+| avm-res-network-privatednszone | Not found in summary | N/A | N/A |
+| avm-res-network-publicipaddress | Not found in summary | N/A | N/A |
+| avm-res-network-routetable | Not found in summary | N/A | N/A |
+| avm-res-sql-managedinstance | Not found in summary | N/A | N/A |
+| avm-res-storage-storageaccount | Not found in summary | N/A | N/A |
 
 ### Project B
 
 | AVM | AVM Source | Module Version | Compatibility |
 |-----|------------|----------------|---------------|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 0.6.0 | incompatible |
-| Azure/avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-bastionhost | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-networksecuritygroup | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-privatednszone | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-publicipaddress | Not found in summary | N/A | N/A |
-| Azure/avm-res-network-routetable | Not found in summary | N/A | N/A |
-| Azure/avm-res-storage-storageaccount | Not found in summary | N/A | N/A |
+| avm-res-network-azurefirewall | Not found in summary | N/A | N/A |
+| avm-res-network-bastionhost | Not found in summary | N/A | N/A |
+| avm-res-network-firewallpolicy | Not found in summary | N/A | N/A |
+| avm-res-network-networksecuritygroup | Not found in summary | N/A | N/A |
+| avm-res-network-privatednszone | Not found in summary | N/A | N/A |
+| avm-res-network-publicipaddress | Not found in summary | N/A | N/A |
+| avm-res-network-routetable | Not found in summary | N/A | N/A |
+| avm-res-storage-storageaccount | Not found in summary | N/A | N/A |
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
