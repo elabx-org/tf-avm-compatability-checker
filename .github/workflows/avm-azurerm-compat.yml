@@ -551,90 +551,90 @@ jobs:
         path: summary.md
 
   project-compatibility:
-    needs: [summarise-results, determine-workflow]
-    if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        needs: [summarise-results, determine-workflow]
+        if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
 
-      - name: Download summary
-        uses: actions/download-artifact@v4
-        with:
-          name: compatibility-summary
+          - name: Download summary
+            uses: actions/download-artifact@v4
+            with:
+              name: compatibility-summary
 
-      - name: Download Project-AVM Associations
-        uses: actions/download-artifact@v4
-        with:
-          name: project-avm-associations
+          - name: Download Project-AVM Associations
+            uses: actions/download-artifact@v4
+            with:
+              name: project-avm-associations
 
-      - name: Calculate Project Compatibility
-        run: |
-          echo "# Project Compatibility with AzureRM" > project_summary.md
-          echo "" >> project_summary.md
-          echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
-          echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
+          - name: Calculate Project Compatibility
+            run: |
+              echo "# Project Compatibility with AzureRM" > project_summary.md
+              echo "" >> project_summary.md
+              echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
+              echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
           
-          # Read project-AVM associations
-          project_avms=$(cat project_avm_associations.json)
+              # Read project-AVM associations
+              project_avms=$(cat project_avm_associations.json)
           
-          # Function to calculate compatibility for a project
-          calculate_compatibility() {
-            local project=$1
-            local avms=$2
-            local compatible_count=0
-            local total_count=0
+              # Function to calculate compatibility for a project
+              calculate_compatibility() {
+                local project=$1
+                local avms=$2
+                local compatible_count=0
+                local total_count=0
           
-            for avm in $avms; do
-              total_count=$((total_count + 1))
-              if grep -q "$avm.*| ✅ |" summary.md; then
-                compatible_count=$((compatible_count + 1))
-              fi
-            done
+                for avm in $avms; do
+                  total_count=$((total_count + 1))
+                  if grep -q "$avm.*| compatible |" summary.md; then
+                    compatible_count=$((compatible_count + 1))
+                  fi
+                done
           
-            local compatibility_percentage=0
-            if [ $total_count -ne 0 ]; then
-              compatibility_percentage=$((compatible_count * 100 / total_count))
-            fi
+                local compatibility_percentage=0
+                if [ $total_count -ne 0 ]; then
+                  compatibility_percentage=$((compatible_count * 100 / total_count))
+                fi
           
-            echo "| $project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
-          }
+                echo "| $project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+              }
           
-          # Process each project
-          echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
-            calculate_compatibility "$project" "$avms"
-          done
-          
-          echo "" >> project_summary.md
-          echo "## Details" >> project_summary.md
-          echo "" >> project_summary.md
-          
-          # Process each project for detailed view
-          echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
-            echo "### $project" >> project_summary.md
-            echo "" >> project_summary.md
-            echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> project_summary.md
-            echo "|----------|:-------:|:---------:|:------:|:----------:|" >> project_summary.md
-            for avm in $avms; do
-              # Match based on AVM source
-              summary_line=$(grep -E "^\| \[.*\]\(.*\) \| .* \| .* \| .* \| [✅❌] \|" summary.md | grep "$avm" | head -n 1)
+              # Process each project
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
+                calculate_compatibility "$project" "$avms"
+              done
               
-              if [ -n "$summary_line" ]; then
-                echo "$summary_line" >> project_summary.md
-              else
-                echo "| [$avm](https://registry.terraform.io/modules/$avm) | N/A | N/A | N/A | N/A |" >> project_summary.md
-              fi
-            done
-            echo "" >> project_summary.md
-          done
-          
-          cat project_summary.md >> $GITHUB_STEP_SUMMARY
+              echo "" >> project_summary.md
+              echo "## Details" >> project_summary.md
+              echo "" >> project_summary.md
+              
+              # Process each project for detailed view
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
+                echo "### $project" >> project_summary.md
+                echo "" >> project_summary.md
+                echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> project_summary.md
+                echo "|----------|:-------:|:---------:|:------:|:----------:|" >> project_summary.md
+                for avm in $avms; do
+                  # Match based on AVM source
+                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| .* \| .* \| .* \| [✅❌] \|" summary.md | grep "$avm" | head -n 1)
+                  
+                  if [ -n "$summary_line" ]; then
+                    echo "$summary_line" >> project_summary.md
+                  else
+                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | N/A | N/A | N/A | N/A |" >> project_summary.md
+                  fi
+                done
+                echo "" >> project_summary.md
+              done
+              
+              cat project_summary.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload Project Summary
-        uses: actions/upload-artifact@v4
-        with:
-          name: project-compatibility-summary
-          path: project_summary.md     
+          - name: Upload Project Summary
+            uses: actions/upload-artifact@v4
+            with:
+              name: project-compatibility-summary
+              path: project_summary.md       
 
   create-issues:
     needs: summarise-results
