@@ -553,7 +553,7 @@ jobs:
   project-compatibility:
       needs: [summarise-results, determine-workflow]
       if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
-      runs-on: unraid
+      runs-on: ubuntu-latest
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
