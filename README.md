@@ -26,11 +26,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Wed Oct 16 18:14:13 BST 2024
+🕒 Last updated: Wed Oct 16 18:19:34 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11370543643)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11370628127)
 
 ## Project-Specific Compatibility
 
@@ -38,7 +38,7 @@
 |---------|-----------------|------------|-----------------|
 | ProjectA | 4 | 10 | 40% |
 | Project B | 5 | 10 | 50% |
-| Project C | 0 | 0 | 0% |
+| Project C | 0 | 1 | 0% |
 
 ## Details
 
@@ -76,5 +76,6 @@
 
 | AVM Name | AVM Source | Compatibility |
 |----------|------------|---------------|
+| [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | Azure/caf-enterprise-scale/azurerm | ❌ |
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
