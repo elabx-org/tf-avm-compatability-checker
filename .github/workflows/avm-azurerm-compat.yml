@@ -587,7 +587,7 @@ jobs:
           
                 for avm in $avms; do
                   total_count=$((total_count + 1))
-                  if grep -q "$avm.*| compatible |" summary.md; then
+                  if grep -q "$avm.*| ✅ |" summary.md; then
                     compatible_count=$((compatible_count + 1))
                   fi
                 done
@@ -604,6 +604,11 @@ jobs:
               echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
                 calculate_compatibility "$project" "$avms"
               done
+
+          - name: Process Each Project
+            run: |
+              # Read project-AVM associations
+              project_avms=$(cat project_avm_associations.json)
               
               echo "" >> project_summary.md
               echo "## Details" >> project_summary.md
