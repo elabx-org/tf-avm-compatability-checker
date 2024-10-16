@@ -615,27 +615,35 @@ jobs:
               echo "" >> project_summary.md
               echo "| AVM | AVM Source | Module Version | Compatibility |" >> project_summary.md
               echo "|-----|------------|----------------|---------------|" >> project_summary.md
+              
+              # First, process all base modules
               for avm in $avms; do
-                if [[ "$avm" == *"//"* ]]; then
-                  # This is a submodule
-                  base_avm=$(echo "$avm" | cut -d'/' -f1-3)
-                  submodule=$(echo "$avm" | sed 's/.*\/\///')
-                  summary_line=$(grep "$avm" summary.md)
-                  avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                  avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
-                  module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
-                  compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                  echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
-                else
-                  # This is a base module
-                  summary_line=$(grep "$avm" summary.md)
-                  avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
-                  avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
-                  module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
-                  compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                  echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                if [[ "$avm" != *"//"* ]]; then
+                  summary_line=$(grep -E "^[^|]+[|][^|]*$avm[^|]*[|]" summary.md)
+                  if [ -n "$summary_line" ]; then
+                    avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                    avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                    compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                  fi
                 fi
               done
+              
+              # Then, process all submodules
+              for avm in $avms; do
+                if [[ "$avm" == *"//"* ]]; then
+                  summary_line=$(grep -E "^[^|]+[|][^|]*$avm[^|]*[|]" summary.md)
+                  if [ -n "$summary_line" ]; then
+                    avm_short_name=$(echo "$summary_line" | awk -F'|' '{print $2}' | xargs)
+                    avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                    compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    echo "| $avm_short_name | $avm_source | $module_version | $compatibility |" >> project_summary.md
+                  fi
+                fi
+              done
+              
               echo "" >> project_summary.md
             done
         
