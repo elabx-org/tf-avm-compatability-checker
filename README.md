@@ -26,11 +26,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Wed Oct 16 14:57:44 BST 2024
+🕒 Last updated: Wed Oct 16 15:17:53 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11367188549)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11367559769)
 
 ## Project-Specific Compatibility
 
@@ -43,31 +43,31 @@
 
 ### ProjectA
 
-| AVM Name | AzureRM | Terraform | Module | Compatible |
-|----------|:-------:|:---------:|:------:|:----------:|
-| [Azure/avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-sql-managedinstance](https://registry.terraform.io/modules/Azure/avm-res-sql-managedinstance) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount) | N/A | N/A | N/A | N/A |
+| AVM Name | AVM Source | Compatibility |
+|----------|------------|---------------|
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway) | Azure/avm-ptn-vnetgateway/azurerm | ❌ |
+| [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall) | Azure/avm-res-network-azurefirewall/azurerm | ✅ |
+| [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost) | Azure/avm-res-network-bastionhost/azurerm | ❌ |
+| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups | ✅ |
+| [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup) | Azure/avm-res-network-networksecuritygroup/azurerm | ❌ |
+| [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone) | Azure/avm-res-network-privatednszone/azurerm | ❌ |
+| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress) | Azure/avm-res-network-publicipaddress/azurerm | ✅ |
+| [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable) | Azure/avm-res-network-routetable/azurerm | ✅ |
+| [sql-managedinstance](https://registry.terraform.io/modules/Azure/avm-res-sql-managedinstance) | Azure/avm-res-sql-managedinstance/azurerm | ❌ |
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount) | Azure/avm-res-storage-storageaccount/azurerm | ❌ |
 
 ### Project B
 
-| AVM Name | AzureRM | Terraform | Module | Compatible |
-|----------|:-------:|:---------:|:------:|:----------:|
-| [Azure/avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable) | N/A | N/A | N/A | N/A |
-| [Azure/avm-res-storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount) | N/A | N/A | N/A | N/A |
+| AVM Name | AVM Source | Compatibility |
+|----------|------------|---------------|
+| [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway) | Azure/avm-ptn-vnetgateway/azurerm | ❌ |
+| [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall) | Azure/avm-res-network-azurefirewall/azurerm | ✅ |
+| [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost) | Azure/avm-res-network-bastionhost/azurerm | ❌ |
+| [network-firewallpolicy//modules/rule_collection_groups](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy) | Azure/avm-res-network-firewallpolicy/azurerm//modules/rule_collection_groups | ✅ |
+| [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup) | Azure/avm-res-network-networksecuritygroup/azurerm | ❌ |
+| [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone) | Azure/avm-res-network-privatednszone/azurerm | ❌ |
+| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress) | Azure/avm-res-network-publicipaddress/azurerm | ✅ |
+| [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable) | Azure/avm-res-network-routetable/azurerm | ✅ |
+| [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount) | Azure/avm-res-storage-storageaccount/azurerm | ❌ |
 
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
