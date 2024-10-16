@@ -26,11 +26,11 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Wed Oct 16 14:34:23 BST 2024
+🕒 Last updated: Wed Oct 16 14:38:19 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366769462)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11366847366)
 
 ## Project-Specific Compatibility
 
@@ -43,8 +43,8 @@
 
 ### ProjectA
 
-| AVM | AzureRM | Terraform | Module | Compatible |
-|-----|:-------:|:---------:|:------:|:----------:|
+| AVM Name | AzureRM | Terraform | Module | Compatible |
+|----------|:-------:|:---------:|:------:|:----------:|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 4.3.0 | 1.9.7 | incompatible | Version constraint mismatch | 0.6.0 | ~> 4.0.0, 4.3.0 |
 | avm-res-network-azurefirewall | N/A | N/A | N/A | N/A |
 | avm-res-network-bastionhost | N/A | N/A | N/A | N/A |
@@ -58,8 +58,8 @@
 
 ### Project B
 
-| AVM | AzureRM | Terraform | Module | Compatible |
-|-----|:-------:|:---------:|:------:|:----------:|
+| AVM Name | AzureRM | Terraform | Module | Compatible |
+|----------|:-------:|:---------:|:------:|:----------:|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | 4.3.0 | 1.9.7 | incompatible | Version constraint mismatch | 0.6.0 | ~> 4.0.0, 4.3.0 |
 | avm-res-network-azurefirewall | N/A | N/A | N/A | N/A |
 | avm-res-network-bastionhost | N/A | N/A | N/A | N/A |
