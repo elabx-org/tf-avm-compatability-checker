@@ -61,82 +61,40 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
-          set +e  # Disable exit on error
-          set -o pipefail  # Consider pipeline failures
+          set +e
+          set -o pipefail
 
-          function log_error() {
+          log_error() {
             echo "ERROR: $1" >&2
           }
 
-          function log_debug() {
-            echo "DEBUG: $1"
+          log_debug() {
+            if [[ "$1" == ESSENTIAL::* ]]; then
+              echo "DEBUG: ${1#ESSENTIAL::}"
+            fi
           }
 
           trap 'log_error "Script failed on line $LINENO"' ERR
 
-          echo "Processing projects-config.txt and extracting AVMs..."
+          echo "ESSENTIAL::Processing projects-config.txt and extracting AVMs..."
           
-          # Initialize arrays to store AVMs
           declare -A existing_avms
           declare -A new_avms
           declare -A project_avms
           
-          echo "Current contents of avm-config.txt:"
-          cat avm-config.txt
-          
-          # Read existing AVMs from avm-config.txt
           while IFS= read -r line; do
             avm=$(echo "$line" | awk '{print $1}')
             existing_avms["$avm"]=1
-            echo "Existing AVM: $avm"
-          done < <(grep -v '^$' avm-config.txt)  # Use process substitution to ignore empty lines
+          done < <(grep -v '^$' avm-config.txt)
           
-          # Debug: Print contents of existing_avms
-          echo "Debug: Contents of existing_avms array"
-          for key in "${!existing_avms[@]}"; do
-            echo "  $key: ${existing_avms[$key]}"
-          done
-          
-          # Function to extract Source values from README.md
           extract_sources() {
-            grep '| <a name="module_' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//' | sort | uniq
-          }
-
-          extract_sources() {
-            echo "DEBUG: Starting source extraction"
-            
-            echo "DEBUG: Checking for original format"
-            original_format=$(grep '| <a name="module_' README.md)
-            if [ -n "$original_format" ]; then
-              echo "DEBUG: Original format found:"
-              echo "$original_format"
-              echo "DEBUG: Extracting from original format"
-              grep '| <a name="module_' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//'
-            else
-              echo "DEBUG: Original format not found"
-            fi
-
-            echo "DEBUG: Checking for new format"
-            new_format=$(grep -E '^\| \[.*\].*\|.*\|.*\|' README.md)
-            if [ -n "$new_format" ]; then
-              echo "DEBUG: New format found:"
-              echo "$new_format"
-              echo "DEBUG: Extracting from new format"
-              grep -E '^\| \[.*\].*\|.*\|.*\|' README.md | awk -F'|' '{print $3}' | sed 's/^ *//;s/ *$//'
-            else
-              echo "DEBUG: New format not found"
-            fi
-
-            echo "DEBUG: Filtering and cleaning results"
             {
               grep '| <a name="module_' README.md | awk -F'|' '{print $3}'
               grep -E '^\| \[.*\].*\|.*\|.*\|' README.md | awk -F'|' '{print $3}'
-            } | sed 's/^ *//;s/ *$//' | # Trim whitespace
-              grep -E '^(Azure/|git@github)' | # Filter for Azure and GitHub sources
-              sed -E 's/ +[0-9.]+$//' | # Remove version numbers at the end
+            } | sed 's/^ *//;s/ *$//' | 
+              grep -E '^(Azure/|git@github)' | 
+              sed -E 's/ +[0-9.]+$//' | 
               sort | uniq
-
-            echo "DEBUG: Extraction complete"
           }
           
           process_github_url() {
@@ -145,7 +103,7 @@ jobs:
             repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
             readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
             
-            log_debug "Fetching README from: $readme_url"
+            log_debug "ESSENTIAL::Processing $project_name from $repo_url"
             readme_response=$(curl -sS -H "Authorization: token $GH_PAT" "$readme_url")
             
             if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
@@ -159,129 +117,71 @@ jobs:
             fi
             
             if [[ $(cat README.md) == "PRIVATE_REPO" ]]; then
-              log_debug "Skipping AVM extraction for private repository: $repo_url"
+              log_debug "ESSENTIAL::Skipping AVM extraction for private repository: $repo_url"
               project_avms["$project_name"]+="PRIVATE_REPO "
             else
               sources=($(extract_sources))
               
-              log_debug "Extracted Sources:"
-              printf '%s\n' "${sources[@]}"
+              log_debug "ESSENTIAL::Extracted Sources for $project_name:"
+              printf '%s\n' "${sources[@]}" | sed 's/^/  /'
               
               for source in "${sources[@]}"; do
                 if [[ $source =~ ^Azure/ ]]; then
-                  # Extract full AVM name including potential submodule
                   full_avm_name=$source
-                  # Extract base AVM name (without submodule)
                   base_avm_name=$(echo "$source" | cut -d'/' -f1-3)
                   
-                  log_debug "Checking AVM $full_avm_name"
-                  log_debug "Base AVM: $base_avm_name"
-                  
                   if [[ -z "${existing_avms[$full_avm_name]}" ]]; then
-                    log_debug "$full_avm_name not found in existing_avms"
                     if [[ -z "${new_avms[$full_avm_name]}" ]]; then
                       new_avms["$full_avm_name"]=1
-                      echo "Found new AVM: $full_avm_name"
-                    else
-                      log_debug "AVM $full_avm_name already in new_avms"
+                      echo "ESSENTIAL::Found new AVM: $full_avm_name"
                     fi
-                  else
-                    log_debug "AVM already exists in avm-config.txt: $full_avm_name"
                   fi
-                  # Add AVM to project_avms
                   if [[ ! " ${project_avms["$project_name"]} " =~ " $full_avm_name " ]]; then
                     project_avms["$project_name"]+="$full_avm_name "
                   fi
                 fi
               done
               
-              log_debug "AVMs for $project_name: ${project_avms["$project_name"]}"
+              log_debug "ESSENTIAL::AVMs for $project_name: ${project_avms["$project_name"]}"
             fi
             
             rm README.md
           }
           
-          echo "Contents of projects-config.txt:"
-          cat projects-config.txt
-          
-          current_project=""
           while IFS= read -r line || [[ -n "$line" ]]; do
             if [[ $line =~ ^\[(.*)\]$ ]]; then
               current_project="${BASH_REMATCH[1]}"
               project_avms["$current_project"]=""
             elif [[ $line =~ ^https://github.com/ ]]; then
               repo_url=$(echo "$line" | grep -o 'https://github.com/[^ ]*')
-              echo "Processing GitHub URL: $repo_url"
               process_github_url "$repo_url" "$current_project"
             fi
           done < projects-config.txt
                     
-          echo "New AVMs to be added:"
+          echo "ESSENTIAL::New AVMs to be added:"
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
-            echo "Checking AVM: $avm"
             if ! grep -q "^$avm" avm-config.txt; then
-              echo "$avm"
-              log_debug "Line 100: Before attempting to add $avm to avm-config.txt"
-              log_debug "Line 101: Content of avm-config.txt before addition:"
-              while IFS= read -r line || [[ -n "$line" ]]; do
-                log_debug "$line"
-              done < avm-config.txt
-              
-              # Ensure the file ends with a newline before adding the new AVM
-              sed -i -e '$a\' avm-config.txt
-              if echo "$avm" >> avm-config.txt; then
-                log_debug "Line 103: Successfully added $avm to avm-config.txt"
-                ((true_new_avms++))
-              else
-                log_error "Line 105: Failed to add $avm to avm-config.txt"
-                log_debug "Current permissions of avm-config.txt: $(ls -l avm-config.txt)"
-                log_debug "Current directory: $(pwd)"
-                log_debug "Contents of current directory: $(ls -la)"
-              fi
-              
-              log_debug "Line 111: Content of avm-config.txt after addition:"
-              while IFS= read -r line || [[ -n "$line" ]]; do
-                log_debug "$line"
-              done < avm-config.txt
+              echo "ESSENTIAL::  $avm"
+              echo "$avm" >> avm-config.txt
+              ((true_new_avms++))
             else
-              log_debug "$avm already exists in avm-config.txt"
               unset new_avms["$avm"]
             fi
           done
 
-          # Ensure the file ends with a newline
           sed -i -e '$a\' avm-config.txt
-          log_debug "After adding new AVMs"
 
-          echo "Updated avm-config.txt:"
-          cat avm-config.txt || log_error "Failed to read avm-config.txt"
+          echo "ESSENTIAL::Summary of changes:"
+          echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
+          echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
+          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
 
-          log_debug "After cat avm-config.txt"
-
-          echo "Summary of changes:"
-          echo "Total existing AVMs: ${#existing_avms[@]}"
-          echo "Total new AVMs added: $true_new_avms"
-          echo "Final total AVMs: $((${#existing_avms[@]} + true_new_avms))"
-          
-          log_debug "After summary of changes"
-
-          echo "List of new AVMs added:"
-          for avm in "${!new_avms[@]}"; do
-            echo "- $avm"
-          done
-
-          log_debug "After listing new AVMs"
-
-          echo "Script completed successfully."
-
-          # If there were any errors, exit with a non-zero status
           if [ $true_new_avms -eq 0 ] && [ ${#new_avms[@]} -gt 0 ]; then
             log_error "Failed to add all new AVMs"
             exit 1
           fi
 
-          # Save project-AVM associations to a JSON file
           echo "{" > project_avm_associations.json
           for project in "${!project_avms[@]}"; do
             avms="${project_avms[$project]}"
@@ -292,16 +192,14 @@ jobs:
               for avm in $avms; do
                 echo "    \"$avm\"," >> project_avm_associations.json
               done
-              # Remove the trailing comma from the last AVM
               sed -i '$ s/,$//' project_avm_associations.json
             fi
             echo "  ]," >> project_avm_associations.json
           done
-          # Remove the trailing comma from the last project
           sed -i '$ s/,$//' project_avm_associations.json
           echo "}" >> project_avm_associations.json
 
-          echo "Project-AVM associations saved to project_avm_associations.json"
+          echo "ESSENTIAL::Project-AVM associations saved to project_avm_associations.json"
           cat project_avm_associations.json
         shell: bash
 
