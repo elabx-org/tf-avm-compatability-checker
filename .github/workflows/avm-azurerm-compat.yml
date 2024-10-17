@@ -255,7 +255,7 @@ jobs:
               echo "Error: avm-config.txt not found" >&2
               exit 1
             fi
-            mapfile -t AVM_SOURCES < <(grep -v '^$' avm-config.txt)
+            mapfile -t AVM_SOURCES < avm-config.txt
           fi
       
           # Use input values or default values with clear precedence
@@ -277,6 +277,13 @@ jobs:
           for source in "${AVM_SOURCES[@]}"; do
             # Split the source into AVM source and version (if provided)
             IFS=' ' read -r avm_source avm_version <<< "$source"
+            
+            # Skip if avm_source is empty or "AVM Name"
+            if [[ -z "$avm_source" || "$avm_source" == "AVM Name" ]]; then
+              echo "Debug: Skipping invalid AVM source: $avm_source"
+              continue
+            }
+            
             short_name=$(get_short_name "$avm_source")
             
             # If version is not specified, set it to "latest"
@@ -431,12 +438,18 @@ jobs:
         REASON="${{ steps.check_result.outputs.reason }}"
         echo "Debug: Compatibility result is $COMPATIBILITY"
         echo "Debug: Reason is $REASON"
-        RESULT_LINE="${{ matrix.avm_short_name }}|${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
-        echo "Debug: Full result line is: $RESULT_LINE"
-        echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
-        echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
-        echo "Debug: Contents of results-${{ strategy.job-index }}.csv:"
-        cat "results-${{ strategy.job-index }}.csv"
+        
+        # Skip saving result if it's the erroneous row
+        if [[ "${{ matrix.avm_short_name }}" != "AVM Name" && "${{ matrix.avm_source }}" != "AVM Name" ]]; then
+          RESULT_LINE="${{ matrix.avm_short_name }}|${{ matrix.avm_source }}|${{ matrix.azurerm_version }}|${{ matrix.tf_version }}|$COMPATIBILITY|$REASON|${{ steps.module_version.outputs.version }}|$AZURERM_CONSTRAINTS"
+          echo "Debug: Full result line is: $RESULT_LINE"
+          echo "$RESULT_LINE" | tr -d '\n' >> "results-${{ strategy.job-index }}.csv"
+          echo "" >> "results-${{ strategy.job-index }}.csv"  # Add a newline for readability
+          echo "Debug: Contents of results-${{ strategy.job-index }}.csv:"
+          cat "results-${{ strategy.job-index }}.csv"
+        else
+          echo "Debug: Skipping erroneous row"
+        fi
 
     - name: Upload results
       uses: actions/upload-artifact@v4
