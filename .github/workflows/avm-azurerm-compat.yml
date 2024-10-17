@@ -463,7 +463,7 @@ jobs:
 
     - name: Summarise Compatibility Results
       run: |
-        echo "### Compatibility Summary" > summary.md
+        echo "### Checks" > summary.md
         echo "" >> summary.md
         echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
         echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
@@ -1056,7 +1056,7 @@ jobs:
             # Add project-specific information if available
             if [ -f "project_summary.md" ]; then
               echo "" >> "$temp_dashboard"
-              echo "## Project-Specific Compatibility" >> "$temp_dashboard"
+              echo "## Project Compatibility" >> "$temp_dashboard"
               echo "" >> "$temp_dashboard"
               sed '1,2d' project_summary.md >> "$temp_dashboard"
             fi
