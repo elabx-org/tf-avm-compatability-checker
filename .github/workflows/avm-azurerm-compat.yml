@@ -483,10 +483,16 @@ jobs:
           
           while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
             echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-
+    
+            # Skip lines that don't have the expected number of fields
+            if [ $(echo "$avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints" | awk -F'|' '{print NF}') -ne 8 ]; then
+              echo "Debug: Skipping invalid line"
+              continue
+            fi
+    
             # Preserve original formatting of azurerm_constraints
             azurerm_constraints=$(echo "$azurerm_constraints" | sed 's/^ *//; s/ *$//')
-
+    
             # Create the registry URL
             if [[ "$avm_source" == *"//"* ]]; then
               base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
@@ -495,16 +501,16 @@ jobs:
             else
               registry_url="https://registry.terraform.io/modules/$avm_source"
             fi
-
+    
             # Create a Markdown link for the AVM name
             avm_name_link="[$avm_short_name]($registry_url)"
-
+    
             echo "Debug: After processing: $avm_name_link|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
-
+    
             # Output the processed line into the summary
             echo "| $avm_name_link | $avm_source | $azurerm_version | $tf_version | $compatibility | $reason | $module_version | $azurerm_constraints |" >> summary.md
           done < sorted_results.csv
-
+    
           echo "Debug: Final contents of summary.md:"
           cat summary.md
         else
