@@ -463,7 +463,7 @@ jobs:
 
     - name: Summarise Compatibility Results
       run: |
-        echo "### Checks" > summary.md
+        echo "### Compatibility Summary" > summary.md
         echo "" >> summary.md
         echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
         echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
@@ -997,7 +997,7 @@ jobs:
               line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
               
               # Skip empty lines, header lines, and lines with only dashes
-              [[ -z "$line" || "$line" == *----* || "$line" == "### Checks" ]] && continue
+              [[ -z "$line" || "$line" == *----* || "$line" == "# Compatibility Summary" ]] && continue
               
               # Skip the first header row
               if $skip_header; then
