@@ -593,7 +593,7 @@ jobs:
               project_avms=$(cat project_avm_associations.json)
               
               echo "" >> project_summary.md
-              echo "### Projects Breakdown" >> project_summary.md
+              echo "### Project Breakdown" >> project_summary.md
               echo "" >> project_summary.md
               
               # Process each project for detailed view
@@ -991,6 +991,10 @@ jobs:
           echo "|----------|:-------:|:---------:|:------:|:----------:|" >> "$temp_dashboard"
           
           # Process summary.md and add to dashboard
+          total_avms=0
+          compatible_avms=0
+          incompatible_avms=0
+          
           skip_header=true
           while IFS= read -r line; do
             # Remove leading and trailing spaces and pipe characters
@@ -1013,7 +1017,7 @@ jobs:
             fi
             
             total_avms=$((total_avms + 1))
-             
+            
             avm_full="${fields[0]}"
             avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
             avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
