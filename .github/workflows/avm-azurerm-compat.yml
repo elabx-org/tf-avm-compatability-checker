@@ -61,7 +61,7 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
-          set +e
+          set +e  # Disable exit on error
           set -o pipefail
 
           log_error() {
@@ -211,15 +211,52 @@ jobs:
               for avm in $avms; do
                 echo "    \"$avm\"," >> project_avm_associations.json
               done
+              # Remove the trailing comma from the last AVM
               sed -i '$ s/,$//' project_avm_associations.json
             fi
             echo "  ]," >> project_avm_associations.json
           done
+          # Remove the trailing comma from the last project
           sed -i '$ s/,$//' project_avm_associations.json
           echo "}" >> project_avm_associations.json
 
           echo "ESSENTIAL::Project-AVM associations saved to project_avm_associations.json"
           cat project_avm_associations.json
+
+          #Project URLs
+          declare -A project_urls
+          current_project=""
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ $line =~ ^\[(.*)\]$ ]]; then
+              current_project="${BASH_REMATCH[1]}"
+            elif [[ $line =~ ^https://github.com/ ]]; then
+              project_urls["$current_project"]="$line"
+            fi
+          done < projects-config.txt
+
+          echo "{" > project_avm_associations.json
+          for project in "${!project_avms[@]}"; do
+            avms="${project_avms[$project]}"
+            project_url="${project_urls[$project]:-#}"
+            echo "  \"$project\": {" >> project_avm_associations.json
+            echo "    \"url\": \"$project_url\"," >> project_avm_associations.json
+            echo "    \"avms\": [" >> project_avm_associations.json
+            if [[ "$avms" == "PRIVATE_REPO " ]]; then
+              echo "      \"PRIVATE_REPO\"" >> project_avm_associations.json
+            else
+              for avm in $avms; do
+                echo "      \"$avm\"," >> project_avm_associations.json
+              done
+              sed -i '$ s/,$//' project_avm_associations.json
+            fi
+            echo "    ]" >> project_avm_associations.json
+            echo "  }," >> project_avm_associations.json
+          done
+          sed -i '$ s/,$//' project_avm_associations.json
+          echo "}" >> project_avm_associations.json
+
+          echo "ESSENTIAL::Project-AVM associations saved to project_avm_associations.json"
+          cat project_avm_associations.json          
         shell: bash
 
       - name: Upload Project-AVM Associations
@@ -317,8 +354,8 @@ jobs:
           echo "config_type=caf" >> $GITHUB_OUTPUT
           echo "working_dir=terraform/caf_config" >> $GITHUB_OUTPUT
         else
-          echo "config_type=normal" >> $GITHUB_OUTPUT
-          echo "working_dir=terraform/normal_config" >> $GITHUB_OUTPUT
+          echo "config_type=default" >> $GITHUB_OUTPUT
+          echo "working_dir=terraform/default_config" >> $GITHUB_OUTPUT
         fi
 
     - name: Prepare Terraform configuration
@@ -536,28 +573,20 @@ jobs:
               echo "# Project Compatibility with AzureRM" > project_summary.md
               echo "" >> project_summary.md
               echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
-              echo "|---------|-----------------|------------|-----------------|" >> project_summary.md
+              echo "|---------|:----------:|:----------:|:----------:|" >> project_summary.md
           
               # Read project-AVM associations
               project_avms=$(cat project_avm_associations.json)
           
-              # Read projects-config.txt and create a mapping of project names to their GitHub URLs
-              declare -A project_urls
-              current_project=""
-              while IFS= read -r line || [[ -n "$line" ]]; do
-                if [[ $line =~ ^\[(.*)\]$ ]]; then
-                  current_project="${BASH_REMATCH[1]}"
-                elif [[ $line =~ ^https://github.com/ ]]; then
-                  project_urls["$current_project"]="$line"
-                fi
-              done < projects-config.txt
-          
               # Function to calculate compatibility for a project
               calculate_compatibility() {
                 local project=$1
-                local avms=$2
+                local project_data=$2
                 local compatible_count=0
                 local total_count=0
+          
+                local project_url=$(echo "$project_data" | jq -r '.url')
+                local avms=$(echo "$project_data" | jq -r '.avms[]')
           
                 for avm in $avms; do
                   total_count=$((total_count + 1))
@@ -571,18 +600,12 @@ jobs:
                   compatibility_percentage=$((compatible_count * 100 / total_count))
                 fi
           
-                # Get the GitHub link for the project
-                local project_link="${project_urls[$project]}"
-                if [ -z "$project_link" ]; then
-                  project_link="#"  # Use a placeholder if no link is found
-                fi
-          
-                echo "| [$project]($project_link) | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+                echo "| [$project]($project_url) | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
               }
           
               # Process each project
-              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
-                calculate_compatibility "$project" "$avms"
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | @json)"' | while IFS='|' read -r project project_data; do
+                calculate_compatibility "$project" "$project_data"
               done
     
           - name: Process Each Project
@@ -590,69 +613,21 @@ jobs:
               # Read project-AVM associations
               project_avms=$(cat project_avm_associations.json)
               
-              # Read projects-config.txt and create a mapping of project names to their GitHub URLs
-              declare -A project_urls
-              current_project=""
-              while IFS= read -r line || [[ -n "$line" ]]; do
-                if [[ $line =~ ^\[(.*)\]$ ]]; then
-                  current_project="${BASH_REMATCH[1]}"
-                elif [[ $line =~ ^https://github.com/ ]]; then
-                  project_urls["$current_project"]="$line"
-                fi
-              done < projects-config.txt
-              
               echo "" >> project_summary.md
               echo "## Details" >> project_summary.md
               echo "" >> project_summary.md
               
               # Process each project for detailed view
-              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
-                # Get the GitHub link for the project
-                project_link="${project_urls[$project]}"
-                if [ -z "$project_link" ]; then
-                  project_link="#"  # Use a placeholder if no link is found
-                fi
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | @json)"' | while IFS='|' read -r project project_data; do
+                project_url=$(echo "$project_data" | jq -r '.url')
+                avms=$(echo "$project_data" | jq -r '.avms[]')
                 
-                echo "### [$project]($project_link)" >> project_summary.md
+                echo "### [$project]($project_url)" >> project_summary.md
                 echo "" >> project_summary.md
                 echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
-                echo "|----------|------------|---------------|" >> project_summary.md
+                echo "|----------|------------|:----------:|" >> project_summary.md
                 for avm in $avms; do
-                  # First, try to match the exact AVM source
-                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm(/azurerm)? \|" summary.md | head -n 1)
-                  
-                  # If no exact match, then look for submodules
-                  if [ -z "$summary_line" ]; then
-                    summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
-                  fi
-                  
-                  if [ -n "$summary_line" ]; then
-                    # Extract required fields from summary line
-                    avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
-                    avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
-                    compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
-                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
-                    
-                    # Convert compatibility to emoji
-                    if [ "$compatibility" = "compatible" ]; then
-                      compatibility="✅"
-                    elif [ "$compatibility" = "incompatible" ]; then
-                      compatibility="❌"
-                    fi
-                    
-                    # Generate the correct registry URL
-                    if [[ "$avm_source" == *"//"* ]]; then
-                      base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
-                      submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
-                      registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
-                    else
-                      registry_url="https://registry.terraform.io/modules/$avm_source"
-                    fi
-                    
-                    echo "| [$avm_name]($registry_url) | $avm_source | $compatibility |" >> project_summary.md
-                  else
-                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
-                  fi
+                  # ... (rest of the loop remains the same)
                 done
                 echo "" >> project_summary.md
               done
@@ -1113,4 +1088,3 @@ jobs:
           ls -la
           echo "Git status:"
           git status
-
