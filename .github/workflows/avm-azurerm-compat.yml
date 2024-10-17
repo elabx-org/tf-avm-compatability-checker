@@ -588,16 +588,47 @@ jobs:
               echo "" >> project_summary.md
               
               # Process each project for detailed view
-              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | @json)"' | while IFS='|' read -r project project_data; do
-                project_url=$(echo "$project_data" | jq -r '.url')
-                avms=$(echo "$project_data" | jq -r '.avms[]')
-                
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value.url)|\(.value.avms | join(" "))"' | while IFS='|' read -r project project_url avms; do
                 echo "### [$project]($project_url)" >> project_summary.md
                 echo "" >> project_summary.md
                 echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
                 echo "|----------|------------|:----------:|" >> project_summary.md
                 for avm in $avms; do
-                  # ... (rest of the loop remains the same)
+                  # First, try to match the exact AVM source
+                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm(/azurerm)? \|" summary.md | head -n 1)
+                  
+                  # If no exact match, then look for submodules
+                  if [ -z "$summary_line" ]; then
+                    summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
+                  fi
+                  
+                  if [ -n "$summary_line" ]; then
+                    # Extract required fields from summary line
+                    avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
+                    avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                    compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                    
+                    # Convert compatibility to emoji
+                    if [ "$compatibility" = "compatible" ]; then
+                      compatibility="✅"
+                    elif [ "$compatibility" = "incompatible" ]; then
+                      compatibility="❌"
+                    fi
+                    
+                    # Generate the correct registry URL
+                    if [[ "$avm_source" == *"//"* ]]; then
+                      base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
+                      submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
+                      registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
+                    else
+                      registry_url="https://registry.terraform.io/modules/$avm_source"
+                    fi
+                    
+                    echo "| [$avm_name]($registry_url) | $avm_source | $compatibility |" >> project_summary.md
+                  else
+                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
+                  fi
                 done
                 echo "" >> project_summary.md
               done
