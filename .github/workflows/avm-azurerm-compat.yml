@@ -540,7 +540,12 @@ jobs:
 
           - name: Calculate Project Compatibility
             run: |
-              echo "# Project Compatibility with AzureRM" > project_summary.md
+              # Get the AzureRM version from the workflow input or use the default
+              AZURERM_VERSION="${{ github.event.inputs.azurerm_versions }}"
+              if [ -z "$AZURERM_VERSION" ]; then
+                AZURERM_VERSION="${{ env.DEFAULT_AZURERM_VERSION }}"
+              fi
+              echo "### Project Compatibility with AzureRM $AZURERM_VERSION" > project_summary.md
               echo "" >> project_summary.md
               echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
               echo "|---------|:----------:|:----------:|:----------:|" >> project_summary.md
