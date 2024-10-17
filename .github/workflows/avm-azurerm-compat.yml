@@ -582,6 +582,7 @@ jobs:
               echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | @json)"' | while IFS='|' read -r project project_data; do
                 calculate_compatibility "$project" "$project_data"
               done
+              echo "Testing Adding a note here"
     
           - name: Process Each Project
             run: |
