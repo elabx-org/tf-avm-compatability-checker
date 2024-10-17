@@ -1,8 +1,8 @@
-[ProjectA]
-https://github.com/elabx-org/test-repo-4
-
-[Project B]
+[Test Repo 2]
 https://github.com/elabx-org/test-repo-2
 
-[Project C]
+[Test Repo 4]
+https://github.com/elabx-org/test-repo-4
+
+[Test Repo 6]
 https://github.com/elabx-org/test-repo-6
