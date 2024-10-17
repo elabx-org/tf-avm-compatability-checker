@@ -16,18 +16,18 @@
 | [network-firewallpolicy](https://registry.terraform.io/modules/Azure/avm-res-network-firewallpolicy/azurerm) | 4.3.0 | 1.9.7 | 0.3.1 | ✅ |
 | [network-networksecuritygroup](https://registry.terraform.io/modules/Azure/avm-res-network-networksecuritygroup/azurerm) | 4.3.0 | 1.9.7 | 0.2.0 | ❌ |
 | [network-privatednszone](https://registry.terraform.io/modules/Azure/avm-res-network-privatednszone/azurerm) | 4.3.0 | 1.9.7 | 0.2.1 | ❌ |
-| [network-publicipaddress](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurerm) | 4.3.0 | 1.9.7 | 0.1.2 | ✅ |
+| [network-publicipaddressavm-res-sql-managedinstance/azurerm](https://registry.terraform.io/modules/Azure/avm-res-network-publicipaddress/azurermAzure/avm-res-sql-managedinstance/azurerm) | 4.3.0 | 1.9.7 | Version not found | ❌ |
 | [network-routetable](https://registry.terraform.io/modules/Azure/avm-res-network-routetable/azurerm) | 4.3.0 | 1.9.7 | 0.3.0 | ✅ |
 | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | 4.3.0 | 1.9.7 | 0.2.7 | ❌ |
 
 ## Compatibility Overview 📊
 - 🔢 Total AVMs checked: 14
-- ✅ Compatible AVMs: 7
-- ❌ Incompatible AVMs: 7
+- ✅ Compatible AVMs: 6
+- ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Thu Oct 17 12:11:31 BST 2024
+🕒 Last updated: Thu Oct 17 12:13:38 BST 2024
 
 🔄 Next scheduled run: 02:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11383736121)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11383769806)
 <!-- AVM_COMPATIBILITY_DASHBOARD_END -->
