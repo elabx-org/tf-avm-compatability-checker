@@ -1012,7 +1012,7 @@ jobs:
             fi
             
             # Skip the erroneous row
-            if [[ "$line" == *"AVM Name"*"azurerm Version"*"Terraform Version"*"Module Version"*"Compatibility"* ]]; then
+            if [[ "$line" == *"AVM Name "*"azurerm Version"*"Terraform Version"*"Module Version"*"Compatibility"* ]]; then
               continue
             fi
             
