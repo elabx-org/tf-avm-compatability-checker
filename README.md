@@ -27,13 +27,13 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Thu Oct 17 15:36:46 BST 2024
+🕒 Last updated: Thu Oct 17 16:00:24 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11387188914)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11387597273)
 
-## Project-Specific Compatibility
+## Project Checks
 
 **Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v4.3.0. These checks does not verify compatibility of the specific AVM versions currently in use within the projects.
 
@@ -45,7 +45,7 @@
 | [Test Repo 6](https://github.com/elabx-org/test-repo-6) | 0 | 1 | 0% |
 | [Test Repo 4](https://github.com/elabx-org/test-repo-4) | 4 | 10 | 40% |
 
-## Details
+### Projects Breakdown
 
 ### [Test Repo 2](https://github.com/elabx-org/test-repo-2)
 
