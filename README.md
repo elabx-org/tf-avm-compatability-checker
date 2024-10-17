@@ -5,7 +5,6 @@
 ## Summary
 | AVM Name | AzureRM | Terraform | Module | Compatible |
 |----------|:-------:|:---------:|:------:|:----------:|
-| [AVM Name ](AVM Name ) | azurerm Version | Terraform Version | Module Version | Compatibility |
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | 4.3.0 | 1.9.7 | 0.6.0 | ❌ |
 | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | 4.3.0 | 1.9.7 | 6.0.0 | ❌ |
 | [compute-virtualmachine](https://registry.terraform.io/modules/Azure/avm-res-compute-virtualmachine/azurerm) | 4.3.0 | 1.9.7 | 0.15.1 | ❌ |
@@ -23,17 +22,17 @@
 | [storage-storageaccount](https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm) | 4.3.0 | 1.9.7 | 0.2.7 | ❌ |
 
 ## Compatibility Overview 📊
-- 🔢 Total AVMs checked: 16
+- 🔢 Total AVMs checked: 15
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Thu Oct 17 16:44:49 BST 2024
+🕒 Last updated: Thu Oct 17 16:51:33 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11388395652)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11388506556)
 
-## Project Checks
+## Project-Specific Compatibility
 
 **Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v4.3.0. These checks does not verify compatibility of the specific AVM versions currently in use within the projects.
 
@@ -45,7 +44,7 @@
 | [Test Repo 6](https://github.com/elabx-org/test-repo-6) | 0 | 1 | 0% |
 | [Test Repo 4](https://github.com/elabx-org/test-repo-4) | 4 | 10 | 40% |
 
-### Project Breakdown
+## Details
 
 ### [Test Repo 2](https://github.com/elabx-org/test-repo-2)
 
