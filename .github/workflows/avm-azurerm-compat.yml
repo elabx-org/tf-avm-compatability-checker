@@ -463,7 +463,7 @@ jobs:
 
     - name: Summarise Compatibility Results
       run: |
-        echo "# Compatibility Summary" > summary.md
+        echo "### Compatibility Summary" > summary.md
         echo "" >> summary.md
         echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
         echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
