@@ -178,17 +178,19 @@ jobs:
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
-      
+
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           # Remove any trailing whitespace and ensure each AVM is on its own line
           sed -i 's/[[:space:]]*$//' avm-config.txt
           sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
-      
+          sed -i '/^$/d' avm-config.txt  # Remove empty lines
+          sed -i 's/\(Azure\/.*\)\(Azure\/.*\)/\1\n\2/' avm-config.txt  # Ensure each AVM is on its own line
+
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
           echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
-      
+
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
       
