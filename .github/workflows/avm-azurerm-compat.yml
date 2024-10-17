@@ -682,7 +682,7 @@ jobs:
             IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
             
             # Convert comma-separated values to arrays
-            IFS=',' read -ra hours <<< "$hour"
+            IIFS=',' read -ra hours <<< "$hour"
             
             # Sort hours array
             IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
@@ -727,45 +727,27 @@ jobs:
           echo "Contents of summary.md:"
           cat summary.md
           
-          # Create a list of all AVMs currently being checked
-          current_avms=()
+          # NEW CODE: Extract all AVMs currently being checked
+          current_avms=$(tail -n +4 summary.md | grep -v '^[-|[:space:]]*$' | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort -u)
           
-          # Read the summary file, skipping the header lines
-          tail -n +4 summary.md | while IFS= read -r line; do
-            # Skip lines that contain only dashes
-            if [[ "$line" =~ ^[-|[:space:]]+$ ]]; then
-              continue
+          echo "Current AVMs being checked:"
+          echo "$current_avms"
+          
+          # NEW CODE: Get all open issues related to AVM incompatibility
+          open_issues=$(gh issue list --search "Incompatibility Detected: in:title" --state open --json number,title --jq '.[] | [.number, .title] | @tsv')
+          
+          # NEW CODE: Process open issues
+          echo "$open_issues" | while IFS=$'\t' read -r issue_number issue_title; do
+            avm_name=$(echo "$issue_title" | sed -E 's/Incompatibility Detected: (.*) with AzureRM.*/\1/')
+            
+            if ! echo "$current_avms" | grep -q "$avm_name"; then
+              echo "AVM $avm_name is no longer being checked. Closing issue #$issue_number."
+              closing_comment="This AVM is no longer part of the compatibility checks. Closing this issue.
+
+              If this AVM needs to be re-added to the checks, please update the configuration and re-run the workflow."
+              gh issue close $issue_number --comment "$closing_comment"
             fi
-            
-            # Remove leading and trailing | and spaces
-            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
-            
-            # Split the line into fields
-            IFS='|' read -ra fields <<< "$line"
-            
-            # Check if we have the expected number of fields
-            if [ ${#fields[@]} -ne 8 ]; then
-              echo "Skipping invalid line: $line"
-              continue
-            fi
-            
-            # Extract AVM name without the link
-            avm_name=$(echo "${fields[0]}" | sed -E 's/\[(.*)\].*/\1/')
-            current_avms+=("$avm_name")
           done
-          
-          echo "Current AVMs being checked: ${current_avms[*]}"
-          
-          # Function to check if an AVM is in the current list
-          is_avm_current() {
-            local avm_to_check="$1"
-            for current_avm in "${current_avms[@]}"; do
-              if [[ "$current_avm" == "$avm_to_check" ]]; then
-                return 0
-              fi
-            done
-            return 1
-          }
           
           # Read the summary file, skipping the header lines
           tail -n +4 summary.md | while IFS= read -r line; do
@@ -848,14 +830,12 @@ jobs:
               
               # Prepare issue title and body
               title="Incompatibility Detected: $avm_name with AzureRM $azurerm_version"
-              body=$(cat << EOL
-              An incompatibility has been detected for the following AVM:
+              body="An incompatibility has been detected for the following AVM:
 
-              $issue_body
-
-              Compatibility checks with AzureRM $azurerm_version will proceed according to the established schedule.
-              EOL
-              )
+          $issue_body
+          
+          Compatibility checks with AzureRM $azurerm_version will proceed according to the established schedule."
+        
               if [ -z "$issue_number" ]; then
                 echo "Creating new issue..."
                 new_issue=$(gh issue create --title "$title" --body "$body" --repo $GITHUB_REPOSITORY)
@@ -883,55 +863,27 @@ jobs:
               # Check if the issue title exactly matches the expected title for this AVM
               if [[ "$issue_title" == "Incompatibility Detected: $avm_name with AzureRM"* ]]; then
                 echo "This is the correct issue for $avm_name. Closing the issue..."
-                closing_comment=$(cat << EOL
-              The module $avm_name is now compatible with AzureRM $azurerm_version. Closing this issue.
+                closing_comment="The module $avm_name is now compatible with AzureRM $azurerm_version. Closing this issue.
 
-              $issue_body
-              EOL
-              )
-                  gh issue close $issue_number --comment "$closing_comment"
-                  if [ $? -eq 0 ]; then
-                    echo "Successfully closed issue for now compatible AVM: $avm_name"
-                  else
-                    echo "Error: Failed to close issue for AVM: $avm_name"
-                  fi
-                else
-                  echo "This issue does not belong to $avm_name. Skipping closure."
-                fi
-              else
-                echo "No action needed for AVM: $avm_name"
-              fi
-              
-              echo "Finished processing AVM: $avm_name"
-              echo "-----------------------------------"
-            done
-            
-            # Check for issues of AVMs no longer in scope
-            echo "Checking for issues of AVMs no longer in scope..."
-            gh issue list --search "Incompatibility Detected: in:title" --json number,title --jq '.[]' | while read -r issue; do
-              issue_number=$(echo "$issue" | jq -r '.number')
-              issue_title=$(echo "$issue" | jq -r '.title')
-              avm_from_title=$(echo "$issue_title" | sed -E 's/Incompatibility Detected: (.*) with AzureRM.*/\1/')
-              
-              if ! is_avm_current "$avm_from_title"; then
-                echo "AVM $avm_from_title is no longer in scope. Closing issue #$issue_number."
-                closing_comment=$(cat << EOL
-              The module $avm_from_title is no longer in the scope of compatibility checks. Closing this issue.
-
-              🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
-              🔄 Next scheduled run: $NEXT_RUN
-              EOL
-              )
+          $issue_body"
                 gh issue close $issue_number --comment "$closing_comment"
                 if [ $? -eq 0 ]; then
-                  echo "Successfully closed issue for out-of-scope AVM: $avm_from_title"
+                  echo "Successfully closed issue for now compatible AVM: $avm_name"
                 else
-                  echo "Error: Failed to close issue for AVM: $avm_from_title"
+                  echo "Error: Failed to close issue for AVM: $avm_name"
                 fi
+              else
+                echo "This issue does not belong to $avm_name. Skipping closure."
               fi
-            done
+            else
+              echo "No action needed for AVM: $avm_name"
+            fi
             
-            echo "Issue management process completed."
+            echo "Finished processing AVM: $avm_name"
+            echo "-----------------------------------"
+          done
+          
+          echo "Issue management process completed."
 
   generate-dashboard:
       needs: [summarise-results, determine-workflow, project-compatibility]
