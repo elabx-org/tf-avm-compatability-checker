@@ -666,9 +666,14 @@ jobs:
         with:
           name: compatibility-summary
 
+      - name: Configure git for github-actions
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
       - name: Manage issues for AVMs
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_REPO_MANAGE }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Starting issue management process..."
           
@@ -727,16 +732,16 @@ jobs:
           echo "Contents of summary.md:"
           cat summary.md
           
-          # NEW CODE: Extract all AVMs currently being checked
+          # Extract all AVMs currently being checked
           current_avms=$(tail -n +4 summary.md | grep -v '^[-|[:space:]]*$' | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort -u)
           
           echo "Current AVMs being checked:"
           echo "$current_avms"
           
-          # NEW CODE: Get all open issues related to AVM incompatibility
+          # Get all open issues related to AVM incompatibility
           open_issues=$(gh issue list --search "Incompatibility Detected: in:title" --state open --json number,title --jq '.[] | [.number, .title] | @tsv')
           
-          # NEW CODE: Process open issues
+          # Process open issues
           echo "$open_issues" | while IFS=$'\t' read -r issue_number issue_title; do
             avm_name=$(echo "$issue_title" | sed -E 's/Incompatibility Detected: (.*) with AzureRM.*/\1/')
             
