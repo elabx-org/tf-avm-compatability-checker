@@ -545,7 +545,7 @@ jobs:
               if [ -z "$AZURERM_VERSION" ]; then
                 AZURERM_VERSION="${{ env.DEFAULT_AZURERM_VERSION }}"
               fi
-              echo "### Project Compatibility with AzureRM $AZURERM_VERSION" > project_summary.md
+              echo "### Compatibility with AzureRM $AZURERM_VERSION" > project_summary.md
               echo "" >> project_summary.md
               echo "**Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v$AZURERM_VERSION. These checks does not verify compatibility of the specific AVM versions currently in use within the projects." >> project_summary.md             
               echo "" >> project_summary.md
@@ -593,7 +593,7 @@ jobs:
               project_avms=$(cat project_avm_associations.json)
               
               echo "" >> project_summary.md
-              echo "### Project Breakdown" >> project_summary.md
+              echo "### Breakdown" >> project_summary.md
               echo "" >> project_summary.md
               
               # Process each project for detailed view
