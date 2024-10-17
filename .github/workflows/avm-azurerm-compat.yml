@@ -20,9 +20,9 @@ on:
         default: false
         type: boolean
       check_projects:
-        description: 'Check project-specific compatibility'
+        description: 'Check project compatibility'
         required: true
-        default: false
+        default: true
         type: boolean
   
   schedule:
@@ -463,7 +463,7 @@ jobs:
 
     - name: Summarise Compatibility Results
       run: |
-        echo "### Compatibility Summary" > summary.md
+        echo "### Checks" > summary.md
         echo "" >> summary.md
         echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
         echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
@@ -593,7 +593,7 @@ jobs:
               project_avms=$(cat project_avm_associations.json)
               
               echo "" >> project_summary.md
-              echo "## Details" >> project_summary.md
+              echo "### Project Breakdown" >> project_summary.md
               echo "" >> project_summary.md
               
               # Process each project for detailed view
@@ -997,7 +997,7 @@ jobs:
               line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
               
               # Skip empty lines, header lines, and lines with only dashes
-              [[ -z "$line" || "$line" == *----* || "$line" == "# Compatibility Summary" ]] && continue
+              [[ -z "$line" || "$line" == *----* || "$line" == "### Checks" ]] && continue
               
               # Skip the first header row
               if $skip_header; then
