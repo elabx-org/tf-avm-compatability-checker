@@ -20,9 +20,9 @@ on:
         default: false
         type: boolean
       check_projects:
-        description: 'Check project-specific compatibility'
+        description: 'Check project compatibility'
         required: true
-        default: false
+        default: true
         type: boolean
   
   schedule:
@@ -593,7 +593,7 @@ jobs:
               project_avms=$(cat project_avm_associations.json)
               
               echo "" >> project_summary.md
-              echo "## Details" >> project_summary.md
+              echo "### Projects Breakdown" >> project_summary.md
               echo "" >> project_summary.md
               
               # Process each project for detailed view
@@ -1050,7 +1050,7 @@ jobs:
           # Add project-specific information if available
           if [ -f "project_summary.md" ]; then
             echo "" >> "$temp_dashboard"
-            echo "## Project-Specific Compatibility" >> "$temp_dashboard"
+            echo "## Project Checks" >> "$temp_dashboard"
             echo "" >> "$temp_dashboard"
             sed '1,2d' project_summary.md >> "$temp_dashboard"
           fi
