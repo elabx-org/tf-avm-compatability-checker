@@ -541,6 +541,17 @@ jobs:
               # Read project-AVM associations
               project_avms=$(cat project_avm_associations.json)
           
+              # Read projects-config.txt and create a mapping of project names to their GitHub URLs
+              declare -A project_urls
+              current_project=""
+              while IFS= read -r line || [[ -n "$line" ]]; do
+                if [[ $line =~ ^\[(.*)\]$ ]]; then
+                  current_project="${BASH_REMATCH[1]}"
+                elif [[ $line =~ ^https://github.com/ ]]; then
+                  project_urls["$current_project"]="$line"
+                fi
+              done < projects-config.txt
+          
               # Function to calculate compatibility for a project
               calculate_compatibility() {
                 local project=$1
@@ -560,18 +571,35 @@ jobs:
                   compatibility_percentage=$((compatible_count * 100 / total_count))
                 fi
           
-                echo "| $project | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+                # Get the GitHub link for the project
+                local project_link="${project_urls[$project]}"
+                if [ -z "$project_link" ]; then
+                  project_link="#"  # Use a placeholder if no link is found
+                fi
+          
+                echo "| [$project]($project_link) | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
               }
           
               # Process each project
               echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
                 calculate_compatibility "$project" "$avms"
               done
-          
+    
           - name: Process Each Project
             run: |
               # Read project-AVM associations
               project_avms=$(cat project_avm_associations.json)
+              
+              # Read projects-config.txt and create a mapping of project names to their GitHub URLs
+              declare -A project_urls
+              current_project=""
+              while IFS= read -r line || [[ -n "$line" ]]; do
+                if [[ $line =~ ^\[(.*)\]$ ]]; then
+                  current_project="${BASH_REMATCH[1]}"
+                elif [[ $line =~ ^https://github.com/ ]]; then
+                  project_urls["$current_project"]="$line"
+                fi
+              done < projects-config.txt
               
               echo "" >> project_summary.md
               echo "## Details" >> project_summary.md
@@ -579,7 +607,13 @@ jobs:
               
               # Process each project for detailed view
               echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | join(" "))"' | while IFS='|' read -r project avms; do
-                echo "### $project" >> project_summary.md
+                # Get the GitHub link for the project
+                project_link="${project_urls[$project]}"
+                if [ -z "$project_link" ]; then
+                  project_link="#"  # Use a placeholder if no link is found
+                fi
+                
+                echo "### [$project]($project_link)" >> project_summary.md
                 echo "" >> project_summary.md
                 echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
                 echo "|----------|------------|---------------|" >> project_summary.md
