@@ -59,7 +59,7 @@ jobs:
 
       - name: Process projects and extract AVMs
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_PAT: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
           set +e  # Disable exit on error
           set -o pipefail
