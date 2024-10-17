@@ -547,7 +547,7 @@ jobs:
               fi
               echo "### Project Compatibility with AzureRM $AZURERM_VERSION" > project_summary.md
               echo "" >> project_summary.md
-              echo "**Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v$AZURERM_VERSION. This check does not verify compatibility of the specific AVM versions currently in use within the projects." >> project_summary.md             
+              echo "**Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v$AZURERM_VERSION. These checks does not verify compatibility of the specific AVM versions currently in use within the projects." >> project_summary.md             
               echo "" >> project_summary.md
               echo "---" >> project_summary.md              
               echo "" >> project_summary.md
