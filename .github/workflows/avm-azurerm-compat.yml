@@ -282,7 +282,7 @@ jobs:
             if [[ -z "$avm_source" || "$avm_source" == "AVM Name" ]]; then
               echo "Debug: Skipping invalid AVM source: $avm_source"
               continue
-            }
+            fi
             
             short_name=$(get_short_name "$avm_source")
             
