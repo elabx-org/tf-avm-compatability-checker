@@ -484,9 +484,9 @@ jobs:
           while IFS='|' read -r avm_short_name avm_source azurerm_version tf_version compatibility reason module_version azurerm_constraints; do
             echo "Debug: Processing line: $avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints"
     
-            # Skip lines that don't have the expected number of fields
-            if [ $(echo "$avm_short_name|$avm_source|$azurerm_version|$tf_version|$compatibility|$reason|$module_version|$azurerm_constraints" | awk -F'|' '{print NF}') -ne 8 ]; then
-              echo "Debug: Skipping invalid line"
+            # Skip the erroneous row
+            if [[ "$avm_short_name" == "AVM Name " && "$avm_source" == "AVM Name " ]]; then
+              echo "Debug: Skipping erroneous row"
               continue
             fi
     
@@ -1011,11 +1011,6 @@ jobs:
               continue
             fi
             
-            # Skip the erroneous row
-            if [[ "$line" == *"AVM Name "*"azurerm Version"*"Terraform Version"*"Module Version"*"Compatibility"* ]]; then
-              continue
-            fi
-            
             IFS='|' read -ra fields <<< "$line"
             
             if [ ${#fields[@]} -ne 8 ]; then
@@ -1024,7 +1019,7 @@ jobs:
             fi
             
             total_avms=$((total_avms + 1))
-            
+             
             avm_full="${fields[0]}"
             avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
             avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
