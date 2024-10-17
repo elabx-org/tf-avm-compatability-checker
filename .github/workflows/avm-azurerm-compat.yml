@@ -991,10 +991,6 @@ jobs:
           echo "|----------|:-------:|:---------:|:------:|:----------:|" >> "$temp_dashboard"
           
           # Process summary.md and add to dashboard
-          total_avms=0
-          compatible_avms=0
-          incompatible_avms=0
-          
           skip_header=true
           while IFS= read -r line; do
             # Remove leading and trailing spaces and pipe characters
@@ -1006,6 +1002,11 @@ jobs:
             # Skip the first header row
             if $skip_header; then
               skip_header=false
+              continue
+            fi
+            
+            # Skip the erroneous row
+            if [[ "$line" == *"AVM Name"*"azurerm Version"*"Terraform Version"*"Module Version"*"Compatibility"* ]]; then
               continue
             fi
             
