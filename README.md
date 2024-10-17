@@ -26,16 +26,15 @@
 - ✅ Compatible AVMs: 7
 - ❌ Incompatible AVMs: 8
 
-🕒 Last updated: Thu Oct 17 15:09:57 BST 2024
+🕒 Last updated: Thu Oct 17 15:27:39 BST 2024
 
 🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11386687569)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11387010035)
 
 ## Project-Specific Compatibility
 
-Compatibility data shown in the tables below only highlight the AVMs used in below projects have compatible versions with AzureRM v4.3.0 available.
-It's not running compatibility checks against in-use AVM module versions.
+**Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v4.3.0. This check does not verify compatibility of the specific AVM versions currently in use within the projects.
 
 ---
 
