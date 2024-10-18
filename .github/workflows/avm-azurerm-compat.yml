@@ -19,6 +19,12 @@ on:
         required: true
         default: false
         type: boolean
+      check_projects:
+        description: 'Check project compatibility'
+        required: true
+        default: true
+        type: boolean
+  
   schedule:
     # Run 4 times a day at 8am, 2pm, 8pm, and 2am UK time (BST/GMT)
     # Note: GitHub Actions uses UTC, so times are adjusted accordingly
@@ -34,8 +40,15 @@ permissions:
   pull-requests: write
   actions: read
   issues: write
-
+  
 jobs:
+  determine-workflow:
+    runs-on: ubuntu-latest
+    outputs:
+      run-project-compatibility: ${{ github.event.inputs.check_projects == 'true' }}
+    steps:
+      - run: echo "Determining workflow"  
+
   prepare-matrix:
     runs-on: unraid
     outputs:
@@ -44,16 +57,194 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Process projects and extract AVMs
+        env:
+          GH_PAT: ${{ secrets.GH_PAT_REPO_MANAGE }}
+        run: |
+          set +e  # Disable exit on error
+          set -o pipefail
+      
+          log_error() {
+            echo "ERROR: $1" >&2
+          }
+      
+          log_debug() {
+            if [[ "$1" == ESSENTIAL::* ]]; then
+              echo "DEBUG: ${1#ESSENTIAL::}"
+            fi
+          }
+      
+          trap 'log_error "Script failed on line $LINENO"' ERR
+      
+          echo "ESSENTIAL::Processing projects-config.txt and extracting AVMs..."
+          
+          declare -A existing_avms
+          declare -A new_avms
+          declare -A project_avms
+          declare -A project_urls
+          
+          while IFS= read -r line; do
+            avm=$(echo "$line" | awk '{print $1}')
+            existing_avms["$avm"]=1
+          done < <(grep -v '^$' avm-config.txt)
+          
+          extract_sources() {
+            {
+              grep '| <a name="module_' README.md | awk -F'|' '{print $3}'
+              grep -E '^\| \[.*\].*\|.*\|.*\|' README.md | awk -F'|' '{print $3}'
+            } | sed 's/^ *//;s/ *$//' | 
+              grep -E '^(Azure/|git@github)' | 
+              sed -E 's/ +[0-9.]+$//' | 
+              sort | uniq
+          }
+          
+          process_github_url() {
+            local repo_url=$1
+            local project_name=$2
+            repo_name=$(echo $repo_url | awk -F'/' '{print $(NF-1)"/"$NF}')
+            readme_url="https://api.github.com/repos/${repo_name}/contents/README.md"
+            
+            log_debug "ESSENTIAL::Processing $project_name from $repo_url"
+            readme_response=$(curl -sS -H "Authorization: token $GH_PAT" "$readme_url")
+            
+            if [[ $(echo "$readme_response" | jq -r '.message') == "Not Found" ]]; then
+              log_error "README not found for $repo_url"
+              echo "PRIVATE_REPO" > README.md
+            elif [[ $(echo "$readme_response" | jq -r '.message') == "Bad credentials" ]]; then
+              log_error "Unable to access $repo_url. It might be a private repository or the PAT doesn't have sufficient permissions."
+              echo "PRIVATE_REPO" > README.md
+            else
+              echo "$readme_response" | jq -r '.content' | base64 --decode > README.md
+            fi
+            
+            if [[ $(cat README.md) == "PRIVATE_REPO" ]]; then
+              log_debug "ESSENTIAL::Skipping AVM extraction for private repository: $repo_url"
+              project_avms["$project_name"]+="PRIVATE_REPO "
+            else
+              sources=($(extract_sources))
+              
+              log_debug "ESSENTIAL::Extracted Sources for $project_name:"
+              printf '%s\n' "${sources[@]}" | sed 's/^/  /'
+              
+              for source in "${sources[@]}"; do
+                if [[ $source =~ ^Azure/ ]]; then
+                  full_avm_name=$source
+                  base_avm_name=$(echo "$source" | cut -d'/' -f1-3)
+                  
+                  if [[ -z "${existing_avms[$full_avm_name]}" ]]; then
+                    if [[ -z "${new_avms[$full_avm_name]}" ]]; then
+                      new_avms["$full_avm_name"]=1
+                      echo "ESSENTIAL::Found new AVM: $full_avm_name"
+                    fi
+                  fi
+                  if [[ ! " ${project_avms["$project_name"]} " =~ " $full_avm_name " ]]; then
+                    project_avms["$project_name"]+="$full_avm_name "
+                  fi
+                fi
+              done
+              
+              log_debug "ESSENTIAL::AVMs for $project_name: ${project_avms["$project_name"]}"
+            fi
+            
+            rm README.md
+          }
+          
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ $line =~ ^\[(.*)\]$ ]]; then
+              current_project="${BASH_REMATCH[1]}"
+              project_avms["$current_project"]=""
+            elif [[ $line =~ ^https://github.com/ ]]; then
+              repo_url=$(echo "$line" | grep -o 'https://github.com/[^ ]*')
+              project_urls["$current_project"]="$repo_url"
+              process_github_url "$repo_url" "$current_project"
+            fi
+          done < projects-config.txt
+                        
+          echo "ESSENTIAL::New AVMs to be added:"
+          true_new_avms=0
+          for avm in "${!new_avms[@]}"; do
+            echo "ESSENTIAL::  $avm"
+            if ! grep -q "^$avm$" avm-config.txt; then
+              echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
+              echo "$avm" >> avm-config.txt
+              if [ $? -eq 0 ]; then
+                ((true_new_avms++))
+                echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
+                existing_avms["$avm"]=1
+              else
+                echo "ERROR: Failed to add $avm to avm-config.txt"
+              fi
+            else
+              echo "ESSENTIAL::  $avm already exists in avm-config.txt"
+            fi
+          done
+
+          echo "ESSENTIAL::Cleaning up avm-config.txt"
+          # Remove any trailing whitespace and ensure each AVM is on its own line
+          sed -i 's/[[:space:]]*$//' avm-config.txt
+          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
+          sed -i '/^$/d' avm-config.txt  # Remove empty lines
+          sed -i 's/\(Azure\/.*\)\(Azure\/.*\)/\1\n\2/' avm-config.txt  # Ensure each AVM is on its own line
+
+          echo "ESSENTIAL::Summary of changes:"
+          echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
+          echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
+          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
+
+          echo "ESSENTIAL::Updated contents of avm-config.txt:"
+          cat avm-config.txt
+      
+          # Debug information
+          echo "ESSENTIAL::Debug: List of all AVMs in existing_avms:"
+          for avm in "${!existing_avms[@]}"; do
+            echo "  $avm"
+          done
+      
+          echo "ESSENTIAL::Debug: List of all AVMs in new_avms:"
+          for avm in "${!new_avms[@]}"; do
+            echo "  $avm"
+          done
+      
+          echo "{" > project_avm_associations.json
+          for project in "${!project_avms[@]}"; do
+            avms="${project_avms[$project]}"
+            project_url="${project_urls[$project]}"
+            echo "  \"$project\": {" >> project_avm_associations.json
+            echo "    \"url\": \"$project_url\"," >> project_avm_associations.json
+            echo "    \"avms\": [" >> project_avm_associations.json
+            if [[ "$avms" == "PRIVATE_REPO " ]]; then
+              echo "      \"PRIVATE_REPO\"" >> project_avm_associations.json
+            else
+              for avm in $avms; do
+                echo "      \"$avm\"," >> project_avm_associations.json
+              done
+              sed -i '$ s/,$//' project_avm_associations.json
+            fi
+            echo "    ]" >> project_avm_associations.json
+            echo "  }," >> project_avm_associations.json
+          done
+          sed -i '$ s/,$//' project_avm_associations.json
+          echo "}" >> project_avm_associations.json
+      
+          echo "ESSENTIAL::Project-AVM associations saved to project_avm_associations.json"
+          cat project_avm_associations.json
+
+      - name: Upload Project-AVM Associations
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-avm-associations
+          path: project_avm_associations.json
+
       - name: Set up matrix
         id: set-matrix
         shell: bash
         run: |
           set -e
-
+      
           get_short_name() {
             echo "$1" | sed -E 's/Azure\/avm-res-//; s/\/azurerm//; s/Azure\///'
           }
-
+      
           # Check if AVM sources are provided via workflow dispatch
           if [ -n "${{ github.event.inputs.avm_sources }}" ]; then
             echo "Using AVM sources from workflow dispatch"
@@ -64,23 +255,23 @@ jobs:
               echo "Error: avm-config.txt not found" >&2
               exit 1
             fi
-            mapfile -t AVM_SOURCES < avm-config.txt
+            mapfile -t AVM_SOURCES < <(grep -v '^$' avm-config.txt)
           fi
-
+      
           # Use input values or default values with clear precedence
           AZURERM_VERSION="${{ github.event.inputs.azurerm_versions }}"
           if [ -z "$AZURERM_VERSION" ]; then
             AZURERM_VERSION="${{ github.event.inputs.azurerm_versions != '' && github.event.inputs.azurerm_versions || env.DEFAULT_AZURERM_VERSION }}"
           fi
-
+      
           TF_VERSION="${{ github.event.inputs.tf_versions }}"
           if [ -z "$TF_VERSION" ]; then
             TF_VERSION="${{ github.event.inputs.tf_versions != '' && github.event.inputs.tf_versions || env.DEFAULT_TF_VERSION }}"
           fi
-
+      
           echo "Using AzureRM version: $AZURERM_VERSION"
           echo "Using Terraform version: $TF_VERSION"
-
+      
           # Process AVM sources
           MATRIX=()
           for source in "${AVM_SOURCES[@]}"; do
@@ -95,16 +286,16 @@ jobs:
             
             MATRIX+=("{\"avm_source\":\"$avm_source\",\"avm_short_name\":\"$short_name\",\"avm_version\":\"$avm_version\",\"azurerm_version\":\"$AZURERM_VERSION\",\"tf_version\":\"$TF_VERSION\"}")
           done
-
+      
           # Join the matrix entries into a JSON array
           MATRIX_JSON="[$(IFS=,; echo "${MATRIX[*]}")]"
-
+      
           # Create the final matrix JSON
           FINAL_MATRIX="{\"include\":$MATRIX_JSON}"
-
+      
           # Set the matrix output
           echo "matrix=$FINAL_MATRIX" >> $GITHUB_OUTPUT
-
+      
           # Debug output
           echo "Matrix: $FINAL_MATRIX"
 
@@ -133,8 +324,8 @@ jobs:
           echo "config_type=caf" >> $GITHUB_OUTPUT
           echo "working_dir=terraform/caf_config" >> $GITHUB_OUTPUT
         else
-          echo "config_type=normal" >> $GITHUB_OUTPUT
-          echo "working_dir=terraform/normal_config" >> $GITHUB_OUTPUT
+          echo "config_type=default" >> $GITHUB_OUTPUT
+          echo "working_dir=terraform/default_config" >> $GITHUB_OUTPUT
         fi
 
     - name: Prepare Terraform configuration
@@ -272,7 +463,7 @@ jobs:
 
     - name: Summarise Compatibility Results
       run: |
-        echo "# Compatibility Summary" > summary.md
+        echo "### Checks" > summary.md
         echo "" >> summary.md
         echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
         echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
@@ -329,6 +520,136 @@ jobs:
         name: compatibility-summary
         path: summary.md
 
+  project-compatibility:
+        needs: [summarise-results, determine-workflow]
+        if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Download summary
+            uses: actions/download-artifact@v4
+            with:
+              name: compatibility-summary
+
+          - name: Download Project-AVM Associations
+            uses: actions/download-artifact@v4
+            with:
+              name: project-avm-associations
+
+          - name: Calculate Project Compatibility
+            run: |
+              # Get the AzureRM version from the workflow input or use the default
+              AZURERM_VERSION="${{ github.event.inputs.azurerm_versions }}"
+              if [ -z "$AZURERM_VERSION" ]; then
+                AZURERM_VERSION="${{ env.DEFAULT_AZURERM_VERSION }}"
+              fi
+              echo "### Compatibility with AzureRM $AZURERM_VERSION" > project_summary.md
+              echo "" >> project_summary.md
+              echo "**Note**: The compatibility data shown in the tables below indicates only that the AVMs used in these projects have compatible versions available for AzureRM v$AZURERM_VERSION. These checks does not verify compatibility of the specific AVM versions currently in use within the projects." >> project_summary.md             
+              echo "" >> project_summary.md
+              echo "---" >> project_summary.md              
+              echo "" >> project_summary.md
+              echo "| Project | Compatible AVMs | Total AVMs | Compatibility % |" >> project_summary.md
+              echo "|---------|:----------:|:----------:|:----------:|" >> project_summary.md
+          
+              # Read project-AVM associations
+              project_avms=$(cat project_avm_associations.json)
+          
+              # Function to calculate compatibility for a project
+              calculate_compatibility() {
+                local project=$1
+                local project_data=$2
+                local compatible_count=0
+                local total_count=0
+          
+                local project_url=$(echo "$project_data" | jq -r '.url')
+                local avms=$(echo "$project_data" | jq -r '.avms[]')
+          
+                for avm in $avms; do
+                  total_count=$((total_count + 1))
+                  if grep -q "$avm.*| compatible |" summary.md; then
+                    compatible_count=$((compatible_count + 1))
+                  fi
+                done
+          
+                local compatibility_percentage=0
+                if [ $total_count -ne 0 ]; then
+                  compatibility_percentage=$((compatible_count * 100 / total_count))
+                fi
+          
+                echo "| [$project]($project_url) | $compatible_count | $total_count | $compatibility_percentage% |" >> project_summary.md
+              }
+          
+              # Process each project
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value | @json)"' | while IFS='|' read -r project project_data; do
+                calculate_compatibility "$project" "$project_data"
+              done
+    
+          - name: Process Each Project
+            run: |
+              # Read project-AVM associations
+              project_avms=$(cat project_avm_associations.json)
+              
+              echo "" >> project_summary.md
+              echo "### Breakdown" >> project_summary.md
+              echo "" >> project_summary.md
+              
+              # Process each project for detailed view
+              echo "$project_avms" | jq -r 'to_entries[] | "\(.key)|\(.value.url)|\(.value.avms | join(" "))"' | while IFS='|' read -r project project_url avms; do
+                echo "### [$project]($project_url)" >> project_summary.md
+                echo "" >> project_summary.md
+                echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
+                echo "|----------|------------|:----------:|" >> project_summary.md
+                for avm in $avms; do
+                  # First, try to match the exact AVM source
+                  summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm(/azurerm)? \|" summary.md | head -n 1)
+                  
+                  # If no exact match, then look for submodules
+                  if [ -z "$summary_line" ]; then
+                    summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm" summary.md | head -n 1)
+                  fi
+                  
+                  if [ -n "$summary_line" ]; then
+                    # Extract required fields from summary line
+                    avm_name=$(echo "$summary_line" | sed -E 's/^\| \[(.*?)\].*/\1/')
+                    avm_source=$(echo "$summary_line" | awk -F'|' '{print $3}' | xargs)
+                    compatibility=$(echo "$summary_line" | awk -F'|' '{print $6}' | xargs)
+                    module_version=$(echo "$summary_line" | awk -F'|' '{print $8}' | xargs)
+                    
+                    # Convert compatibility to emoji
+                    if [ "$compatibility" = "compatible" ]; then
+                      compatibility="✅"
+                    elif [ "$compatibility" = "incompatible" ]; then
+                      compatibility="❌"
+                    fi
+                    
+                    # Generate the correct registry URL
+                    if [[ "$avm_source" == *"//"* ]]; then
+                      base_avm_source=$(echo "$avm_source" | cut -d'/' -f1-3)
+                      submodule_path=$(echo "$avm_source" | sed 's/.*\/\///' | sed 's/^modules\///')
+                      registry_url="https://registry.terraform.io/modules/${base_avm_source}/${module_version}/submodules/${submodule_path}"
+                    else
+                      registry_url="https://registry.terraform.io/modules/$avm_source"
+                    fi
+                    
+                    echo "| [$avm_name]($registry_url) | $avm_source | $compatibility |" >> project_summary.md
+                  else
+                    echo "| [$avm](https://registry.terraform.io/modules/$avm) | $avm | N/A |" >> project_summary.md
+                  fi
+                done
+                echo "" >> project_summary.md
+              done
+              
+              cat project_summary.md >> $GITHUB_STEP_SUMMARY
+
+          - name: Upload Project Summary
+            uses: actions/upload-artifact@v4
+            with:
+              name: project-compatibility-summary
+              path: project_summary.md       
+
   create-issues:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
@@ -345,9 +666,14 @@ jobs:
         with:
           name: compatibility-summary
 
+      - name: Configure git for github-actions
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
       - name: Manage issues for AVMs
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Starting issue management process..."
           
@@ -361,7 +687,7 @@ jobs:
             IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
             
             # Convert comma-separated values to arrays
-            IFS=',' read -ra hours <<< "$hour"
+            IIFS=',' read -ra hours <<< "$hour"
             
             # Sort hours array
             IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
@@ -405,6 +731,28 @@ jobs:
           
           echo "Contents of summary.md:"
           cat summary.md
+          
+          # Extract all AVMs currently being checked
+          current_avms=$(tail -n +4 summary.md | grep -v '^[-|[:space:]]*$' | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort -u)
+          
+          echo "Current AVMs being checked:"
+          echo "$current_avms"
+          
+          # Get all open issues related to AVM incompatibility
+          open_issues=$(gh issue list --search "Incompatibility Detected: in:title" --state open --json number,title --jq '.[] | [.number, .title] | @tsv')
+          
+          # Process open issues
+          echo "$open_issues" | while IFS=$'\t' read -r issue_number issue_title; do
+            avm_name=$(echo "$issue_title" | sed -E 's/Incompatibility Detected: (.*) with AzureRM.*/\1/')
+            
+            if ! echo "$current_avms" | grep -q "$avm_name"; then
+              echo "AVM $avm_name is no longer being checked. Closing issue #$issue_number."
+              closing_comment="This AVM is no longer part of the compatibility checks. Closing this issue.
+
+              If this AVM needs to be re-added to the checks, please update the configuration and re-run the workflow."
+              gh issue close $issue_number --comment "$closing_comment"
+            fi
+          done
           
           # Read the summary file, skipping the header lines
           tail -n +4 summary.md | while IFS= read -r line; do
@@ -543,220 +891,243 @@ jobs:
           echo "Issue management process completed."
 
   generate-dashboard:
-    needs: summarise-results
-    runs-on: unraid
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Download summary
-        uses: actions/download-artifact@v4
-        with:
-          name: compatibility-summary
-
-      - name: Check File Permissions
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          echo "File permissions for summary.md:"
-          ls -l summary.md || echo "summary.md not found"
-          echo "File type of summary.md:"
-          file summary.md || echo "summary.md not found"
-        shell: bash
-
-      - name: Display Summary Content
-        run: |
-          echo "Contents of summary.md:"
-          cat summary.md 2>&1 || echo "Error reading summary.md"
-          echo "---End of summary.md---"
-          echo "First 10 lines of summary.md:"
-          head -n 10 summary.md 2>&1 || echo "Error reading summary.md"
-        shell: bash    
-      
-      - name: Debug - List files
-        run: |
-          echo "Current directory contents:"
-          ls -la
-          echo "summary.md contents:"
-          cat summary.md || echo "summary.md not found"    
-
-      - name: Generate Markdown Dashboard
-        shell: bash
-        run: |
-          set -e
-          
-          echo "Starting dashboard generation..."
-          
-          if [ ! -f summary.md ]; then
-            echo "ERROR: summary.md file not found!" >&2
-            exit 1
-          fi
-          
-          if [ ! -s summary.md ]; then
-            echo "Warning: summary.md is empty. Generating dashboard with no data."
-          fi
-          
-          calculate_next_run() {
-            local cron_schedule="$1"
-            local current_time=$(TZ='UTC' date +%H%M)
-            local current_day=$(TZ='UTC' date +%u)  # 1-7, where 1 is Monday
-            local next_run=""
-            
-            # Parse cron schedule
-            IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
-            
-            # Convert comma-separated values to arrays
-            IFS=',' read -ra hours <<< "$hour"
-            
-            # Sort hours array
-            IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
-            unset IFS
-            
-            # Find the next run time
-            for h in "${sorted_hours[@]}"; do
-              if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
-                next_run=$(printf "%02d:%02d" $h $minute)
-                break
-              fi
-            done
-            
-            # If no next run time found today, it's the first time slot next day
-            if [ -z "$next_run" ]; then
-              next_run=$(printf "%02d:%02d" ${sorted_hours[0]} $minute)
-            fi
-
-            # Determine if it's BST or GMT
-            local is_bst=$(TZ='Europe/London' date +%Z)
-            local timezone="${is_bst/BST/BST}"
-            timezone="${timezone/GMT/GMT}"
-            
-            # Convert UTC time to London time
-            local uk_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
-            
-            echo "$uk_time $timezone"
-          }
-          
-          # Extract cron schedule from workflow file
-          CRON_SCHEDULE=$(grep -oP '(?<=cron: ).+' $GITHUB_WORKSPACE/.github/workflows/avm-azurerm-compat.yml | tr -d "'")
-          
-          # Calculate next run time
-          NEXT_RUN=$(calculate_next_run "$CRON_SCHEDULE")
-          
-          # Process summary.md and count AVMs
-          echo "Processing summary.md..."
-          total_avms=0
-          compatible_avms=0
-          incompatible_avms=0
-          
-          # Create a temporary file for the dashboard content
-          temp_dashboard=$(mktemp)
-          
-          # Add header to the dashboard
-          echo "# AVM Compatibility Dashboard 🚀" > "$temp_dashboard"
-          echo "" >> "$temp_dashboard"
-          echo "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->" >> "$temp_dashboard"
-          echo "## Summary" >> "$temp_dashboard"
-          echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> "$temp_dashboard"
-          echo "|----------|:-------:|:---------:|:------:|:----------:|" >> "$temp_dashboard"
-          
-          # Process summary.md and add to dashboard
-          skip_header=true
-          while IFS= read -r line; do
-            # Remove leading and trailing spaces and pipe characters
-            line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
-            
-            # Skip empty lines, header lines, and lines with only dashes
-            [[ -z "$line" || "$line" == *----* || "$line" == "# Compatibility Summary" ]] && continue
-            
-            # Skip the first header row
-            if $skip_header; then
-              skip_header=false
-              continue
-            fi
-            
-            IFS='|' read -ra fields <<< "$line"
-            
-            if [ ${#fields[@]} -ne 8 ]; then
-              echo "Warning: Unexpected number of fields (${#fields[@]}) in line: $line"
-              continue
-            fi
-            
-            total_avms=$((total_avms + 1))
-             
-            avm_full="${fields[0]}"
-            avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
-            avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
-            azurerm_version=$(echo "${fields[2]}" | xargs)
-            tf_version=$(echo "${fields[3]}" | xargs)
-            compatibility=$(echo "${fields[4]}" | xargs)
-            module_version=$(echo "${fields[6]}" | xargs)
-            
-            if [ "$compatibility" = "compatible" ]; then
-              compatible_avms=$((compatible_avms + 1))
-              compatibility="✅"
-            elif [ "$compatibility" = "incompatible" ]; then
-              incompatible_avms=$((incompatible_avms + 1))
-              compatibility="❌"
-            fi
-            
-            echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $module_version | $compatibility |" >> "$temp_dashboard"
-          done < summary.md
-          
-          # Add compatibility overview
-          echo "" >> "$temp_dashboard"
-          echo "## Compatibility Overview 📊" >> "$temp_dashboard"
-          echo "- 🔢 Total AVMs checked: $total_avms" >> "$temp_dashboard"
-          echo "- ✅ Compatible AVMs: $compatible_avms" >> "$temp_dashboard"
-          echo "- ❌ Incompatible AVMs: $incompatible_avms" >> "$temp_dashboard"
-          echo "" >> "$temp_dashboard"
-          echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
-          echo "" >> "$temp_dashboard"
-          echo "🔄 Next scheduled run: $NEXT_RUN" >> "$temp_dashboard"
-          echo "" >> "$temp_dashboard"
-          echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
-          echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
-          
-          # Update README.md with new dashboard content
-          awk '
-          /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
-            print
-            while (getline line < "'"$temp_dashboard"'") {
-              if (line !~ /^# AVM Compatibility Dashboard/ && 
-                  line !~ /^<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ && 
-                  line !~ /^<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/) {
-                print line
-              }
-            }
-            f=1
-          }
-          /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
-          if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
-          print
-          f=0
-          next
-          }
-          !f
-          ' README.md > README.md.new && mv README.md.new README.md
-          
-          # Clean up temporary files
-          rm "$temp_dashboard"
-          
-          echo "Dashboard update complete. Updated contents of README.md:"
-          cat README.md
-
-      - name: Commit and push if changed
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git add README.md
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update AVM Compatibility Dashboard" && git push)
-        shell: bash
+      needs: [summarise-results, determine-workflow, project-compatibility]
+      if: always()
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
         
-      - name: Debug - Final directory state
-        if: always()
-        run: |
-          echo "Final directory contents:"
-          ls -la
-          echo "Git status:"
-          git status
+        - name: Download summary
+          uses: actions/download-artifact@v4
+          with:
+            name: compatibility-summary
+
+        - name: Download Project Summary
+          uses: actions/download-artifact@v4
+          with:
+            name: project-compatibility-summary
+          if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
+          continue-on-error: true          
+
+        - name: Check File Permissions
+          run: |
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            echo "File permissions for summary.md:"
+            ls -l summary.md || echo "summary.md not found"
+            echo "File type of summary.md:"
+            file summary.md || echo "summary.md not found"
+          shell: bash
+
+        - name: Display Summary Content
+          run: |
+            echo "Contents of summary.md:"
+            cat summary.md 2>&1 || echo "Error reading summary.md"
+            echo "---End of summary.md---"
+            echo "First 10 lines of summary.md:"
+            head -n 10 summary.md 2>&1 || echo "Error reading summary.md"
+          shell: bash    
+        
+        - name: Debug - List files
+          run: |
+            echo "Current directory contents:"
+            ls -la
+            echo "summary.md contents:"
+            cat summary.md || echo "summary.md not found"    
+
+        - name: Generate Markdown Dashboard
+          shell: bash
+          run: |
+            set -e
+            
+            echo "Starting dashboard generation..."
+            
+            if [ ! -f summary.md ]; then
+              echo "ERROR: summary.md file not found!" >&2
+              exit 1
+            fi
+            
+            if [ ! -s summary.md ]; then
+              echo "Warning: summary.md is empty. Generating dashboard with no data."
+            fi
+            
+            calculate_next_run() {
+              local cron_schedule="$1"
+              local current_time=$(TZ='UTC' date +%H%M)
+              local current_day=$(TZ='UTC' date +%u)  # 1-7, where 1 is Monday
+              local next_run=""
+              
+              # Parse cron schedule
+              IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
+              
+              # Convert comma-separated values to arrays
+              IFS=',' read -ra hours <<< "$hour"
+              
+              # Sort hours array
+              IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
+              unset IFS
+              
+              # Find the next run time
+              for h in "${sorted_hours[@]}"; do
+                if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
+                  next_run=$(printf "%02d:%02d" $h $minute)
+                  break
+                fi
+              done
+              
+              # If no next run time found today, it's the first time slot next day
+              if [ -z "$next_run" ]; then
+                next_run=$(printf "%02d:%02d" ${sorted_hours[0]} $minute)
+              fi
+
+              # Determine if it's BST or GMT
+              local is_bst=$(TZ='Europe/London' date +%Z)
+              local timezone="${is_bst/BST/BST}"
+              timezone="${timezone/GMT/GMT}"
+              
+              # Convert UTC time to London time
+              local uk_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+              
+              echo "$uk_time $timezone"
+            }
+            
+            # Extract cron schedule from workflow file
+            CRON_SCHEDULE=$(grep -oP '(?<=cron: ).+' $GITHUB_WORKSPACE/.github/workflows/avm-azurerm-compat.yml | tr -d "'")
+            
+            # Calculate next run time
+            NEXT_RUN=$(calculate_next_run "$CRON_SCHEDULE")
+            
+            # Process summary.md and count AVMs
+            echo "Processing summary.md..."
+            total_avms=0
+            compatible_avms=0
+            incompatible_avms=0
+            
+            # Create a temporary file for the dashboard content
+            temp_dashboard=$(mktemp)
+            
+            # Add header to the dashboard
+            echo "# AVM Compatibility Dashboard 🚀" > "$temp_dashboard"
+            echo "" >> "$temp_dashboard"
+            echo "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->" >> "$temp_dashboard"
+            echo "## Summary" >> "$temp_dashboard"
+            echo "| AVM Name | AzureRM | Terraform | Module | Compatible |" >> "$temp_dashboard"
+            echo "|----------|:-------:|:---------:|:------:|:----------:|" >> "$temp_dashboard"
+            
+            # Process summary.md and add to dashboard
+            skip_header=true
+            skip_first_row=true
+            while IFS= read -r line; do
+              # Remove leading and trailing spaces and pipe characters
+              line=$(echo "$line" | sed 's/^[ |]*//;s/[ |]*$//')
+              
+              # Skip empty lines, header lines, and lines with only dashes
+              [[ -z "$line" || "$line" == *----* || "$line" == "# Compatibility Summary" ]] && continue
+              
+              # Skip the first header row
+              if $skip_header; then
+                skip_header=false
+                continue
+              fi
+              
+              # Skip the first data row (which is the unnecessary one)
+              if $skip_first_row; then
+                skip_first_row=false
+                continue
+              fi
+              
+              IFS='|' read -ra fields <<< "$line"
+              
+              if [ ${#fields[@]} -ne 8 ]; then
+                echo "Warning: Unexpected number of fields (${#fields[@]}) in line: $line"
+                continue
+              fi
+              
+              total_avms=$((total_avms + 1))
+              
+              avm_full="${fields[0]}"
+              avm_name=$(echo "$avm_full" | sed -E 's/\[(.*?)\].*/\1/')
+              avm_url=$(echo "$avm_full" | sed -E 's/.*\((.*?)\).*/\1/')
+              azurerm_version=$(echo "${fields[2]}" | xargs)
+              tf_version=$(echo "${fields[3]}" | xargs)
+              compatibility=$(echo "${fields[4]}" | xargs)
+              module_version=$(echo "${fields[6]}" | xargs)
+              
+              if [ "$compatibility" = "compatible" ]; then
+                compatible_avms=$((compatible_avms + 1))
+                compatibility="✅"
+              elif [ "$compatibility" = "incompatible" ]; then
+                incompatible_avms=$((incompatible_avms + 1))
+                compatibility="❌"
+              fi
+              
+              echo "| [$avm_name]($avm_url) | $azurerm_version | $tf_version | $module_version | $compatibility |" >> "$temp_dashboard"
+            done < summary.md
+            
+            # Add compatibility overview
+            echo "" >> "$temp_dashboard"
+            echo "## Compatibility Overview 📊" >> "$temp_dashboard"
+            echo "- 🔢 Total AVMs checked: $total_avms" >> "$temp_dashboard"
+            echo "- ✅ Compatible AVMs: $compatible_avms" >> "$temp_dashboard"
+            echo "- ❌ Incompatible AVMs: $incompatible_avms" >> "$temp_dashboard"
+            echo "" >> "$temp_dashboard"
+            echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
+            echo "" >> "$temp_dashboard"
+            echo "🔄 Next scheduled run: $NEXT_RUN" >> "$temp_dashboard"
+            echo "" >> "$temp_dashboard"
+            echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
+            echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
+
+            # Add project-specific information if available
+            if [ -f "project_summary.md" ]; then
+              echo "" >> "$temp_dashboard"
+              echo "## Project Compatibility" >> "$temp_dashboard"
+              echo "" >> "$temp_dashboard"
+              sed '1,2d' project_summary.md >> "$temp_dashboard"
+            fi
+            
+            # Update README.md with new dashboard content
+            awk '
+            /<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ {
+              print
+              while (getline line < "'"$temp_dashboard"'") {
+                if (line !~ /^# AVM Compatibility Dashboard/ && 
+                    line !~ /^<!-- AVM_COMPATIBILITY_DASHBOARD_START -->/ && 
+                    line !~ /^<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/) {
+                  print line
+                }
+              }
+              f=1
+            }
+            /<!-- AVM_COMPATIBILITY_DASHBOARD_END -->/ {
+            if (!f) print "<!-- AVM_COMPATIBILITY_DASHBOARD_START -->"
+            print
+            f=0
+            next
+            }
+            !f
+            ' README.md > README.md.new && mv README.md.new README.md
+            
+            # Clean up temporary files
+            rm "$temp_dashboard"
+            
+            echo "Dashboard update complete. Updated contents of README.md:"
+            cat README.md
+
+        - name: Commit and push if changed
+          run: |
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git config --global user.name "github-actions[bot]"
+            git add README.md
+            git diff --quiet && git diff --staged --quiet || (git commit -m "Update AVM Compatibility Dashboard" && git push)
+          shell: bash
+          
+        - name: Debug - Final directory state
+          if: always()
+          run: |
+            echo "Final directory contents:"
+            ls -la
+            echo "Git status:"
+            git status
