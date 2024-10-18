@@ -50,7 +50,7 @@ jobs:
       - run: echo "Determining workflow"  
 
   prepare-matrix:
-    runs-on: unraid
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -301,7 +301,7 @@ jobs:
 
   check-compatibility:
     needs: prepare-matrix
-    runs-on: unraid
+    runs-on: ubuntu-latest
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
@@ -446,7 +446,7 @@ jobs:
 
   summarise-results:
     needs: check-compatibility
-    runs-on: unraid
+    runs-on: ubuntu-latest
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -653,7 +653,7 @@ jobs:
   create-issues:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
-    runs-on: unraid
+    runs-on: ubuntu-latest
     permissions:
       issues: write
       contents: read
