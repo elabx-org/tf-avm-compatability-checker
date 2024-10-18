@@ -1,14 +1,26 @@
-name: Close All Open Issues
+name: Manage Issues
 
 on:
-  workflow_dispatch:  # This allows manual triggering only
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform on issues'
+        required: true
+        default: 'close'
+        type: choice
+        options:
+        - close
+        - delete_all
+        - delete_closed
 
 jobs:
-  close-issues:
+  manage-issues:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT_REPO_MANAGE }}
 
       - name: Setup GitHub CLI
         run: |
@@ -20,8 +32,25 @@ jobs:
           && sudo apt install gh -y
 
       - name: Authenticate with GitHub CLI
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+        run: echo "${{ secrets.GH_PAT_REPO_MANAGE }}" | gh auth login --with-token
 
-      - name: Close all open issues
+      - name: Manage issues
         run: |
-          gh issue list --state open --limit 1000 --json number --jq '.[].number' | xargs -I {} gh issue close {}
+          case "${{ github.event.inputs.action }}" in
+            "close")
+              gh issue list --state open --limit 1000 --json number --jq '.[].number' | xargs -I {} gh issue close {}
+              echo "All open issues have been closed."
+              ;;
+            "delete_all")
+              gh issue list --state all --limit 1000 --json number --jq '.[].number' | xargs -I {} gh issue delete {} --yes
+              echo "All issues have been deleted."
+              ;;
+            "delete_closed")
+              gh issue list --state closed --limit 1000 --json number --jq '.[].number' | xargs -I {} gh issue delete {} --yes
+              echo "All closed issues have been deleted."
+              ;;
+            *)
+              echo "Invalid action specified."
+              exit 1
+              ;;
+          esac

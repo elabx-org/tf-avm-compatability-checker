@@ -1,4 +1,4 @@
-name: Check AVM Compatibility with Azurerm
+name: avm-azurerm-check
 
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ permissions:
 
 jobs:
   prepare-matrix:
-    runs-on: ubuntu-latest
+    runs-on: unraid
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -110,7 +110,7 @@ jobs:
 
   check-compatibility:
     needs: prepare-matrix
-    runs-on: ubuntu-latest
+    runs-on: unraid
     strategy:
       matrix: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
       fail-fast: false
@@ -255,7 +255,7 @@ jobs:
 
   summarise-results:
     needs: check-compatibility
-    runs-on: ubuntu-latest
+    runs-on: unraid
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -332,7 +332,7 @@ jobs:
   create-issues:
     needs: summarise-results
     if: ${{ !inputs.skip_issue_creation }}
-    runs-on: ubuntu-latest
+    runs-on: unraid
     permissions:
       issues: write
       contents: read
@@ -351,7 +351,6 @@ jobs:
         run: |
           echo "Starting issue management process..."
           
-          # Function to parse cron schedule and calculate next run time
           calculate_next_run() {
             local cron_schedule="$1"
             local current_time=$(TZ='UTC' date +%H%M)
@@ -359,43 +358,37 @@ jobs:
             local next_run=""
             
             # Parse cron schedule
-            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
-            
-            # Convert day of week to 1-7 format if necessary
-            if [[ "$day_of_week" == "0" ]]; then
-              day_of_week="7"
-            fi
+            IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
             
             # Convert comma-separated values to arrays
             IFS=',' read -ra hours <<< "$hour"
-            IFS=',' read -ra days_of_week <<< "$day_of_week"
+            
+            # Sort hours array
+            IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
+            unset IFS
             
             # Find the next run time
-            for h in "${hours[@]}"; do
-              if (( 10#$h > 10#$current_time / 100 )); then
-                next_run=$(printf "%02d:00" $h)
+            for h in "${sorted_hours[@]}"; do
+              if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
+                next_run=$(printf "%02d:%02d" $h $minute)
                 break
               fi
             done
             
-            # If no next run time found today, find the next day
+            # If no next run time found today, it's the first time slot next day
             if [ -z "$next_run" ]; then
-              for d in "${days_of_week[@]}"; do
-                if (( d > current_day )); then
-                  next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
-                  break
-                fi
-              done
+              next_run=$(printf "%02d:%02d" ${sorted_hours[0]} $minute)
             fi
+
+            # Determine if it's BST or GMT
+            local is_bst=$(TZ='Europe/London' date +%Z)
+            local timezone="${is_bst/BST/BST}"
+            timezone="${timezone/GMT/GMT}"
             
-            # If still no next run time, it's the first time slot next week
-            if [ -z "$next_run" ]; then
-              next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
-            fi
+            # Convert UTC time to UK time
+            local uk_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
             
-            # Convert UTC time to BST
-            local bst_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
-            echo "$bst_time BST"
+            echo "$uk_time $timezone"
           }
           
           # Extract cron schedule from workflow file
@@ -487,7 +480,7 @@ jobs:
             | AzureRM Constraints | $azurerm_constraints |
 
             🕒 Last checked: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')
-            🔄 Next scheduled run: $NEXT_RUN (UK time)"
+            🔄 Next scheduled run: $NEXT_RUN"
             
             if [ "$compatibility" == "incompatible" ]; then
               echo "AVM is incompatible. Preparing issue..."
@@ -551,7 +544,7 @@ jobs:
 
   generate-dashboard:
     needs: summarise-results
-    runs-on: ubuntu-latest
+    runs-on: unraid
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -586,7 +579,7 @@ jobs:
           echo "Current directory contents:"
           ls -la
           echo "summary.md contents:"
-          cat summary.md || echo "summary.md not found"
+          cat summary.md || echo "summary.md not found"    
 
       - name: Generate Markdown Dashboard
         shell: bash
@@ -604,7 +597,6 @@ jobs:
             echo "Warning: summary.md is empty. Generating dashboard with no data."
           fi
           
-          # Function to parse cron schedule and calculate next run time
           calculate_next_run() {
             local cron_schedule="$1"
             local current_time=$(TZ='UTC' date +%H%M)
@@ -612,55 +604,37 @@ jobs:
             local next_run=""
             
             # Parse cron schedule
-            IFS=' ' read -r minute hour day_of_month month day_of_week <<< "$cron_schedule"
-            
-            # Convert day of week to 1-7 format if necessary
-            if [[ "$day_of_week" == "0" ]]; then
-              day_of_week="7"
-            fi
+            IFS=' ' read -r minute hour _ _ day_of_week <<< "$cron_schedule"
             
             # Convert comma-separated values to arrays
             IFS=',' read -ra hours <<< "$hour"
-            IFS=',' read -ra days_of_week <<< "$day_of_week"
+            
+            # Sort hours array
+            IFS=$'\n' sorted_hours=($(sort -n <<<"${hours[*]}"))
+            unset IFS
             
             # Find the next run time
-            for h in "${hours[@]}"; do
-              if (( 10#$h > 10#$current_time / 100 )); then
-                next_run=$(printf "%02d:00" $h)
+            for h in "${sorted_hours[@]}"; do
+              if (( 10#$h > 10#$current_time / 100 )) || (( 10#$h == 10#$current_time / 100 && 10#$minute >= 10#$current_time % 100 )); then
+                next_run=$(printf "%02d:%02d" $h $minute)
                 break
               fi
             done
             
-            # If no next run time found today, find the next day
+            # If no next run time found today, it's the first time slot next day
             if [ -z "$next_run" ]; then
-              for d in "${days_of_week[@]}"; do
-                if (( d > current_day )); then
-                  next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + $d days" +%A)" +%A))"
-                  break
-                fi
-              done
+              next_run=$(printf "%02d:%02d" ${sorted_hours[0]} $minute)
             fi
-            
-            # If still no next run time, it's the first time slot next week
-            if [ -z "$next_run" ]; then
-              next_run="${hours[0]}:00 ($(TZ='UTC' date -d "next $(date -d "last Sunday + ${days_of_week[0]} days" +%A)" +%A))"
-            fi
-            
+
             # Determine if it's BST or GMT
             local is_bst=$(TZ='Europe/London' date +%Z)
             local timezone="${is_bst/BST/BST}"
             timezone="${timezone/GMT/GMT}"
             
             # Convert UTC time to London time
-            local london_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
+            local uk_time=$(TZ='Europe/London' date -d "TZ=\"UTC\" $next_run" '+%I:%M %p')
             
-            # If next_run includes a day, format it accordingly
-            if [[ "$next_run" == *"("* ]]; then
-              local day=$(echo "$next_run" | grep -oP '\(\K[^)]+')
-              echo "$london_time $timezone ($day)"
-            else
-              echo "$london_time $timezone"
-            fi
+            echo "$uk_time $timezone"
           }
           
           # Extract cron schedule from workflow file
@@ -738,7 +712,7 @@ jobs:
           echo "" >> "$temp_dashboard"
           echo "🕒 Last updated: $(TZ='Europe/London' date '+%a %b %d %H:%M:%S %Z %Y')" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
-          echo "🔄 Next scheduled run: $NEXT_RUN (UK time)" >> "$temp_dashboard"
+          echo "🔄 Next scheduled run: $NEXT_RUN" >> "$temp_dashboard"
           echo "" >> "$temp_dashboard"
           echo "🔗 [More Info](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$temp_dashboard"
           echo "<!-- AVM_COMPATIBILITY_DASHBOARD_END -->" >> "$temp_dashboard"
