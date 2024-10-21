@@ -167,33 +167,28 @@ jobs:
           for avm in "${!new_avms[@]}"; do
             echo "ESSENTIAL::  $avm"
             if [[ -z "${all_avms[$avm]}" ]]; then
-              echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
-              echo "$avm" >> avm-config.txt
-              if [ $? -eq 0 ]; then
-                ((true_new_avms++))
-                echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
-                all_avms["$avm"]=1
-              else
-                echo "ERROR: Failed to add $avm to avm-config.txt"
-              fi
+              all_avms["$avm"]=1
+              ((true_new_avms++))
+              echo "ESSENTIAL::  New AVM: $avm"
             else
-              echo "ESSENTIAL::  $avm already exists in avm-config.txt"
+              echo "ESSENTIAL::  $avm already exists"
             fi
           done
 
-          echo "ESSENTIAL::Cleaning up avm-config.txt"
-          sort -u avm-config.txt -o avm-config.txt.tmp && mv avm-config.txt.tmp avm-config.txt
+          # Write all unique AVMs to avm-config.txt
+          echo "ESSENTIAL::Updating avm-config.txt"
+          > avm-config.txt  # Clear the file
+          for avm in "${!all_avms[@]}"; do
+            echo "$avm" >> avm-config.txt
+          done
 
-          # Reset all_avms and repopulate it with the cleaned up content
-          all_avms=()
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            all_avms["$line"]=1
-          done < avm-config.txt
+          # Sort avm-config.txt
+          sort -u -o avm-config.txt avm-config.txt
 
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: ${#all_avms[@]}"
+          echo "ESSENTIAL::  Final total AVMs: $(wc -l < avm-config.txt)"
 
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
