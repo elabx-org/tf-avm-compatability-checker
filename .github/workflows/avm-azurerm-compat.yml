@@ -45,7 +45,7 @@ jobs:
   determine-workflow:
     runs-on: ubuntu-latest
     outputs:
-      run-project-compatibility: ${{ github.event.inputs.check_projects == 'true' }}
+      run-project-compatibility: ${{ github.event_name == 'schedule' || github.event.inputs.check_projects == 'true' || github.event.inputs.avm_sources == '' }}
     steps:
       - run: echo "Determining workflow"  
 
