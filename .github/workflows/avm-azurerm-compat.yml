@@ -82,13 +82,11 @@ jobs:
           declare -A new_avms
           declare -A project_avms
           declare -A project_urls
-          declare -A all_avms
           
-          # Read existing AVMs into the all_avms associative array
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            all_avms["$line"]=1
-            existing_avms["$line"]=1
-          done < avm-config.txt
+          while IFS= read -r line; do
+            avm=$(echo "$line" | awk '{print $1}')
+            existing_avms["$avm"]=1
+          done < <(grep -v '^$' avm-config.txt)
           
           extract_sources() {
             {
@@ -166,13 +164,13 @@ jobs:
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
             echo "ESSENTIAL::  $avm"
-            if [[ -z "${all_avms[$avm]}" ]]; then
+            if ! grep -q "^$avm$" avm-config.txt; then
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
               echo "$avm" >> avm-config.txt
               if [ $? -eq 0 ]; then
                 ((true_new_avms++))
                 echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
-                all_avms["$avm"]=1
+                existing_avms["$avm"]=1
               else
                 echo "ERROR: Failed to add $avm to avm-config.txt"
               fi
@@ -180,19 +178,19 @@ jobs:
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
-      
+
           echo "ESSENTIAL::Cleaning up avm-config.txt"
-          sort -u avm-config.txt -o avm-config.txt
+          # Remove any trailing whitespace and ensure each AVM is on its own line
           sed -i 's/[[:space:]]*$//' avm-config.txt
           sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
           sed -i '/^$/d' avm-config.txt  # Remove empty lines
           sed -i 's/\(Azure\/.*\)\(Azure\/.*\)/\1\n\2/' avm-config.txt  # Ensure each AVM is on its own line
-      
+
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $((${#all_avms[@]}))"
-      
+          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
+
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
       
@@ -468,7 +466,7 @@ jobs:
         echo "### Checks" > summary.md
         echo "" >> summary.md
         echo "| AVM Name | AVM Source | azurerm Version | Terraform Version | Compatibility | Reason | Module Version | azurerm Constraints |" >> summary.md
-        echo "|----------|------------|-----------------|-------------------|---------------|--------|----------------|---------------------|" >> summary.md
+        echo "|----------|------------|:---------------:|:-----------------:|---------------|--------|:--------------:|---------------------|" >> summary.md
         
         # Combine all result files
         cat results-* > all_results.csv
@@ -524,7 +522,7 @@ jobs:
 
   project-compatibility:
         needs: [summarise-results, determine-workflow]
-        if: needs.determine-workflow.outputs.run-project-compatibility == 'true'
+        if: needs.determine-workflow.outputs.run-project-compatibility == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.avm_sources == '')
         runs-on: ubuntu-latest
         steps:
           - name: Checkout code
@@ -603,7 +601,7 @@ jobs:
                 echo "### [$project]($project_url)" >> project_summary.md
                 echo "" >> project_summary.md
                 echo "| AVM Name | AVM Source | Compatibility |" >> project_summary.md
-                echo "|----------|------------|:----------:|" >> project_summary.md
+                echo "|----------|------------|:-------------:|" >> project_summary.md
                 for avm in $avms; do
                   # First, try to match the exact AVM source
                   summary_line=$(grep -E "^\| \[.*\]\(.*\) \| $avm(/azurerm)? \|" summary.md | head -n 1)
@@ -654,7 +652,7 @@ jobs:
 
   create-issues:
     needs: summarise-results
-    if: ${{ !inputs.skip_issue_creation }}
+    if: ${{ !inputs.skip_issue_creation && github.ref == 'refs/heads/main'  }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -675,7 +673,7 @@ jobs:
 
       - name: Manage issues for AVMs
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT_REPO_MANAGE }}
         run: |
           echo "Starting issue management process..."
           
@@ -894,7 +892,7 @@ jobs:
 
   generate-dashboard:
       needs: [summarise-results, determine-workflow, project-compatibility]
-      if: always()
+      if: always() && (github.event_name != 'workflow_dispatch' || github.event.inputs.avm_sources == '')
       runs-on: ubuntu-latest
       steps:
         - name: Checkout code
