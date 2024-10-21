@@ -37,11 +37,11 @@
 - ✅ Compatible AVMs: 12
 - ❌ Incompatible AVMs: 14
 
-🕒 Last updated: Mon Oct 21 01:08:31 BST 2024
+🕒 Last updated: Mon Oct 21 01:33:34 BST 2024
 
 🔄 Next scheduled run: 02:00 AM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11430755067)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11430996399)
 
 ## Project Compatibility
 
@@ -60,7 +60,7 @@
 ### [Test Repo 2](https://github.com/elabx-org/test-repo-2)
 
 | AVM Name | AVM Source | Compatibility |
-|----------|------------|:----------:|
+|----------|------------|:-------------:|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | ❌ |
 | [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | Azure/avm-res-network-azurefirewall/azurerm | ✅ |
 | [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | Azure/avm-res-network-bastionhost/azurerm | ❌ |
@@ -75,13 +75,13 @@
 ### [Test Repo 6](https://github.com/elabx-org/test-repo-6)
 
 | AVM Name | AVM Source | Compatibility |
-|----------|------------|:----------:|
+|----------|------------|:-------------:|
 | [caf-enterprise-scale](https://registry.terraform.io/modules/Azure/caf-enterprise-scale/azurerm) | Azure/caf-enterprise-scale/azurerm | ❌ |
 
 ### [Test Repo 4](https://github.com/elabx-org/test-repo-4)
 
 | AVM Name | AVM Source | Compatibility |
-|----------|------------|:----------:|
+|----------|------------|:-------------:|
 | [avm-ptn-vnetgateway](https://registry.terraform.io/modules/Azure/avm-ptn-vnetgateway/azurerm) | Azure/avm-ptn-vnetgateway/azurerm | ❌ |
 | [network-azurefirewall](https://registry.terraform.io/modules/Azure/avm-res-network-azurefirewall/azurerm) | Azure/avm-res-network-azurefirewall/azurerm | ✅ |
 | [network-bastionhost](https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/azurerm) | Azure/avm-res-network-bastionhost/azurerm | ❌ |
