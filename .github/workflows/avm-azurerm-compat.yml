@@ -82,11 +82,13 @@ jobs:
           declare -A new_avms
           declare -A project_avms
           declare -A project_urls
+          declare -A all_avms
           
-          while IFS= read -r line; do
-            avm=$(echo "$line" | awk '{print $1}')
-            existing_avms["$avm"]=1
-          done < <(grep -v '^$' avm-config.txt)
+          # Read existing AVMs into the all_avms associative array
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            all_avms["$line"]=1
+            existing_avms["$line"]=1
+          done < avm-config.txt
           
           extract_sources() {
             {
@@ -164,13 +166,13 @@ jobs:
           true_new_avms=0
           for avm in "${!new_avms[@]}"; do
             echo "ESSENTIAL::  $avm"
-            if ! grep -q "^$avm$" avm-config.txt; then
+            if [[ -z "${all_avms[$avm]}" ]]; then
               echo "ESSENTIAL::  Attempting to add $avm to avm-config.txt"
               echo "$avm" >> avm-config.txt
               if [ $? -eq 0 ]; then
                 ((true_new_avms++))
                 echo "ESSENTIAL::  Successfully added $avm to avm-config.txt"
-                existing_avms["$avm"]=1
+                all_avms["$avm"]=1
               else
                 echo "ERROR: Failed to add $avm to avm-config.txt"
               fi
@@ -178,19 +180,19 @@ jobs:
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
-
+      
           echo "ESSENTIAL::Cleaning up avm-config.txt"
-          # Remove any trailing whitespace and ensure each AVM is on its own line
+          sort -u avm-config.txt -o avm-config.txt
           sed -i 's/[[:space:]]*$//' avm-config.txt
           sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
           sed -i '/^$/d' avm-config.txt  # Remove empty lines
           sed -i 's/\(Azure\/.*\)\(Azure\/.*\)/\1\n\2/' avm-config.txt  # Ensure each AVM is on its own line
-
+      
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $((${#existing_avms[@]}))"
-
+          echo "ESSENTIAL::  Final total AVMs: $((${#all_avms[@]}))"
+      
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
       
