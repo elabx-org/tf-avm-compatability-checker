@@ -87,7 +87,6 @@ jobs:
           # Read existing AVMs into the all_avms associative array
           while IFS= read -r line || [[ -n "$line" ]]; do
             all_avms["$line"]=1
-            existing_avms["$line"]=1
           done < avm-config.txt
           
           extract_sources() {
@@ -180,25 +179,27 @@ jobs:
               echo "ESSENTIAL::  $avm already exists in avm-config.txt"
             fi
           done
-      
+
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           sort -u avm-config.txt -o avm-config.txt
-          sed -i 's/[[:space:]]*$//' avm-config.txt
-          sed -i 's/Azure\/Azure\//Azure\//' avm-config.txt
-          sed -i '/^$/d' avm-config.txt  # Remove empty lines
-          sed -i 's/\(Azure\/.*\)\(Azure\/.*\)/\1\n\2/' avm-config.txt  # Ensure each AVM is on its own line
-      
+
+          # After cleaning up, re-read the file to update all_avms
+          all_avms=()
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            all_avms["$line"]=1
+          done < avm-config.txt
+
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $((${#all_avms[@]}))"
-      
+          echo "ESSENTIAL::  Final total AVMs: ${#all_avms[@]}"
+
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
-      
+
           # Debug information
-          echo "ESSENTIAL::Debug: List of all AVMs in existing_avms:"
-          for avm in "${!existing_avms[@]}"; do
+          echo "ESSENTIAL::Debug: List of all AVMs in all_avms:"
+          for avm in "${!all_avms[@]}"; do
             echo "  $avm"
           done
       
