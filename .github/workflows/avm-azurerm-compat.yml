@@ -84,7 +84,6 @@ jobs:
           declare -A project_avms
           declare -A project_urls
 
-          
           # Read existing AVMs into the existing_avms and all_avms associative arrays
           while IFS= read -r line || [[ -n "$line" ]]; do
             existing_avms["$line"]=1
@@ -183,12 +182,18 @@ jobs:
           done
 
           echo "ESSENTIAL::Cleaning up avm-config.txt"
-          sort -u avm-config.txt -o avm-config.txt
+          sort -u avm-config.txt -o avm-config.txt.tmp && mv avm-config.txt.tmp avm-config.txt
+
+          # Reset all_avms and repopulate it with the cleaned up content
+          all_avms=()
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            all_avms["$line"]=1
+          done < avm-config.txt
 
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $(wc -l < avm-config.txt)"
+          echo "ESSENTIAL::  Final total AVMs: ${#all_avms[@]}"
 
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
