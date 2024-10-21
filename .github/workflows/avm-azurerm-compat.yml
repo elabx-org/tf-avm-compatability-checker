@@ -83,21 +83,26 @@ jobs:
           declare -A new_avms
           declare -A project_avms
           declare -A project_urls
-      
+
           # Read existing AVMs into the existing_avms and all_avms associative arrays
           while IFS= read -r line || [[ -n "$line" ]]; do
-            existing_avms["$line"]=1
-            all_avms["$line"]=1
+            line=$(echo "$line" | tr -d '[:space:]')  # Remove any whitespace
+            if [[ -n "$line" ]]; then  # Skip empty lines
+              existing_avms["$line"]=1
+              all_avms["$line"]=1
+            fi
           done < avm-config.txt
-          
+
           process_avm() {
             local avm="$1"
-            if [[ -z "${all_avms[$avm]}" ]]; then
+            avm=$(echo "$avm" | tr -d '[:space:]')  # Remove any whitespace
+            if [[ -n "$avm" && -z "${all_avms[$avm]}" ]]; then
               echo "ESSENTIAL::Found new AVM: $avm"
               new_avms["$avm"]=1
               all_avms["$avm"]=1
             fi
           }
+
       
           extract_sources() {
             {
@@ -170,31 +175,37 @@ jobs:
             echo "ESSENTIAL::  $avm"
             ((true_new_avms++))
           done
-      
+
           # Write all unique AVMs to avm-config.txt
           echo "ESSENTIAL::Updating avm-config.txt"
           > avm-config.txt  # Clear the file
           for avm in "${!all_avms[@]}"; do
             echo "$avm" >> avm-config.txt
           done
-      
-          # Sort avm-config.txt
-          sort -o avm-config.txt avm-config.txt
-      
+
+          # Sort avm-config.txt and remove any empty lines
+          sort -u avm-config.txt | sed '/^$/d' > avm-config.tmp && mv avm-config.tmp avm-config.txt
+
+          # Recalculate all_avms based on the final avm-config.txt
+          all_avms=()
+          while IFS= read -r line; do
+            all_avms["$line"]=1
+          done < avm-config.txt
+
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: $(wc -l < avm-config.txt)"
-      
+          echo "ESSENTIAL::  Final total AVMs: ${#all_avms[@]}"
+
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
-      
+
           # Debug information
           echo "ESSENTIAL::Debug: List of all AVMs in all_avms:"
           for avm in "${!all_avms[@]}"; do
             echo "  $avm"
           done
-      
+
           echo "ESSENTIAL::Debug: List of all AVMs in new_avms:"
           for avm in "${!new_avms[@]}"; do
             echo "  $avm"
