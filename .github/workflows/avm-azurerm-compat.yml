@@ -79,13 +79,15 @@ jobs:
           echo "ESSENTIAL::Processing projects-config.txt and extracting AVMs..."
           
           declare -A existing_avms
+          declare -A all_avms
           declare -A new_avms
           declare -A project_avms
           declare -A project_urls
-          declare -A all_avms
+
           
-          # Read existing AVMs into the all_avms associative array
+          # Read existing AVMs into the existing_avms and all_avms associative arrays
           while IFS= read -r line || [[ -n "$line" ]]; do
+            existing_avms["$line"]=1
             all_avms["$line"]=1
           done < avm-config.txt
           
@@ -183,16 +185,10 @@ jobs:
           echo "ESSENTIAL::Cleaning up avm-config.txt"
           sort -u avm-config.txt -o avm-config.txt
 
-          # After cleaning up, re-read the file to update all_avms
-          all_avms=()
-          while IFS= read -r line || [[ -n "$line" ]]; do
-            all_avms["$line"]=1
-          done < avm-config.txt
-
           echo "ESSENTIAL::Summary of changes:"
           echo "ESSENTIAL::  Total existing AVMs: ${#existing_avms[@]}"
           echo "ESSENTIAL::  Total new AVMs added: $true_new_avms"
-          echo "ESSENTIAL::  Final total AVMs: ${#all_avms[@]}"
+          echo "ESSENTIAL::  Final total AVMs: $(wc -l < avm-config.txt)"
 
           echo "ESSENTIAL::Updated contents of avm-config.txt:"
           cat avm-config.txt
@@ -202,7 +198,7 @@ jobs:
           for avm in "${!all_avms[@]}"; do
             echo "  $avm"
           done
-      
+
           echo "ESSENTIAL::Debug: List of all AVMs in new_avms:"
           for avm in "${!new_avms[@]}"; do
             echo "  $avm"
