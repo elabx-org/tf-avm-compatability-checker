@@ -23,11 +23,11 @@
 - ✅ Compatible AVMs: 5
 - ❌ Incompatible AVMs: 7
 
-🕒 Last updated: Tue Oct 22 08:09:29 BST 2024
+🕒 Last updated: Tue Oct 22 14:18:15 BST 2024
 
-🔄 Next scheduled run: 02:00 PM BST
+🔄 Next scheduled run: 08:00 PM BST
 
-🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11455034266)
+🔗 [More Info](https://github.com/elabx-org/tf-avm-compatability-checker/actions/runs/11461033107)
 
 ## Project Compatibility
 
